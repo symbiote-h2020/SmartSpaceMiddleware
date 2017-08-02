@@ -67,6 +67,8 @@ symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, Res_type* res_typ
 		// change the value of the global variable keep_alive_interval accordingly
 	keep_alive_interval = _keep_alive;
 
+	_server = new ESP8266WebServer();
+
 	//_hash = readHashFromFlash(); 
 	if (_hash != "none") {
 		//saveHashInFlash();
@@ -93,6 +95,31 @@ boolean symAgent::connect(String ssid, String psw){
 	}
 	JOIN_LED_OFF
 	return true; 
+}
+
+boolean symAgent::elaborateRequest()
+{
+	String resp = _server->arg(0);
+	P("ELABORATEREQUEST");
+	P(resp);
+	_jsonBuff.clear();
+		JsonObject& _root2 = _jsonBuff.parseObject(resp);
+		if (!_root2.success()) {
+    		P("parseObject() failed");
+    		return false;
+		}
+#if DEBUG_SYM_CLASS == 1
+		_root2.prettyPrintTo(Serial);
+#endif
+		String id = _root2["id"].as<String>();
+		if (id == _id){
+			P("Correctly decoded!");
+			return true;
+		} else {
+			P("Wrong id");
+			return false;
+		}
+	return true;
 }
 
      //search for well-known symbiotic ssid and try to connect to it.
@@ -140,6 +167,32 @@ boolean symAgent::begin()
   					PI("mac: ");
   					P(_mac);
   					P("-------------");
+  					_server->on("/RequestResourceAgent", [this](){
+						P("RESOURCEHANDLER");
+						String message = "Args found:\n";
+						for (uint8_t i=0; i < _server->args(); i++){
+						   message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
+						}
+						P(message);
+						elaborateRequest();
+						_server->send(200, "text/plain", message);
+				    });
+					_server->onNotFound([this](){
+						P("NOTFOUND");
+						String message = "File Not Found\n\n";
+						message += "URI: ";
+						message += _server->uri();
+						message += "\nMethod: ";
+						message += (_server->method() == HTTP_GET)?"GET":"POST";
+						message += "\nArguments: ";
+						message += _server->args();
+						message += "\n";
+						for (uint8_t i=0; i<_server->args(); i++){
+						  message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
+						}
+						P(message)
+				    });
+					_server->begin();
   					return true;
   				}
   			}
@@ -312,6 +365,11 @@ void symAgent::sendValue(float* value)
 void symAgent::sendValue(int* value)
 {
 
+}
+
+void symAgent::handleSSPRequest()
+{
+	_server->handleClient();
 }
 
 String symAgent::calculateWifiPSW(String ssid)

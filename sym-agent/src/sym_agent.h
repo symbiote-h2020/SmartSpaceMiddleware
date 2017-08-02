@@ -17,6 +17,7 @@
 //#endif
 
 #include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 #include "symbiote-resources.h"
 #include <ArduinoJson.h>
 #include <RestClient.h>
@@ -44,6 +45,8 @@
 #define JOIN_URL "innkeeper.symbiote.org"
 #define JOIN_PATH "/join.php"
 #define KEEPALIVE_PATH "/keepalive.php"
+
+#define LISTEN_PORT 80
 
 #define JOIN_LED 0
 #define KEEPALIVE_LED 2
@@ -78,6 +81,8 @@ struct join_resp
 
 void printJoinResp(struct join_resp data);
 void keepAliveISR(void);
+
+
 
 class symAgent
 {
@@ -115,6 +120,11 @@ class symAgent
     void sendValue(float* value);
     void sendValue(int* value);
 
+    boolean elaborateRequest();
+
+
+    void handleSSPRequest();
+
   private:
       //This function calculate the password of the symbiotic ssid.
       // Remember that max 32 characters are allowed for wifi ssid
@@ -150,6 +160,8 @@ class symAgent
     StaticJsonBuffer<MAX_JSON_SIZE> _jsonBuff;
 
     RestClient* _rest_client;
+    ESP8266WebServer* _server;
+
 };
 
 
