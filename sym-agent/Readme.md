@@ -4,6 +4,14 @@ Symbiote Agent resources
 This project contain a set of resources to use a symbiote agent in the symbiote ecosystem.
 Symbiote is a platform cooperation and interoperability porject found by the European commission. Learn more at: https://www.symbiote-h2020.eu/
 
+# Version release
+
+V. 0.1: first release of the agent.
+
+# Supported Platform
+
+First release of the agent currently support ESP8266 arduino based platform like Adafruit HUZZAH.
+
 # Directory descriptions
 
 ## src
