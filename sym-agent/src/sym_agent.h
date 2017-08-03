@@ -125,6 +125,11 @@ class symAgent
 
     void handleSSPRequest();
 
+    boolean bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)());
+
+    String (* _createObservedPropertiesString)();
+    String (* _readSensorsJSON)();
+
   private:
       //This function calculate the password of the symbiotic ssid.
       // Remember that max 32 characters are allowed for wifi ssid

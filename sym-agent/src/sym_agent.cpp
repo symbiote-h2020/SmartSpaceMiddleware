@@ -100,8 +100,8 @@ boolean symAgent::connect(String ssid, String psw){
 boolean symAgent::elaborateRequest()
 {
 	String resp = _server->arg(0);
-	P("ELABORATEREQUEST");
-	P(resp);
+	P("ELABORATE_REQUEST");
+	//P(resp);
 	_jsonBuff.clear();
 		JsonObject& _root2 = _jsonBuff.parseObject(resp);
 		if (!_root2.success()) {
@@ -110,10 +110,15 @@ boolean symAgent::elaborateRequest()
 		}
 #if DEBUG_SYM_CLASS == 1
 		_root2.prettyPrintTo(Serial);
+		P(" ");
 #endif
 		String id = _root2["id"].as<String>();
 		if (id == _id){
 			P("Correctly decoded!");
+			String tmpResp = _readSensorsJSON();
+			//P("SENDING:" + tmpResp)
+			tmpResp = "{ \"id\":\"" + _id + "\", \"value\": " + tmpResp + "\"}";
+			_server->send(200, "text/plain", tmpResp);
 			return true;
 		} else {
 			P("Wrong id");
@@ -173,9 +178,9 @@ boolean symAgent::begin()
 						for (uint8_t i=0; i < _server->args(); i++){
 						   message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
 						}
-						P(message);
+						//P(message);
 						elaborateRequest();
-						_server->send(200, "text/plain", message);
+						//_server->send(200, "text/plain", message);
 				    });
 					_server->onNotFound([this](){
 						P("NOTFOUND");
@@ -191,6 +196,7 @@ boolean symAgent::begin()
 						  message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
 						}
 						P(message)
+						_server->send(404, "text/plain", String("eooooooooooooo"));
 				    });
 					_server->begin();
   					return true;
@@ -215,7 +221,7 @@ int symAgent::join(struct join_resp * result)
 	JsonObject& _root = _jsonBuff.createObject();
 	_root["id"] = _id;
 	_root["hash"] = _hash;
-	_root["observesProperty"] = "TBD"; // TODO: FIXME
+	_root["observesProperty"] = _createObservedPropertiesString(); // TODO: FIXME
 	/*
 		now create a JSON like this:
 		{
@@ -246,6 +252,10 @@ int symAgent::join(struct join_resp * result)
 	_root.printTo(temp);
 	temp = "\r\n" + temp;
 	int statusCode = _rest_client->post(JOIN_PATH, temp.c_str(), &resp);
+	P("Join message: ");
+#if DEBUG_SYM_CLASS == 1
+	_root.prettyPrintTo(Serial);
+#endif
 	PI("Status code from server: ");
   	P(statusCode);
   	//P("Response body from server: ");
@@ -260,6 +270,7 @@ int symAgent::join(struct join_resp * result)
 		}
 #if DEBUG_SYM_CLASS == 1
 		_root2.prettyPrintTo(Serial);
+		P("");
 #endif
 			//write result on the struct
 		result->result = _root2["result"].as<String>();
@@ -269,7 +280,7 @@ int symAgent::join(struct join_resp * result)
 	}
 	if (_keep_alive > 0) {
 		volatile unsigned long next;
-		P("Setting timer")
+		//P("Setting timer")
 		noInterrupts();
 	  	timer0_isr_init();
 	  	timer0_attachInterrupt(keepAliveISR);
@@ -370,6 +381,14 @@ void symAgent::sendValue(int* value)
 void symAgent::handleSSPRequest()
 {
 	_server->handleClient();
+}
+
+boolean symAgent::bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)())
+{
+	P("BIND");
+	//P(createObservedPropertiesString());
+	_createObservedPropertiesString = createObservedPropertiesString;
+	_readSensorsJSON = readSensorsJSON;
 }
 
 String symAgent::calculateWifiPSW(String ssid)
