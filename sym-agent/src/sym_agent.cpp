@@ -38,7 +38,7 @@ void printJoinResp(struct join_resp data){
 }
 
 void keepAliveISR(void){
-	KEEPALIVE_LED_TOGGLE
+	//KEEPALIVE_LED_TOGGLE
 	keepAlive_triggered = true;
 	volatile unsigned long next;
 	noInterrupts();
@@ -357,7 +357,8 @@ unsigned long symAgent::getKeepAlive()
 int symAgent::sendKeepAlive(String& response)
 {
 	P("KEEPALIVE");
-	//struct join_resp;
+	KEEPALIVE_LED_ON
+	delay(50);
 	_jsonBuff.clear();
 	JsonObject& _root = _jsonBuff.createObject();
 	_root["id"] = _id;
@@ -375,6 +376,7 @@ int symAgent::sendKeepAlive(String& response)
 		if (!_root2.success()) {
     		P("parseObject() failed");
     		keepAlive_triggered = false;
+    		KEEPALIVE_LED_OFF
     		return statusCode;
 		}
 	#if DEBUG_SYM_CLASS == 1
@@ -383,9 +385,11 @@ int symAgent::sendKeepAlive(String& response)
 	#endif
 		response = _root2["result"].as<String>();
 		keepAlive_triggered = false;
+		KEEPALIVE_LED_OFF
 		return statusCode;
 	}
 	keepAlive_triggered = false;
+	KEEPALIVE_LED_OFF
 	return statusCode;
 }
 
@@ -419,6 +423,11 @@ String symAgent::calculateWifiPSW(String ssid)
 	String temp;
 		//get only the ssp_id
 	temp = ssid.substring(4);
+	P(temp);
+	temp.replace("f", "9");
+	P(temp);
+	temp.replace("5", "a");
+	P(temp);
 	//temp += temp;
 	return temp;
 }
