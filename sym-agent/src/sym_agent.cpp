@@ -18,6 +18,8 @@
 
 volatile boolean keepAlive_triggered = false;
 volatile unsigned long keep_alive_interval = 0;
+String listResources[RES_NUMBER];
+String (* functions[RES_NUMBER])();
 
 
 void printJoinResp(struct join_resp data){
@@ -48,13 +50,37 @@ void keepAliveISR(void){
 	interrupts();
 }
 
+String createObservedPropertiesString()
+{
+  String ret = "[";
+  for (int i = 0; i < RES_NUMBER; i++) {
+    ret += listResources[i] + ", ";
+  }
+    // delete the last comma
+  ret = ret.substring(0, ret.length() - 2);
+  ret += "]";
+  return ret;
+}
+
+String readSensorsJSON()
+{
+  String ret = "[";
+  for (int i = 0; i < RES_NUMBER; i++) {
+    ret += "\"" + listResources[i] + "\"" + ": \"" + functions[i]() + "\", ";
+  }
+    // delete the last comma
+  ret = ret.substring(0, ret.length() - 2);
+  ret += "]";
+  return ret;
+}
+
 symAgent::symAgent()
 {
 		//create the json object, refers to https://github.com/bblanchon/ArduinoJson/blob/master/examples/JsonGeneratorExample/JsonGeneratorExample.ino
 		// calculate the ssp-id based on the WiFi MAC. TODO: maybe this is possible only when it is connected by wifi, or maybe is better to create this
 }
       //TODO please remember to add parameter for class BLE in the constructor
-symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, Res_type* res_type, int num_resources, unsigned long keep_alive)
+symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive)
 {
 	pinMode(JOIN_LED, OUTPUT);
 	pinMode(KEEPALIVE_LED, OUTPUT);
@@ -99,9 +125,8 @@ boolean symAgent::connect(String ssid, String psw){
 
 boolean symAgent::elaborateRequest()
 {
-	String resp = _server->arg(0);
 	P("ELABORATE_REQUEST");
-	//P(resp);
+	String resp = _server->arg(0);
 	_jsonBuff.clear();
 		JsonObject& _root2 = _jsonBuff.parseObject(resp);
 		if (!_root2.success()) {
@@ -114,9 +139,8 @@ boolean symAgent::elaborateRequest()
 #endif
 		String id = _root2["id"].as<String>();
 		if (id == _id){
-			P("Correctly decoded!");
+			//P("Correctly decoded!");
 			String tmpResp = _readSensorsJSON();
-			//P("SENDING:" + tmpResp)
 			tmpResp = "{ \"id\":\"" + _id + "\", \"value\": " + tmpResp + "\"}";
 			_server->send(200, "text/plain", tmpResp);
 			return true;
@@ -165,11 +189,11 @@ boolean symAgent::begin()
   						//create a new http client class 
   					_rest_client = new RestClient(JOIN_URL);
   					_rest_client->setContentType("application/json");
-  					PI("Got this IDs:\nssp_id: ");
+  					PI("Got this IDs:\n\tssp_id: ");
   					P(_ssp_id);
-  					PI("id: ");
+  					PI("\tid: ");
   					P(_id);
-  					PI("mac: ");
+  					PI("\tmac: ");
   					P(_mac);
   					P("-------------");
   					_server->on("/RequestResourceAgent", [this](){
@@ -178,7 +202,6 @@ boolean symAgent::begin()
 						for (uint8_t i=0; i < _server->args(); i++){
 						   message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
 						}
-						//P(message);
 						elaborateRequest();
 						//_server->send(200, "text/plain", message);
 				    });
@@ -199,6 +222,7 @@ boolean symAgent::begin()
 						_server->send(404, "text/plain", String("eooooooooooooo"));
 				    });
 					_server->begin();
+					this->bind(createObservedPropertiesString, readSensorsJSON);
   					return true;
   				}
   			}
@@ -255,11 +279,10 @@ int symAgent::join(struct join_resp * result)
 	P("Join message: ");
 #if DEBUG_SYM_CLASS == 1
 	_root.prettyPrintTo(Serial);
+	P(" ");
 #endif
 	PI("Status code from server: ");
   	P(statusCode);
-  	//P("Response body from server: ");
-	//P(resp);
 	if (statusCode < 300 and statusCode >= 200){
 		//got a valid response
 		_jsonBuff.clear();
@@ -306,8 +329,8 @@ Conn_type symAgent::getConnectionType()
 {
 	return _conn_type;
 }
-      //set the agent type if a platform agent or a SDEV agent. In the first case, specify also the number of resources available inside the platform
-void symAgent::setAgentType(Agent_type agent_type, int num_resources)
+      //set the agent type if a platform agent or a SDEV agent.
+void symAgent::setAgentType(Agent_type agent_type)
 {
 	_agent_type = agent_type;
 }
@@ -345,8 +368,6 @@ int symAgent::sendKeepAlive(String& response)
 	int statusCode = _rest_client->post(KEEPALIVE_PATH, temp.c_str(), &resp);
 	PI("Status code from server: ");
   	P(statusCode);
-  	//P("Response body from server: ");
-	//P(resp);
 	if (statusCode < 300 and statusCode >= 200){
 		//got a valid response
 		_jsonBuff.clear();
@@ -383,10 +404,9 @@ void symAgent::handleSSPRequest()
 	_server->handleClient();
 }
 
-boolean symAgent::bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)())
+void symAgent::bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)())
 {
 	P("BIND");
-	//P(createObservedPropertiesString());
 	_createObservedPropertiesString = createObservedPropertiesString;
 	_readSensorsJSON = readSensorsJSON;
 }
