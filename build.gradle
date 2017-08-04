@@ -7,6 +7,7 @@ buildscript {
 	}
 	dependencies {
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+                
 	}
 }
 
@@ -18,11 +19,32 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 1.8
 
 repositories {
-	mavenCentral()
+    mavenCentral()
+    maven {
+        url 'https://jitpack.io'
+    }
 }
 
 
 dependencies {
-	compile('org.springframework.boot:spring-boot-starter-data-mongodb')
-	testCompile('org.springframework.boot:spring-boot-starter-test')
+    compile('org.springframework.boot:spring-boot-starter-data-mongodb')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    compile('org.springframework.boot:spring-boot-starter-amqp')
+    compile('org.springframework.boot:spring-boot-starter-data-rest')
+    compile('org.springframework.boot:spring-boot-starter-web')
+
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
+
+    
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:develop-SNAPSHOT')
+    // OData
+    compile("org.apache.olingo:odata-commons-api:${'4.3.0'}")
+    compile("org.apache.olingo:odata-commons-core:${'4.3.0'}")
+    
+    compile("org.apache.olingo:odata-server-api:${'4.3.0'}")
+    compile("org.apache.olingo:odata-server-core:${'4.3.0'}")
+    
+    //Owlapi
+    compile('net.sourceforge.owlapi:owlapi-distribution:5.1.0')
+    compile('net.sourceforge.owlapi:owlapi-contract:3.4')
 }
