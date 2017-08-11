@@ -15,6 +15,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  *
@@ -26,6 +27,10 @@ public class ResourceRegistrationHandler {
 
     @Autowired
     ResourcesRepository resourcesRepository;
+        
+    @Value("${rabbit.username}")
+    String interworkingInterfaceUrl;
+    
     /**
      * Register a list of resources
      * @param resourceList 
@@ -165,4 +170,39 @@ public class ResourceRegistrationHandler {
             log.info("Resource with id " + resourceId + " not found");
         }
     }
+    
+    /*
+    private void registerTowardsCloud(List<CloudResource> resourceList) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+            String json = mapper.writeValueAsString(resourceList);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<String> entity = new HttpEntity<String>(requestJson,headers);
+            String response = restTemplate.postForObject(url, entity, String.class);
+        
+        //    log.info(response.getBody());
+        } catch (Exception e) {
+            log.debug("Error during Cloud Registration - " + e.getMessage());
+        }
+    }
+    
+    private void unregisterTowardsCloud(List<CloudResource> resourceList) {
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<Boolean> response = restTemplate.postForEntity("http://localhost:8090/availability", "", ResponseEntity.class
+        
+    System.out.println(response.getBody());
+    }
+    
+    private void updateTowardsCloud() {
+        RestTemplate restTemplate = new RestTemplate();
+    restTemplate.setMessageConverters(Arrays.asList(new MappingJackson2HttpMessageConverter()));
+    ResponseEntity<Boolean> response = restTemplate.postForEntity("http://localhost:8090/availability",
+            userModel.getUsername(), Boolean.class);
+    System.out.println(response.getBody());
+    }*/
 }

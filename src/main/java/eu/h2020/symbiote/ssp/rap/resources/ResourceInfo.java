@@ -19,16 +19,16 @@ public class ResourceInfo {
     
     @Id
     private final String id;    
-    private final String internalId;    
+    private final String internalId;
     private final String platformId;
     private List<String> observedProperties;
     private List<String> sessionIdList;
     
     
-    public ResourceInfo(String resourceId, String platformResourceId, String platformId) {
+    public ResourceInfo(String resourceId, String internalId, String platformId) {
         this.id = resourceId;
-        this.internalId = platformResourceId;
-        this.platformId = null;
+        this.internalId = internalId;
+        this.platformId = platformId;
         this.observedProperties = null;
         this.sessionIdList = null;        
     }
