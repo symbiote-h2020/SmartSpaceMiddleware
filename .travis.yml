@@ -1,0 +1,33 @@
+language: java
+env:
+  global:
+  - GITHUB_REPO=symbiote-h2020/SmartSpaceMiddleware
+  - secure: Sqj0BwtmYoreVAKLNcGaFdOniMGAGVPg7Qm2vJi9O+bo9KAxfUoSs3cwvKjTn401PO6tBUqsUgYDIxGTnE5HSbVt1wVK5Se7tccHJh6r0NZ1ybZGE5kqPl09/oXzoSTsPflGNLdPNGjMoK60LBNCvK/J0qqkWVRg6mHn/JtT9vjy7+244cILXel+AQXjGF92GH8K97j7ZwROGOkMI9uDALVu9dUmlVgBgKDq1vqcez44eSaxEZAiY+MrMsxAaWEN/GgMSBDCbD6POLTc8ALSfvLD/4JPQ65FWKsMA+/Jn7icPewtUvnoeG6o5ns8+HiJhetYNZjYPzmsA0j3sldyVIjt4/wv3OYKUKf5PNHV32z6voZGCLJvHLJ+rVmr4daT1ZHXwmGsTgaRIcqCd625prkuCafjIvG7YV7J5d95XQDS51SLYeuYaIxbLb94hgrj3Y1uwG+9NLM2u23RPrmmvmPvBal2km72k58dWN9iZblufIbydxlxV1qEnUrcJvSXYsMC0Om6Cv4QjYbwXEoe1wkNt81SU5tmU6j2d5jKpZ/bbVRtL8suXT/bz01DFj72ft5A+w6dY1IyvBWvIrhDWD/AFSIA49MuRpELTVACCsOavK2oxfLEJahfHMgO5mP0HxcpqsD1IGcezyBcxlZlTo4jRpd5F4NlWdUtu5Ys/jo=
+jdk:
+- oraclejdk8
+services:
+- mongodb
+- rabbitmq
+sudo: required
+branches:
+  only:
+  - staging
+install: true
+before_cache:
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+cache:
+  directories:
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
+before_script:
+- chmod a+x merge_script.sh
+- "./merge_script.sh"
+after_success:
+- chmod a+x pushing_script.sh
+- "./pushing_script.sh"
+- bash <(curl -s https://codecov.io/bash)
+notifications:
+  email:
+    on_success: never
+    on_failure: always
