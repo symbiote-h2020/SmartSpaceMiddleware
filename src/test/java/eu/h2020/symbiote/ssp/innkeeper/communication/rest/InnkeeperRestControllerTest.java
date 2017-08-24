@@ -1,8 +1,7 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.h2020.symbiote.ssp.innkeeper.model.*;
-import eu.h2020.symbiote.ssp.innkeeper.repository.ResourceRepository;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
@@ -19,8 +18,13 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+
+import eu.h2020.symbiote.ssp.communication.rest.*;
+import eu.h2020.symbiote.ssp.innkeeper.model.*;
+import eu.h2020.symbiote.ssp.innkeeper.repository.ResourceRepository;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -61,11 +65,11 @@ public class InnkeeperRestControllerTest {
     public void joinTest() throws Exception {
         DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
-        InnkeeperResource resource = new InnkeeperResource("id", "", deviceDescriptor,
+        JoinRequest joinRequest = new JoinRequest("id", "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
         MvcResult result = mockMvc.perform(post("/innkeeper/join")
-                .content(this.json(resource))
+                .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
@@ -74,13 +78,13 @@ public class InnkeeperRestControllerTest {
         String joinResponseString = result.getResponse().getContentAsString();
         log.info("JoinResponse = " + joinResponseString);
 
-        validateJoinResponse(joinResponseString, resource);
+        validateJoinResponse(joinResponseString, joinRequest);
 
-        resource = new InnkeeperResource(null, "", deviceDescriptor,
+        joinRequest = new JoinRequest(null, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
         result = mockMvc.perform(post("/innkeeper/join")
-                .content(this.json(resource))
+                .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
@@ -89,13 +93,14 @@ public class InnkeeperRestControllerTest {
         joinResponseString = result.getResponse().getContentAsString();
         log.info("JoinResponse = " + joinResponseString);
 
-        validateJoinResponse(joinResponseString, resource);
+        validateJoinResponse(joinResponseString, joinRequest);
 
-        resource = new InnkeeperResource("", "", deviceDescriptor,
+        joinRequest = new JoinRequest("", "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
+        assertEquals(true, joinRequest.getId().isEmpty());
         result = mockMvc.perform(post("/innkeeper/join")
-                .content(this.json(resource))
+                .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
@@ -104,10 +109,33 @@ public class InnkeeperRestControllerTest {
         joinResponseString = result.getResponse().getContentAsString();
         log.info("JoinResponse = " + joinResponseString);
 
-        validateJoinResponse(joinResponseString, resource);
+        validateJoinResponse(joinResponseString, joinRequest);
     }
 
-    private void validateJoinResponse(String joinResponseString, InnkeeperResource resource) {
+    @Test
+    public void invalidDeviceDescriptorTest() throws Exception {
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
+                AgentType.SDEV, 100);
+        Field queryIntervalField = deviceDescriptor.getClass().getDeclaredField("mac");
+        queryIntervalField.setAccessible(true);
+        queryIntervalField.set(deviceDescriptor, "invalidMac");
+
+        JoinRequest joinRequest = new JoinRequest("id", "", deviceDescriptor,
+                Arrays.asList("temperature", "humidity"));
+
+        MvcResult result = mockMvc.perform(post("/innkeeper/join")
+                .content(this.json(joinRequest))
+                .contentType(contentType))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.result", is(JoinResponseResult.INVALID_MAC_ADDRESS_FORMAT.toString())))
+                .andReturn();
+
+        String joinResponseString = result.getResponse().getContentAsString();
+        log.info("JoinResponse = " + joinResponseString);
+
+    }
+
+    private void validateJoinResponse(String joinResponseString, JoinRequest joinRequest) {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
@@ -117,9 +145,9 @@ public class InnkeeperRestControllerTest {
             InnkeeperResource storedResource = resourceRepository.findOne(joinResponse.getId());
             assertNotNull("The new resource should be saved in the database", storedResource);
 
-            if (resource.getId() != null && !resource.getId().isEmpty())
-                assertEquals(resource.getId(), storedResource.getId());
-            assertEquals(resource.getObservesProperty(), storedResource.getObservesProperty());
+            if (joinRequest.getId() != null && !joinRequest.getId().isEmpty())
+                assertEquals(joinRequest.getId(), storedResource.getId());
+            assertEquals(joinRequest.getObservesProperty(), storedResource.getObservesProperty());
 
         } catch (IOException e) {
             e.printStackTrace();
