@@ -59,16 +59,20 @@ public class InnkeeperRestControllerTest {
     @Before
     public void setup() throws Exception {
         this.mockMvc = webAppContextSetup(webApplicationContext).build();
+        resourceRepository.deleteAll();
     }
 
     @Test
     public void joinTest() throws Exception {
+        String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
+                InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
+
         DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest("id", "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
-        MvcResult result = mockMvc.perform(post("/innkeeper/join")
+        MvcResult result = mockMvc.perform(post(url)
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
@@ -83,7 +87,7 @@ public class InnkeeperRestControllerTest {
         joinRequest = new JoinRequest(null, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
-        result = mockMvc.perform(post("/innkeeper/join")
+        result = mockMvc.perform(post(url)
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
@@ -99,7 +103,7 @@ public class InnkeeperRestControllerTest {
                 Arrays.asList("temperature", "humidity"));
 
         assertEquals(true, joinRequest.getId().isEmpty());
-        result = mockMvc.perform(post("/innkeeper/join")
+        result = mockMvc.perform(post(url)
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
@@ -114,6 +118,9 @@ public class InnkeeperRestControllerTest {
 
     @Test
     public void invalidDeviceDescriptorTest() throws Exception {
+        String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
+                InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
+
         DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
         Field queryIntervalField = deviceDescriptor.getClass().getDeclaredField("mac");
@@ -123,7 +130,7 @@ public class InnkeeperRestControllerTest {
         JoinRequest joinRequest = new JoinRequest("id", "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
-        MvcResult result = mockMvc.perform(post("/innkeeper/join")
+        MvcResult result = mockMvc.perform(post(url)
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isBadRequest())
@@ -133,6 +140,58 @@ public class InnkeeperRestControllerTest {
         String joinResponseString = result.getResponse().getContentAsString();
         log.info("JoinResponse = " + joinResponseString);
 
+    }
+
+    @Test
+    public void listResourcesTest() throws Exception {
+        String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
+                InnkeeperRestControllerConstants.INNKEEPER_LIST_RESOURCES_REQUEST_PATH;
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        MvcResult result = mockMvc.perform(post(url)
+                .content(this.json("id"))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String listResourceString = result.getResponse().getContentAsString();
+        log.info("listResourceString = " + listResourceString);
+
+        ListResourcesResponse listResourcesResponse = mapper.readValue(listResourceString, ListResourcesResponse.class);
+        assertEquals(0, listResourcesResponse.getInnkeeperListResourceInfoList().size());
+
+        DeviceDescriptor deviceDescriptor1 = new DeviceDescriptor("00:00:00:00:00:00", true,
+                AgentType.SDEV, 100);
+        InnkeeperResource innkeeperResource1 = new InnkeeperResource("id1", "", deviceDescriptor1,
+                Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE);
+        DeviceDescriptor deviceDescriptor2 = new DeviceDescriptor("00:00:00:00:00:00", true,
+                AgentType.SDEV, 100);
+        InnkeeperResource innkeeperResource2 = new InnkeeperResource("id2", "", deviceDescriptor2,
+                Arrays.asList("temperature", "humidity", "air quality"), InnkeeperResourceStatus.OFFLINE);
+
+        resourceRepository.save(innkeeperResource1);
+        resourceRepository.save(innkeeperResource2);
+
+        result = mockMvc.perform(post(url)
+                .content(this.json("id"))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        listResourceString = result.getResponse().getContentAsString();
+        log.info("listResourceString = " + listResourceString);
+
+        listResourcesResponse = mapper.readValue(listResourceString, ListResourcesResponse.class);
+        assertEquals(2, listResourcesResponse.getInnkeeperListResourceInfoList().size());
+        assertEquals(innkeeperResource1.getId(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getId());
+        assertEquals(innkeeperResource1.getStatus(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getStatus());
+        assertEquals(innkeeperResource1.getObservesProperty().size(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).
+                getObservesProperty().size());
+        assertEquals(innkeeperResource2.getId(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getId());
+        assertEquals(innkeeperResource2.getStatus(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getStatus());
+        assertEquals(innkeeperResource2.getObservesProperty().size(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).
+                getObservesProperty().size());
     }
 
     private void validateJoinResponse(String joinResponseString, JoinRequest joinRequest) {

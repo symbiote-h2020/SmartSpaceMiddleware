@@ -3,9 +3,7 @@ package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.h2020.symbiote.ssp.communication.rest.JoinRequest;
-import eu.h2020.symbiote.ssp.communication.rest.JoinResponse;
-import eu.h2020.symbiote.ssp.communication.rest.JoinResponseResult;
+import eu.h2020.symbiote.ssp.communication.rest.*;
 import eu.h2020.symbiote.ssp.exception.InvalidMacAddressException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
 import eu.h2020.symbiote.ssp.innkeeper.repository.ResourceRepository;
@@ -28,6 +26,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -71,6 +71,26 @@ public class InnkeeperRestController {
         return ResponseEntity.ok(joinResponse);
     }
 
+    @PostMapping(InnkeeperRestControllerConstants.INNKEEPER_LIST_RESOURCES_REQUEST_PATH)
+    ResponseEntity<ListResourcesResponse> listResources(@RequestBody String id) {
+
+        log.info("New list_resource request was received from symbIoTe device with id = " + id);
+
+        ListResourcesResponse listResourcesResponse = new ListResourcesResponse();
+        List<InnkeeperListResourceInfo> innkeeperListResourceInfoList = new ArrayList<>();
+        List<InnkeeperResource> innkeeperResourceList = resourceRepository.findAll();
+
+        for (InnkeeperResource resource : innkeeperResourceList) {
+            InnkeeperListResourceInfo innkeeperListResourceInfo = new InnkeeperListResourceInfo();
+            innkeeperListResourceInfo.setId(resource.getId());
+            innkeeperListResourceInfo.setStatus(resource.getStatus());
+            innkeeperListResourceInfo.setObservesProperty(resource.getObservesProperty());
+            innkeeperListResourceInfoList.add(innkeeperListResourceInfo);
+        }
+
+        listResourcesResponse.setInnkeeperListResourceInfoList(innkeeperListResourceInfoList);
+        return ResponseEntity.ok(listResourcesResponse);
+    }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<JoinResponse> httpMessageNotReadableExceptionHandler(HttpServletRequest req) {
