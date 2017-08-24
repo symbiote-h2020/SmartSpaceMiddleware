@@ -92,6 +92,25 @@ public class InnkeeperRestController {
         return ResponseEntity.ok(listResourcesResponse);
     }
 
+    @PostMapping(InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH)
+    ResponseEntity<KeepAliveResponse> keepAlive(@RequestBody KeepAliveRequest req) {
+
+        log.info("New keep_alive request was received from symbIoTe device with id = " + req.getId());
+
+        InnkeeperResource innkeeperResource = resourceRepository.findOne(req.getId());
+
+        if (innkeeperResource == null) {
+            KeepAliveResponse response = new KeepAliveResponse("The request with id = " +
+                    req.getId() + " was not registered.");
+            return new ResponseEntity<KeepAliveResponse>(response, HttpStatus.BAD_REQUEST);
+        }
+        else {
+            KeepAliveResponse response = new KeepAliveResponse("The keep_alive request from resource with id = " +
+                    req.getId() + " was received successfully!");
+            return ResponseEntity.ok(response);
+        }
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<JoinResponse> httpMessageNotReadableExceptionHandler(HttpServletRequest req) {
         ObjectMapper mapper = new ObjectMapper();

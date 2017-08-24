@@ -194,6 +194,47 @@ public class InnkeeperRestControllerTest {
                 getObservesProperty().size());
     }
 
+    @Test
+    public void keepAliveTest() throws Exception {
+        String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
+                InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH;
+        String id = "id";
+        ObjectMapper mapper = new ObjectMapper();
+
+        KeepAliveRequest req = new KeepAliveRequest(id);
+        MvcResult result = mockMvc.perform(post(url)
+                .content(this.json(req))
+                .contentType(contentType))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        String keepAliveResponseString = result.getResponse().getContentAsString();
+        log.info("keepAliveResponseString = " + keepAliveResponseString);
+        KeepAliveResponse response = mapper.readValue(keepAliveResponseString, KeepAliveResponse.class);
+        assertEquals("The request with id = " + id + " was not registered.", response.getResult());
+
+
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
+                AgentType.SDEV, 100);
+        InnkeeperResource innkeeperResource1 = new InnkeeperResource(id, "", deviceDescriptor,
+                Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE);
+
+        resourceRepository.save(innkeeperResource1);
+
+        req = new KeepAliveRequest(id);
+        result = mockMvc.perform(post(url)
+                .content(this.json(req))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        keepAliveResponseString = result.getResponse().getContentAsString();
+        log.info("keepAliveResponseString = " + keepAliveResponseString);
+        response = mapper.readValue(keepAliveResponseString, KeepAliveResponse.class);
+        assertEquals("The keep_alive request from resource with id = " + id +
+                " was received successfully!", response.getResult());
+    }
+
     private void validateJoinResponse(String joinResponseString, JoinRequest joinRequest) {
         ObjectMapper mapper = new ObjectMapper();
 
