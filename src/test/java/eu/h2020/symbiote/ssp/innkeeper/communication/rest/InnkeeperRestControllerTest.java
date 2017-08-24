@@ -1,9 +1,8 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
-import eu.h2020.symbiote.ssp.innkeeper.model.AgentType;
-import eu.h2020.symbiote.ssp.innkeeper.model.DeviceDescriptor;
-import eu.h2020.symbiote.ssp.innkeeper.model.JoinRequest;
-import eu.h2020.symbiote.ssp.innkeeper.model.JoinResponseResult;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.h2020.symbiote.ssp.innkeeper.model.*;
+import eu.h2020.symbiote.ssp.innkeeper.repository.ResourceRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
@@ -13,10 +12,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.mock.http.MockHttpOutputMessage;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,7 +33,9 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.*;
  */
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(properties = {"registrationExpiration=100"})
+@SpringBootTest(
+        properties = {"registrationExpiration=100",
+                "symbiote.ssp.database=symbiote-ssp-database-irct"})
 @WebAppConfiguration
 public class InnkeeperRestControllerTest {
 
@@ -46,26 +45,12 @@ public class InnkeeperRestControllerTest {
     private WebApplicationContext webApplicationContext;
 
     @Autowired
-    private InnkeeperRestController innkeeperRestController;
+    private ResourceRepository resourceRepository;
 
     private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
             MediaType.APPLICATION_JSON.getSubtype(),
             Charset.forName("utf8"));
     private MockMvc mockMvc;
-    private HttpMessageConverter mappingJackson2HttpMessageConverter;
-
-    @Autowired
-    void setConverters(HttpMessageConverter<?>[] converters) {
-
-        this.mappingJackson2HttpMessageConverter = Arrays.asList(converters).stream()
-                .filter(hmc -> hmc instanceof MappingJackson2HttpMessageConverter)
-                .findAny()
-                .orElse(null);
-
-        assertNotNull("the JSON message converter must not be null",
-                this.mappingJackson2HttpMessageConverter);
-        assertNotNull("InnkeeperRestController must not be null", this.innkeeperRestController);
-    }
 
     @Before
     public void setup() throws Exception {
@@ -76,21 +61,74 @@ public class InnkeeperRestControllerTest {
     public void joinTest() throws Exception {
         DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
-        JoinRequest joinRequest = new JoinRequest("id", "", deviceDescriptor,
+        InnkeeperResource resource = new InnkeeperResource("id", "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
-        mockMvc.perform(post("/innkeeper/join")
-                .content(this.json(joinRequest))
+        MvcResult result = mockMvc.perform(post("/innkeeper/join")
+                .content(this.json(resource))
                 .contentType(contentType))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())));
+                .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
+                .andReturn();
 
+        String joinResponseString = result.getResponse().getContentAsString();
+        log.info("JoinResponse = " + joinResponseString);
+
+        validateJoinResponse(joinResponseString, resource);
+
+        resource = new InnkeeperResource(null, "", deviceDescriptor,
+                Arrays.asList("temperature", "humidity"));
+
+        result = mockMvc.perform(post("/innkeeper/join")
+                .content(this.json(resource))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
+                .andReturn();
+
+        joinResponseString = result.getResponse().getContentAsString();
+        log.info("JoinResponse = " + joinResponseString);
+
+        validateJoinResponse(joinResponseString, resource);
+
+        resource = new InnkeeperResource("", "", deviceDescriptor,
+                Arrays.asList("temperature", "humidity"));
+
+        result = mockMvc.perform(post("/innkeeper/join")
+                .content(this.json(resource))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
+                .andReturn();
+
+        joinResponseString = result.getResponse().getContentAsString();
+        log.info("JoinResponse = " + joinResponseString);
+
+        validateJoinResponse(joinResponseString, resource);
+    }
+
+    private void validateJoinResponse(String joinResponseString, InnkeeperResource resource) {
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            JoinResponse joinResponse = mapper.readValue(joinResponseString, JoinResponse.class);
+            assertNotNull("The id field of the JoinResponse must not be null", joinResponse.getId());
+
+            InnkeeperResource storedResource = resourceRepository.findOne(joinResponse.getId());
+            assertNotNull("The new resource should be saved in the database", storedResource);
+
+            if (resource.getId() != null && !resource.getId().isEmpty())
+                assertEquals(resource.getId(), storedResource.getId());
+            assertEquals(resource.getObservesProperty(), storedResource.getObservesProperty());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("Error occurred during deserializing JoinResponse");
+        }
     }
 
     private String json(Object o) throws IOException {
-        MockHttpOutputMessage mockHttpOutputMessage = new MockHttpOutputMessage();
-        this.mappingJackson2HttpMessageConverter.write(
-                o, MediaType.APPLICATION_JSON, mockHttpOutputMessage);
-        return mockHttpOutputMessage.getBodyAsString();
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(o);
     }
 }
