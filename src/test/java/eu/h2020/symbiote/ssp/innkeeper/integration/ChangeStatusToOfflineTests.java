@@ -43,17 +43,17 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         properties = {
-                "registrationExpiration=500",
-                "makeResourceOffline=2000000",
+                "registrationExpiration=2000000",
+                "makeResourceOffline=500",
                 "symbiote.ssp.database=symbiote-ssp-database-irct"})
 @WebAppConfiguration
-public class CheckUnregistrationTests {
+public class ChangeStatusToOfflineTests {
 
-    private static Log log = LogFactory.getLog(CheckUnregistrationTests.class);
+    private static Log log = LogFactory.getLog(ChangeStatusToOfflineTests.class);
 
     @Autowired
-    @Qualifier("registrationExpiration")
-    private Integer registrationExpiration;
+    @Qualifier("makeResourceOffline")
+    private Integer makeResourceOffline;
 
     @Autowired
     @Qualifier("unregisteringTimerTaskMap")
@@ -86,18 +86,61 @@ public class CheckUnregistrationTests {
     }
 
     @Test
-    public void unregistrationTest() throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
+    public void changeStatusToOfflineTest() throws Exception {
+        String joinUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
+        ObjectMapper mapper = new ObjectMapper();
         String id = "id";
 
+        // Register the resource
         DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
-        MvcResult result = mockMvc.perform(post(url)
+        MvcResult result = mockMvc.perform(post(joinUrl)
+                .content(this.json(joinRequest))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
+                .andReturn();
+
+        String joinResponseString = result.getResponse().getContentAsString();
+        log.info("JoinResponse = " + joinResponseString);
+
+        JoinResponse joinResponse = mapper.readValue(joinResponseString, JoinResponse.class);
+        InnkeeperResource storedResource = resourceRepository.findOne(joinResponse.getId());
+
+        assertNotNull("The new resource should be saved in the database", storedResource);
+        assertEquals(InnkeeperResourceStatus.ONLINE, storedResource.getStatus());
+        assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
+        assertEquals(offlineTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getOfflineEventTime());
+
+        TimeUnit.MILLISECONDS.sleep(makeResourceOffline);
+
+        // Make sure that the status of the resource has changed after {makeResourceOffline} ms have passed
+        storedResource = resourceRepository.findOne(id);
+        assertNotNull("The new resource should be saved in the database", storedResource);
+        assertEquals(InnkeeperResourceStatus.OFFLINE, storedResource.getStatus());
+        assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
+        assertNull("The offlineTimerTask should be removed", offlineTimerTaskMap.get(id));
+    }
+
+    @Test
+    public void changeStatusAfterKeepAliveTest() throws Exception {
+        String joinUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
+                InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
+        String keepAliveUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
+                InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH;
+        ObjectMapper mapper = new ObjectMapper();
+        String id = "id";
+        // Register the resource
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
+                AgentType.SDEV, 100);
+        JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
+                Arrays.asList("temperature", "humidity"));
+
+        MvcResult result = mockMvc.perform(post(joinUrl)
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
@@ -112,83 +155,44 @@ public class CheckUnregistrationTests {
 
         InnkeeperResource storedResource = resourceRepository.findOne(id);
         assertNotNull("The new resource should be saved in the database", storedResource);
+        assertEquals(InnkeeperResourceStatus.ONLINE, storedResource.getStatus());
         assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
         assertEquals(offlineTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getOfflineEventTime());
 
-        TimeUnit.MILLISECONDS.sleep(registrationExpiration);
+        TimeUnit.MILLISECONDS.sleep((long) (0.5 * makeResourceOffline));
 
-        // Make sure that the resource is deleted from the database after {registrationExpiration} ms have passed
-        storedResource = resourceRepository.findOne(id);
-        assertEquals(null, storedResource);
-        assertNull("The unregistrationTimerTask should be removed along with the resource",
-                unregisteringTimerTaskMap.get(id));
-        assertNull("The offlineTimerTask should be removed along with the resource",
-                offlineTimerTaskMap.get(id));
-    }
-
-    @Test
-    public void reRegistrationTest() throws Exception {
-        // Send a unregistration request before the resource is unregistered
-
-        ObjectMapper mapper = new ObjectMapper();
-        String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
-                InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
-        String id = "id";
-
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
-                AgentType.SDEV, 100);
-        JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
-                Arrays.asList("temperature", "humidity"));
-
-        MvcResult result = mockMvc.perform(post(url)
-                .content(this.json(joinRequest))
+        // Send a KeepAlive message
+        KeepAliveRequest req = new KeepAliveRequest(id);
+        result = mockMvc.perform(post(keepAliveUrl)
+                .content(this.json(req))
                 .contentType(contentType))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
                 .andReturn();
 
-        String joinResponseString = result.getResponse().getContentAsString();
-        log.info("JoinResponse = " + joinResponseString);
+        String keepAliveResponseString = result.getResponse().getContentAsString();
+        log.info("keepAliveResponseString = " + keepAliveResponseString);
+        KeepAliveResponse keepAliveResponse = mapper.readValue(keepAliveResponseString, KeepAliveResponse.class);
+        assertEquals("The keep_alive request from resource with id = " + id +
+                " was received successfully!", keepAliveResponse.getResult());
 
-        JoinResponse joinResponse = mapper.readValue(joinResponseString, JoinResponse.class);
-        assertEquals(id, joinResponse.getId());
+        TimeUnit.MILLISECONDS.sleep((long) (0.5 * makeResourceOffline));
 
-        InnkeeperResource storedResource = resourceRepository.findOne(id);
-        assertNotNull("The new resource should be stored in the database", storedResource);
+        // Make sure that the status in still ONLINE, since there was a KeepAlive request
+        storedResource = resourceRepository.findOne(id);
+        assertNotNull("The new resource should be saved in the database", storedResource);
+        assertEquals(InnkeeperResourceStatus.ONLINE, storedResource.getStatus());
         assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
         assertEquals(offlineTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getOfflineEventTime());
 
-        TimeUnit.MILLISECONDS.sleep((long) (0.5 * registrationExpiration));
-        result = mockMvc.perform(post(url)
-                .content(this.json(joinRequest))
-                .contentType(contentType))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
-                .andReturn();
+        TimeUnit.MILLISECONDS.sleep((long) (0.75 * makeResourceOffline));
 
-        joinResponseString = result.getResponse().getContentAsString();
-        log.info("JoinResponse = " + joinResponseString);
-
-        TimeUnit.MILLISECONDS.sleep((long) (0.5 * registrationExpiration));
-
-        // Make sure that the resource is not deleted from the database, since there was a 2nd JoinRequest
+        // Make sure that the status of the resource has changed after {makeResourceOffline} ms have passed
+        // from the KeepAlive request
         storedResource = resourceRepository.findOne(id);
-        assertNotNull("The new resource should be stored in the database after the re-registration event",
-                storedResource);
+        assertNotNull("The new resource should be saved in the database", storedResource);
+        assertEquals(InnkeeperResourceStatus.OFFLINE, storedResource.getStatus());
         assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
-        assertEquals(offlineTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getOfflineEventTime());
-
-        TimeUnit.MILLISECONDS.sleep((long) (0.75 * registrationExpiration));
-
-        // Make sure that the resource is deleted from the database after {registrationExpiration} ms have passed from
-        // the 2nd JoinRequest
-        storedResource = resourceRepository.findOne(id);
-        assertEquals(null, storedResource);
-        assertNull("The unregistrationTimerTask should be removed along with the resource",
-                unregisteringTimerTaskMap.get(id));
-        assertNull("The offlineTimerTask should be removed along with the resource",
-                offlineTimerTaskMap.get(id));
-
+        assertNull("The offlineTimerTask should be removed", offlineTimerTaskMap.get(id));
     }
 
     private String json(Object o) throws IOException {

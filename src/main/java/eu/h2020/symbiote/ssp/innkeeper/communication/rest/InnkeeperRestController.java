@@ -91,9 +91,10 @@ public class InnkeeperRestController {
 
         // Create UnregistrationTimerTask
         ScheduledUnregisterTimerTask unregisterTimerTask = createUnregisterTimerTask(joinRequest.getId());
+        ScheduledResourceOfflineTimerTask offlineTimerTask = createOfflineTimerTask(joinRequest.getId());
 
         InnkeeperResource newResource = resourceRepository.save(new InnkeeperResource(joinRequest,
-                unregisterTimerTask, null));
+                unregisterTimerTask, offlineTimerTask));
         log.info("newResource.getId() = " + newResource.getId());
 
         JoinResponse joinResponse = new JoinResponse(JoinResponseResult.OK, newResource.getId(),
@@ -135,6 +136,10 @@ public class InnkeeperRestController {
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
         else {
+            ScheduledResourceOfflineTimerTask offlineTimerTask = createOfflineTimerTask(innkeeperResource.getId());
+            innkeeperResource.setOfflineEventTime(offlineTimerTask.scheduledExecutionTime());
+            innkeeperResource.setStatus(InnkeeperResourceStatus.ONLINE);
+            resourceRepository.save(innkeeperResource);
 
             KeepAliveResponse response = new KeepAliveResponse("The keep_alive request from resource with id = " +
                     req.getId() + " was received successfully!");
@@ -195,7 +200,7 @@ public class InnkeeperRestController {
         cancelUnregisterTimerTask(resourceId);
 
         ScheduledUnregisterTimerTask timerTask = new ScheduledUnregisterTimerTask(resourceRepository,
-                resourceId);
+                resourceId, unregisteringTimerTaskMap, offlineTimerTaskMap);
         timer.schedule(timerTask, registrationExpiration);
         unregisteringTimerTaskMap.put(resourceId, timerTask);
 
@@ -206,7 +211,7 @@ public class InnkeeperRestController {
         cancelOfflineTimerTask(resourceId);
 
         ScheduledResourceOfflineTimerTask timerTask = new ScheduledResourceOfflineTimerTask(resourceRepository,
-                resourceId);
+                resourceId, offlineTimerTaskMap);
         timer.schedule(timerTask, makeResourceOffine);
         offlineTimerTaskMap.put(resourceId, timerTask);
 

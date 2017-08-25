@@ -37,9 +37,7 @@ public class InnkeeperResource extends JoinRequest {
         setStatus(InnkeeperResourceStatus.ONLINE);
         setUnregisterEventTime(unregisterTimerTask.scheduledExecutionTime());
 
-        // ToDo: Change in SYM-568
-        // setOfflineEventTime(offlineTimerTask.scheduledExecutionTime());
-        setOfflineEventTime(null);
+        setOfflineEventTime(offlineTimerTask.scheduledExecutionTime());
     }
 
     public InnkeeperResource(InnkeeperResource resource) {

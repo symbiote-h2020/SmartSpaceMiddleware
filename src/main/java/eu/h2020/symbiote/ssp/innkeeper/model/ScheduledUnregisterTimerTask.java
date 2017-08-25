@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.util.Assert;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.TimerTask;
 
 /**
@@ -18,14 +19,24 @@ public class ScheduledUnregisterTimerTask extends TimerTask {
     private static Log log = LogFactory.getLog(ScheduledUnregisterTimerTask.class);
 
     private static ResourceRepository resourceRepository;
-    private static String resourceId;
+    private String resourceId;
+    private Map<String, ScheduledUnregisterTimerTask> unregisteringTimerTaskMap;
+    private Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap;
 
-    public ScheduledUnregisterTimerTask(ResourceRepository resourceRepository, String resourceId) {
+    public ScheduledUnregisterTimerTask(ResourceRepository resourceRepository, String resourceId,
+                                        Map<String, ScheduledUnregisterTimerTask> unregisteringTimerTaskMap,
+                                        Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap) {
         Assert.notNull(resourceRepository,"Resource repository can not be null!");
         this.resourceRepository = resourceRepository;
 
         Assert.notNull(resourceId,"resourceId can not be null!");
         this.resourceId = resourceId;
+
+        Assert.notNull(unregisteringTimerTaskMap,"unregisteringTimerTaskMap can not be null!");
+        this.unregisteringTimerTaskMap = unregisteringTimerTaskMap;
+
+        Assert.notNull(offlineTimerTaskMap,"offlineTimerTaskMap can not be null!");
+        this.offlineTimerTaskMap = offlineTimerTaskMap;
     }
 
     public void run() {
@@ -39,6 +50,9 @@ public class ScheduledUnregisterTimerTask extends TimerTask {
         } else {
             log.info("The resource with id = " + resourceId + " has been unregistered.");
             resourceRepository.delete(resourceId);
+
+            unregisteringTimerTaskMap.remove(resourceId);
+            offlineTimerTaskMap.remove(resourceId);
         }
 
         log.debug("Periodic resource unregister task for resourceId = " + resourceId +

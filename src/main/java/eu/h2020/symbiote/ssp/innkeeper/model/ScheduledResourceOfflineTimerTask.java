@@ -7,6 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.util.Assert;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.TimerTask;
 
 /**
@@ -17,14 +18,19 @@ public class ScheduledResourceOfflineTimerTask extends TimerTask {
     private static Log log = LogFactory.getLog(ScheduledResourceOfflineTimerTask.class);
 
     private static ResourceRepository resourceRepository;
-    private static String resourceId;
+    private String resourceId;
+    private Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap;
 
-    public ScheduledResourceOfflineTimerTask(ResourceRepository resourceRepository, String resourceId) {
+    public ScheduledResourceOfflineTimerTask(ResourceRepository resourceRepository, String resourceId,
+                                             Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap) {
         Assert.notNull(resourceRepository,"Resource repository can not be null!");
         this.resourceRepository = resourceRepository;
 
         Assert.notNull(resourceId,"resourceId can not be null!");
         this.resourceId = resourceId;
+
+        Assert.notNull(offlineTimerTaskMap,"offlineTimerTaskMap can not be null!");
+        this.offlineTimerTaskMap = offlineTimerTaskMap;
     }
 
     public void run() {
@@ -39,6 +45,8 @@ public class ScheduledResourceOfflineTimerTask extends TimerTask {
             log.info("The status of resource with id = " + resourceId + " has turned to " +
                     InnkeeperResourceStatus.OFFLINE);
             resource.setStatus(InnkeeperResourceStatus.OFFLINE);
+            resourceRepository.save(resource);
+            offlineTimerTaskMap.remove(resourceId);
         }
 
         log.debug("Periodic resource unregister task for resourceId = " + resourceId +
