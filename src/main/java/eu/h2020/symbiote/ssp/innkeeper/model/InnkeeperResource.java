@@ -13,29 +13,48 @@ import java.util.List;
  */
 public class InnkeeperResource extends JoinRequest {
 
-    @JsonProperty("status")
     private InnkeeperResourceStatus status;
+    private Long unregisterEventTime;
+    private Long offlineEventTime;
 
     public InnkeeperResource() {
         // empty constructor
     }
 
     public InnkeeperResource(String id, String hash, DeviceDescriptor deviceDescriptor,
-                             List<String> observesProperty, InnkeeperResourceStatus status) {
+                             List<String> observesProperty, InnkeeperResourceStatus status,
+                             Long unregisterEventTime,
+                             Long offlineEventTime) {
         super(id, hash, deviceDescriptor, observesProperty);
         setStatus(status);
+        setUnregisterEventTime(unregisterEventTime);
+        setOfflineEventTime(offlineEventTime);
     }
 
-    public InnkeeperResource(JoinRequest joinRequest) {
+    public InnkeeperResource(JoinRequest joinRequest, ScheduledUnregisterTimerTask unregisterTimerTask,
+                             ScheduledResourceOfflineTimerTask offlineTimerTask) {
         super(joinRequest);
         setStatus(InnkeeperResourceStatus.ONLINE);
+        setUnregisterEventTime(unregisterTimerTask.scheduledExecutionTime());
+
+        // ToDo: Change in SYM-568
+        // setOfflineEventTime(offlineTimerTask.scheduledExecutionTime());
+        setOfflineEventTime(null);
     }
 
     public InnkeeperResource(InnkeeperResource resource) {
         super((InnkeeperResource) resource);
         setStatus(resource.getStatus());
+        setUnregisterEventTime(resource.getUnregisterEventTime());
+        setOfflineEventTime(resource.getOfflineEventTime());
     }
 
     public InnkeeperResourceStatus getStatus() { return status; }
     public void setStatus(InnkeeperResourceStatus status) { this.status = status; }
+
+    public Long getUnregisterEventTime() { return unregisterEventTime; }
+    public void setUnregisterEventTime(Long unregisterEventTime) { this.unregisterEventTime = unregisterEventTime; }
+
+    public Long getOfflineEventTime() { return offlineEventTime; }
+    public void setOfflineEventTime(Long offlineEventTime) { this.offlineEventTime = offlineEventTime; }
 }

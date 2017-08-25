@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,7 +39,9 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-        properties = {"registrationExpiration=100",
+        properties = {
+                "registrationExpiration=2000000",
+                "makeResourceOffline=2000000",
                 "symbiote.ssp.database=symbiote-ssp-database-irct"})
 @WebAppConfiguration
 public class InnkeeperRestControllerTest {
@@ -59,6 +62,11 @@ public class InnkeeperRestControllerTest {
     @Before
     public void setup() throws Exception {
         this.mockMvc = webAppContextSetup(webApplicationContext).build();
+        resourceRepository.deleteAll();
+    }
+
+    @After
+    public void clear() {
         resourceRepository.deleteAll();
     }
 
@@ -164,11 +172,11 @@ public class InnkeeperRestControllerTest {
         DeviceDescriptor deviceDescriptor1 = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
         InnkeeperResource innkeeperResource1 = new InnkeeperResource("id1", "", deviceDescriptor1,
-                Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE);
+                Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE, null, null);
         DeviceDescriptor deviceDescriptor2 = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
         InnkeeperResource innkeeperResource2 = new InnkeeperResource("id2", "", deviceDescriptor2,
-                Arrays.asList("temperature", "humidity", "air quality"), InnkeeperResourceStatus.OFFLINE);
+                Arrays.asList("temperature", "humidity", "air quality"), InnkeeperResourceStatus.OFFLINE, null, null);
 
         resourceRepository.save(innkeeperResource1);
         resourceRepository.save(innkeeperResource2);
@@ -217,7 +225,7 @@ public class InnkeeperRestControllerTest {
         DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
         InnkeeperResource innkeeperResource1 = new InnkeeperResource(id, "", deviceDescriptor,
-                Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE);
+                Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE, null, null);
 
         resourceRepository.save(innkeeperResource1);
 
@@ -243,11 +251,12 @@ public class InnkeeperRestControllerTest {
             assertNotNull("The id field of the JoinResponse must not be null", joinResponse.getId());
 
             InnkeeperResource storedResource = resourceRepository.findOne(joinResponse.getId());
-            assertNotNull("The new resource should be saved in the database", storedResource);
+            assertNotNull("The new resource should be stored in the database", storedResource);
 
             if (joinRequest.getId() != null && !joinRequest.getId().isEmpty())
                 assertEquals(joinRequest.getId(), storedResource.getId());
             assertEquals(joinRequest.getObservesProperty(), storedResource.getObservesProperty());
+            assertEquals(InnkeeperResourceStatus.ONLINE, storedResource.getStatus());
 
         } catch (IOException e) {
             e.printStackTrace();

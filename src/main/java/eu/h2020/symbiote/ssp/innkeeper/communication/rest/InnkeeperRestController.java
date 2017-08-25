@@ -6,11 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.h2020.symbiote.ssp.communication.rest.*;
 import eu.h2020.symbiote.ssp.exception.InvalidMacAddressException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
+import eu.h2020.symbiote.ssp.innkeeper.model.ScheduledResourceOfflineTimerTask;
+import eu.h2020.symbiote.ssp.innkeeper.model.ScheduledUnregisterTimerTask;
 import eu.h2020.symbiote.ssp.innkeeper.repository.ResourceRepository;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +31,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Timer;
 import java.util.stream.Collectors;
 
 /**
@@ -40,19 +45,38 @@ public class InnkeeperRestController {
 
     private static Log log = LogFactory.getLog(InnkeeperRestController.class);
 
-    private Integer registrationExpiration;
-
     private ResourceRepository resourceRepository;
+    private Integer registrationExpiration;
+    private Integer makeResourceOffine;
+    private Timer timer;
+    private Map<String, ScheduledUnregisterTimerTask> unregisteringTimerTaskMap;
+    private Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap;
 
     @Autowired
     public InnkeeperRestController(ResourceRepository resourceRepository,
-                                   @Qualifier("registrationExpiration") Integer registrationExpiration) {
+                                   @Qualifier("registrationExpiration") Integer registrationExpiration,
+                                   @Qualifier("makeResourceOffline") Integer makeResourceOffine,
+                                   Timer timer,
+                                   @Qualifier("unregisteringTimerTaskMap") Map<String, ScheduledUnregisterTimerTask> unregisteringTimerTaskMap,
+                                   @Qualifier("offlineTimerTaskMap") Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap) {
 
         Assert.notNull(resourceRepository,"Resource repository can not be null!");
         this.resourceRepository = resourceRepository;
 
         Assert.notNull(registrationExpiration,"registrationExpiration can not be null!");
         this.registrationExpiration = registrationExpiration;
+
+        Assert.notNull(makeResourceOffine,"makeResourceOffine can not be null!");
+        this.makeResourceOffine = makeResourceOffine;
+
+        Assert.notNull(timer,"Timer can not be null!");
+        this.timer = timer;
+
+        Assert.notNull(unregisteringTimerTaskMap,"unregisteringTimerTaskMap can not be null!");
+        this.unregisteringTimerTaskMap = unregisteringTimerTaskMap;
+
+        Assert.notNull(offlineTimerTaskMap,"offlineTimerTaskMap can not be null!");
+        this.offlineTimerTaskMap = offlineTimerTaskMap;
     }
 
     @PostMapping(InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH)
@@ -60,10 +84,16 @@ public class InnkeeperRestController {
 
         log.info("New join request was received for resource id = " + joinRequest.getId());
 
-        if (joinRequest.getId() != null && joinRequest.getId().isEmpty())
-            joinRequest.setId(null);
+        if (joinRequest.getId() == null || joinRequest.getId().isEmpty()) {
+            ObjectId objectId = new ObjectId();
+            joinRequest.setId(objectId.toString());
+        }
 
-        InnkeeperResource newResource = resourceRepository.save(new InnkeeperResource(joinRequest));
+        // Create UnregistrationTimerTask
+        ScheduledUnregisterTimerTask unregisterTimerTask = createUnregisterTimerTask(joinRequest.getId());
+
+        InnkeeperResource newResource = resourceRepository.save(new InnkeeperResource(joinRequest,
+                unregisterTimerTask, null));
         log.info("newResource.getId() = " + newResource.getId());
 
         JoinResponse joinResponse = new JoinResponse(JoinResponseResult.OK, newResource.getId(),
@@ -102,9 +132,10 @@ public class InnkeeperRestController {
         if (innkeeperResource == null) {
             KeepAliveResponse response = new KeepAliveResponse("The request with id = " +
                     req.getId() + " was not registered.");
-            return new ResponseEntity<KeepAliveResponse>(response, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
         else {
+
             KeepAliveResponse response = new KeepAliveResponse("The keep_alive request from resource with id = " +
                     req.getId() + " was received successfully!");
             return ResponseEntity.ok(response);
@@ -146,4 +177,39 @@ public class InnkeeperRestController {
         return new ResponseEntity<>(joinResponse, responseHeaders, HttpStatus.BAD_REQUEST);
     }
 
+    private void cancelUnregisterTimerTask(String resourceId) {
+        ScheduledUnregisterTimerTask timerTask = unregisteringTimerTaskMap.get(resourceId);
+
+        if (timerTask != null)
+            timerTask.cancel();
+    }
+
+    private void cancelOfflineTimerTask(String resourceId) {
+        ScheduledResourceOfflineTimerTask timerTask = offlineTimerTaskMap.get(resourceId);
+
+        if (timerTask != null)
+            timerTask.cancel();
+    }
+
+    private ScheduledUnregisterTimerTask createUnregisterTimerTask(String resourceId) {
+        cancelUnregisterTimerTask(resourceId);
+
+        ScheduledUnregisterTimerTask timerTask = new ScheduledUnregisterTimerTask(resourceRepository,
+                resourceId);
+        timer.schedule(timerTask, registrationExpiration);
+        unregisteringTimerTaskMap.put(resourceId, timerTask);
+
+        return timerTask;
+    }
+
+    private ScheduledResourceOfflineTimerTask createOfflineTimerTask(String resourceId) {
+        cancelOfflineTimerTask(resourceId);
+
+        ScheduledResourceOfflineTimerTask timerTask = new ScheduledResourceOfflineTimerTask(resourceRepository,
+                resourceId);
+        timer.schedule(timerTask, makeResourceOffine);
+        offlineTimerTaskMap.put(resourceId, timerTask);
+
+        return timerTask;
+    }
 }
