@@ -87,7 +87,6 @@ public class CheckUnregistrationTests {
 
     @Test
     public void unregistrationTest() throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
         String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
         String id = "id";
@@ -101,14 +100,12 @@ public class CheckUnregistrationTests {
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(id)))
                 .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
                 .andReturn();
 
         String joinResponseString = result.getResponse().getContentAsString();
         log.info("JoinResponse = " + joinResponseString);
-
-        JoinResponse joinResponse = mapper.readValue(joinResponseString, JoinResponse.class);
-        assertEquals(id, joinResponse.getId());
 
         InnkeeperResource storedResource = resourceRepository.findOne(id);
         assertNotNull("The new resource should be saved in the database", storedResource);
@@ -130,8 +127,7 @@ public class CheckUnregistrationTests {
     public void reRegistrationTest() throws Exception {
         // Send a unregistration request before the resource is unregistered
 
-        ObjectMapper mapper = new ObjectMapper();
-        String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
+        String joinUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
         String id = "id";
 
@@ -140,18 +136,16 @@ public class CheckUnregistrationTests {
         JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
-        MvcResult result = mockMvc.perform(post(url)
+        MvcResult result = mockMvc.perform(post(joinUrl)
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(id)))
                 .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
                 .andReturn();
 
         String joinResponseString = result.getResponse().getContentAsString();
         log.info("JoinResponse = " + joinResponseString);
-
-        JoinResponse joinResponse = mapper.readValue(joinResponseString, JoinResponse.class);
-        assertEquals(id, joinResponse.getId());
 
         InnkeeperResource storedResource = resourceRepository.findOne(id);
         assertNotNull("The new resource should be stored in the database", storedResource);
@@ -159,11 +153,11 @@ public class CheckUnregistrationTests {
         assertEquals(offlineTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getOfflineEventTime());
 
         TimeUnit.MILLISECONDS.sleep((long) (0.5 * registrationExpiration));
-        result = mockMvc.perform(post(url)
+        result = mockMvc.perform(post(joinUrl)
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
+                .andExpect(jsonPath("$.result", is(JoinResponseResult.ALREADY_REGISTERED.toString())))
                 .andReturn();
 
         joinResponseString = result.getResponse().getContentAsString();

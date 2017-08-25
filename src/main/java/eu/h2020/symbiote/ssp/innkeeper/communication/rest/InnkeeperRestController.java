@@ -81,24 +81,39 @@ public class InnkeeperRestController {
 
     @PostMapping(InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH)
     ResponseEntity<JoinResponse> join(@RequestBody JoinRequest joinRequest) {
+        boolean alreadyRegistered = false;
+        JoinResponse joinResponse;
 
         log.info("New join request was received for resource id = " + joinRequest.getId());
 
         if (joinRequest.getId() == null || joinRequest.getId().isEmpty()) {
             ObjectId objectId = new ObjectId();
             joinRequest.setId(objectId.toString());
+        } else {
+            // Check if the resource is already registered
+            InnkeeperResource resource = resourceRepository.findOne(joinRequest.getId());
+
+            if (resource != null)
+                alreadyRegistered = true;
         }
 
         // Create UnregistrationTimerTask
         ScheduledUnregisterTimerTask unregisterTimerTask = createUnregisterTimerTask(joinRequest.getId());
+
+        // Create OfflineTimerTask
         ScheduledResourceOfflineTimerTask offlineTimerTask = createOfflineTimerTask(joinRequest.getId());
 
         InnkeeperResource newResource = resourceRepository.save(new InnkeeperResource(joinRequest,
                 unregisterTimerTask, offlineTimerTask));
         log.info("newResource.getId() = " + newResource.getId());
 
-        JoinResponse joinResponse = new JoinResponse(JoinResponseResult.OK, newResource.getId(),
+        if (alreadyRegistered)
+            joinResponse = new JoinResponse(JoinResponseResult.ALREADY_REGISTERED, newResource.getId(),
                 "", registrationExpiration);
+        else
+            joinResponse = new JoinResponse(JoinResponseResult.OK, newResource.getId(),
+                    "", registrationExpiration);
+
         return ResponseEntity.ok(joinResponse);
     }
 

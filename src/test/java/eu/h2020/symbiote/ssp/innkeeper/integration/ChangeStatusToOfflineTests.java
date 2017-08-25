@@ -89,7 +89,7 @@ public class ChangeStatusToOfflineTests {
     public void changeStatusToOfflineTest() throws Exception {
         String joinUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
-        ObjectMapper mapper = new ObjectMapper();
+
         String id = "id";
 
         // Register the resource
@@ -102,15 +102,14 @@ public class ChangeStatusToOfflineTests {
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(id)))
                 .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
                 .andReturn();
 
         String joinResponseString = result.getResponse().getContentAsString();
         log.info("JoinResponse = " + joinResponseString);
 
-        JoinResponse joinResponse = mapper.readValue(joinResponseString, JoinResponse.class);
-        InnkeeperResource storedResource = resourceRepository.findOne(joinResponse.getId());
-
+        InnkeeperResource storedResource = resourceRepository.findOne(id);
         assertNotNull("The new resource should be saved in the database", storedResource);
         assertEquals(InnkeeperResourceStatus.ONLINE, storedResource.getStatus());
         assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
@@ -132,8 +131,9 @@ public class ChangeStatusToOfflineTests {
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
         String keepAliveUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH;
-        ObjectMapper mapper = new ObjectMapper();
+
         String id = "id";
+
         // Register the resource
         DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
@@ -144,14 +144,12 @@ public class ChangeStatusToOfflineTests {
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(id)))
                 .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
                 .andReturn();
 
         String joinResponseString = result.getResponse().getContentAsString();
         log.info("JoinResponse = " + joinResponseString);
-
-        JoinResponse joinResponse = mapper.readValue(joinResponseString, JoinResponse.class);
-        assertEquals(id, joinResponse.getId());
 
         InnkeeperResource storedResource = resourceRepository.findOne(id);
         assertNotNull("The new resource should be saved in the database", storedResource);
@@ -167,13 +165,76 @@ public class ChangeStatusToOfflineTests {
                 .content(this.json(req))
                 .contentType(contentType))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result", is("The keep_alive request from resource with id = " + id +
+                        " was received successfully!")))
                 .andReturn();
 
         String keepAliveResponseString = result.getResponse().getContentAsString();
         log.info("keepAliveResponseString = " + keepAliveResponseString);
-        KeepAliveResponse keepAliveResponse = mapper.readValue(keepAliveResponseString, KeepAliveResponse.class);
-        assertEquals("The keep_alive request from resource with id = " + id +
-                " was received successfully!", keepAliveResponse.getResult());
+
+        TimeUnit.MILLISECONDS.sleep((long) (0.5 * makeResourceOffline));
+
+        // Make sure that the status in still ONLINE, since there was a KeepAlive request
+        storedResource = resourceRepository.findOne(id);
+        assertNotNull("The new resource should be saved in the database", storedResource);
+        assertEquals(InnkeeperResourceStatus.ONLINE, storedResource.getStatus());
+        assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
+        assertEquals(offlineTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getOfflineEventTime());
+
+        TimeUnit.MILLISECONDS.sleep((long) (0.75 * makeResourceOffline));
+
+        // Make sure that the status of the resource has changed after {makeResourceOffline} ms have passed
+        // from the KeepAlive request
+        storedResource = resourceRepository.findOne(id);
+        assertNotNull("The new resource should be saved in the database", storedResource);
+        assertEquals(InnkeeperResourceStatus.OFFLINE, storedResource.getStatus());
+        assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
+        assertNull("The offlineTimerTask should be removed", offlineTimerTaskMap.get(id));
+    }
+
+    @Test
+    public void changeStatusAfterRegistationTest() throws Exception {
+        String joinUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
+                InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
+
+        String id = "id";
+
+        // Register the resource
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
+                AgentType.SDEV, 100);
+        JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
+                Arrays.asList("temperature", "humidity"));
+
+        MvcResult result = mockMvc.perform(post(joinUrl)
+                .content(this.json(joinRequest))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(id)))
+                .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
+                .andReturn();
+
+        String joinResponseString = result.getResponse().getContentAsString();
+        log.info("JoinResponse = " + joinResponseString);
+
+        InnkeeperResource storedResource = resourceRepository.findOne(id);
+        assertNotNull("The new resource should be saved in the database", storedResource);
+        assertEquals(InnkeeperResourceStatus.ONLINE, storedResource.getStatus());
+        assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
+        assertEquals(offlineTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getOfflineEventTime());
+
+        TimeUnit.MILLISECONDS.sleep((long) (0.5 * makeResourceOffline));
+
+        // Send a Join message again
+        result = mockMvc.perform(post(joinUrl)
+                .content(this.json(joinRequest))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(id)))
+                .andExpect(jsonPath("$.result", is(JoinResponseResult.ALREADY_REGISTERED.toString())))
+                .andReturn();
+
+        joinResponseString = result.getResponse().getContentAsString();
+        log.info("JoinResponse = " + joinResponseString);
 
         TimeUnit.MILLISECONDS.sleep((long) (0.5 * makeResourceOffline));
 

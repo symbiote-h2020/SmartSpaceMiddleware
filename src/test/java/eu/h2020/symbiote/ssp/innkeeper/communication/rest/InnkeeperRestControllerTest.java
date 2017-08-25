@@ -84,6 +84,7 @@ public class InnkeeperRestControllerTest {
                 .content(this.json(joinRequest))
                 .contentType(contentType))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is("id")))
                 .andExpect(jsonPath("$.result", is(JoinResponseResult.OK.toString())))
                 .andReturn();
 
@@ -207,20 +208,17 @@ public class InnkeeperRestControllerTest {
         String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH;
         String id = "id";
-        ObjectMapper mapper = new ObjectMapper();
 
         KeepAliveRequest req = new KeepAliveRequest(id);
         MvcResult result = mockMvc.perform(post(url)
                 .content(this.json(req))
                 .contentType(contentType))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.result", is("The request with id = " + id + " was not registered.")))
                 .andReturn();
 
         String keepAliveResponseString = result.getResponse().getContentAsString();
         log.info("keepAliveResponseString = " + keepAliveResponseString);
-        KeepAliveResponse response = mapper.readValue(keepAliveResponseString, KeepAliveResponse.class);
-        assertEquals("The request with id = " + id + " was not registered.", response.getResult());
-
 
         DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
                 AgentType.SDEV, 100);
@@ -234,13 +232,13 @@ public class InnkeeperRestControllerTest {
                 .content(this.json(req))
                 .contentType(contentType))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result", is("The keep_alive request from resource with id = " + id +
+                        " was received successfully!")))
                 .andReturn();
 
         keepAliveResponseString = result.getResponse().getContentAsString();
         log.info("keepAliveResponseString = " + keepAliveResponseString);
-        response = mapper.readValue(keepAliveResponseString, KeepAliveResponse.class);
-        assertEquals("The keep_alive request from resource with id = " + id +
-                " was received successfully!", response.getResult());
+
     }
 
     private void validateJoinResponse(String joinResponseString, JoinRequest joinRequest) {
@@ -249,6 +247,7 @@ public class InnkeeperRestControllerTest {
         try {
             JoinResponse joinResponse = mapper.readValue(joinResponseString, JoinResponse.class);
             assertNotNull("The id field of the JoinResponse must not be null", joinResponse.getId());
+            assertEquals(JoinResponseResult.OK, joinResponse.getResult());
 
             InnkeeperResource storedResource = resourceRepository.findOne(joinResponse.getId());
             assertNotNull("The new resource should be stored in the database", storedResource);
