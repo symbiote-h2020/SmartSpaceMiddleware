@@ -5,6 +5,8 @@
  */
 package eu.h2020.symbiote.ssp.rap.resources;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.annotation.Id;
@@ -18,14 +20,30 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class ResourceInfo {
     
     @Id
+    @JsonProperty("symbioteId")
     private final String id;    
+    
+    @JsonProperty("internalId")
     private final String internalId;
+    
+    @JsonProperty("platformId")
     private final String platformId;
     private List<String> observedProperties;
     private List<String> sessionIdList;
     
     
-    public ResourceInfo(String resourceId, String internalId, String platformId) {
+    public ResourceInfo() {
+        this.id = "";
+        this.internalId = "";
+        this.platformId = null;
+        this.observedProperties = null;
+        this.sessionIdList = null;
+    }
+    
+    @JsonCreator
+    public ResourceInfo(@JsonProperty("symbioteId")String resourceId, 
+            @JsonProperty("internalId")String internalId, 
+            @JsonProperty("platformId")String platformId) {
         this.id = resourceId;
         this.internalId = internalId;
         this.platformId = platformId;
