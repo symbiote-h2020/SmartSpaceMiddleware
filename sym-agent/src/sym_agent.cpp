@@ -80,7 +80,7 @@ symAgent::symAgent()
 		// calculate the ssp-id based on the WiFi MAC. TODO: maybe this is possible only when it is connected by wifi, or maybe is better to create this
 }
       //TODO please remember to add parameter for class BLE in the constructor
-symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive)
+symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name)
 {
 	pinMode(JOIN_LED, OUTPUT);
 	pinMode(KEEPALIVE_LED, OUTPUT);
@@ -92,9 +92,9 @@ symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long kee
 	_keep_alive = keep_alive * TICK_MILLISECONDS;
 		// change the value of the global variable keep_alive_interval accordingly
 	keep_alive_interval = _keep_alive;
+	_name = name;
 
 	_server = new ESP8266WebServer();
-
 	//_hash = readHashFromFlash(); 
 	if (_hash != "none") {
 		//saveHashInFlash();
@@ -146,6 +146,8 @@ boolean symAgent::elaborateRequest()
 			return true;
 		} else {
 			P("Wrong id");
+			String tmpResp = "{ \"id\":\"" + _id + "\", \"value\":\"WrongId\"}";
+			_server->send(200, "text/plain", tmpResp);
 			return false;
 		}
 	return true;
@@ -219,7 +221,7 @@ boolean symAgent::begin()
 						  message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
 						}
 						P(message)
-						_server->send(404, "text/plain", String("eooooooooooooo"));
+						_server->send(404, "text/plain", String("Not Found :("));
 				    });
 					_server->begin();
 					this->bind(createObservedPropertiesString, readSensorsJSON);
@@ -254,6 +256,7 @@ int symAgent::join(struct join_resp * result)
 		    deviceDescriptor{
 		        String mac,
 		        Boolean sleeping,
+		        String name,
 		        String agentType,
 		        Integer readingInterval,
 		    }
@@ -265,6 +268,7 @@ int symAgent::join(struct join_resp * result)
 	deviceDescriptor["mac"] = _mac;
 		//TODO insert sleeping device as constructor parameter
 	deviceDescriptor["sleeping"] = true;
+	deviceDescriptor["name"] = _name;
 	if (_agent_type == agent_SDEV) {
 		deviceDescriptor["agentType"] = "SDEV";
 	} else if (_agent_type == agent_PLAT) {
@@ -303,7 +307,6 @@ int symAgent::join(struct join_resp * result)
 	}
 	if (_keep_alive > 0) {
 		volatile unsigned long next;
-		//P("Setting timer")
 		noInterrupts();
 	  	timer0_isr_init();
 	  	timer0_attachInterrupt(keepAliveISR);
@@ -417,17 +420,13 @@ void symAgent::bind(String (* createObservedPropertiesString)(), String (* readS
 
 String symAgent::calculateWifiPSW(String ssid)
 {
-	// the algoritm for retrive psw is simply repeat two times the ssp_id.
+	// the algoritm for retrive psw is simply to substitue all the hex value 0xf-> 0x9 and all the hex value 0x5-> 0xa.
 	// Remember that max 32 characters are allowed for wifi ssid
-	// EG: if the ssid is "sym-2e4467f2a7b03255a2a4" then the psw is "2e4467f2a7b03255a2a42e4467f2a7b03255a2a4"
-	String temp;
+	// EG: if the ssid is "sym-2e4467f2a7b03255a2a4" then the psw is "2e446792a7b032aaa2a4"
+	String temp = ssid;
 		//get only the ssp_id
-	temp = ssid.substring(4);
-	P(temp);
+	temp = temp.substring(4);
 	temp.replace("f", "9");
-	P(temp);
 	temp.replace("5", "a");
-	P(temp);
-	//temp += temp;
 	return temp;
 }

@@ -1,9 +1,12 @@
 #include <ArduinoJson.h>
 #include <sym_agent.h>
+#include <Adafruit_MPL3115A2.h>
 
-//Res_type resources[3] = { _1_1_1_trichloroethaneConcentration, _1_1_2_trichloroethaneConcentration, windPressure};
-//symAgent sdev1(agent_SDEV, conn_WIFI, resources, 2, 10000);
-symAgent sdev1(agent_SDEV, conn_WIFI, 10000);
+#define SDA 4
+#define SCL 5
+
+symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test1");
+Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 struct join_resp joinResp;
 extern volatile boolean keepAlive_triggered;
 extern String listResources[RES_NUMBER];
@@ -11,12 +14,13 @@ extern String (* functions[RES_NUMBER])();
 
 String readTemp()
 {
-  return "32.5°C";
+    return String (baro.getTemperature()) + " °C";
 }
 
 String readPressure()
 {
-  return "1014 mBar";
+    // return in kPa
+  return String (baro.getPressure() * 0.01) + " mBar";
 }
 
 boolean setupBind(String* listResources, String (* functions[])() )
@@ -36,7 +40,14 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.println("Start...");
-  
+  if (! baro.begin()) {
+    Serial.println("Couldnt find sensor");
+    return;
+  }
+  Serial.print("Temperatura: ");
+  Serial.println(readTemp());
+  Serial.print("Pressione: ");
+  Serial.println(readPressure());
   if (sdev1.begin() == true) {
     setupBind(listResources, functions);
     sdev1.join(&joinResp);
@@ -51,7 +62,10 @@ void loop() {
   delay(10);
   if (keepAlive_triggered){
     sdev1.sendKeepAlive(resp);
-    //Serial.println(resp);
+    Serial.print("Temperatura: ");
+    Serial.println(readTemp());
+    Serial.print("Pressione: ");
+    Serial.println(readPressure());
   }
   sdev1.handleSSPRequest();
 }

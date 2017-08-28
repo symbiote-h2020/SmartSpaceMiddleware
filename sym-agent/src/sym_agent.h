@@ -30,7 +30,7 @@
   #define PI(__VA_ARGS__)
 #endif 
 
-#define MAX_JSON_SIZE 200
+#define MAX_JSON_SIZE 300
 #define JOIN_URL "innkeeper.symbiote.org"
 #define JOIN_PATH "/join.php"
 #define KEEPALIVE_PATH "/keepalive.php"
@@ -80,7 +80,7 @@ class symAgent
   public:
     symAgent();
       //TODO please remember to add parameter for class BLE in the constructor
-    symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive);
+    symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name);
     ~symAgent();
 
       // search for well-known symbiotic ssid and try to connect to it.
@@ -135,6 +135,7 @@ class symAgent
       //this is the agent identifier
     String _id;
     String _hash;
+    String _name;
 
     Agent_type _agent_type;
     Conn_type _conn_type;
