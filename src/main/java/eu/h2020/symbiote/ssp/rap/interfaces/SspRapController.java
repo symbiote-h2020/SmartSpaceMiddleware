@@ -9,11 +9,13 @@ package eu.h2020.symbiote.ssp.rap.interfaces;
  *
  * @author Luca Tomaselli <l.tomaselli@nextworks.it>
  */
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.h2020.symbiote.cloud.model.data.observation.Observation;
 import eu.h2020.symbiote.ssp.rap.exceptions.EntityNotFoundException;
 import eu.h2020.symbiote.ssp.rap.exceptions.GenericException;
 import eu.h2020.symbiote.ssp.rap.resources.ResourceInfo;
 import eu.h2020.symbiote.ssp.rap.resources.ResourcesRepository;
+import eu.h2020.symbiote.ssp.rap.resources.messages.RequestMessage;
 import java.util.List;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
@@ -45,6 +47,9 @@ import org.springframework.web.servlet.HandlerMapping;
 public class SspRapController {
 
     private static final Logger log = LoggerFactory.getLogger(SspRapController.class);
+    private static final String PathPlatformGet = "/rap/Sensor/";
+    private static final String PathPlatformPost = "/rap/Service/";
+    private static final String PathSdevGet = "/RequestResourceAgent";
 
     @Autowired
     ResourcesRepository resourcesRepo;
@@ -59,123 +64,40 @@ public class SspRapController {
      *
      */
     @CrossOrigin(origins = "*")
-    @RequestMapping(value = "*('{resourceId}')/**", method = RequestMethod.GET)
-    public List<Observation> readResourceODATA(@PathVariable String resourceId/*, @RequestHeader("X-Auth-Token") String token*/, HttpServletRequest request) {
-        List<Observation> obsList = null;
-        try {
-            log.info("Received read resource request for ID = " + resourceId);
-            //    checkToken(token);
-            obsList = readResourcePrivate(resourceId, request);
-            /* } catch (TokenValidationException tokenEx) { 
-            log.error(tokenEx.toString());
-            throw tokenEx;*/
-        } catch (Exception e) {
-            String err = "Unable to read resource with id: " + resourceId;
-            log.error(err + "\n" + e.getMessage());
-            throw new GenericException(e.getMessage());
-        }
-        return obsList;
-    }
-
-    @CrossOrigin(origins = "*")
-    @RequestMapping(value = "*/{resourceId}/history", method = RequestMethod.GET)
-    public List<Observation> readResourceRESTHistory(@PathVariable String resourceId/*, @RequestHeader("X-Auth-Token") String token*/, HttpServletRequest request) {
-        List<Observation> obsList = null;
-        try {
-            log.info("Received read resource request for ID = " + resourceId);
-            //    checkToken(token);
-            obsList = readResourcePrivate(resourceId, request);
-            /* } catch (TokenValidationException tokenEx) { 
-            log.error(tokenEx.toString());
-            throw tokenEx;*/
-        } catch (Exception e) {
-            String err = "Unable to read resource with id: " + resourceId;
-            log.error(err + "\n" + e.getMessage());
-            throw new GenericException(e.getMessage());
-        }
-        return obsList;
-    }
-
-    @CrossOrigin(origins = "*")
-    @RequestMapping(value = "*/{resourceId}/**", method = RequestMethod.GET)
-    public List<Observation> readResourceREST(@PathVariable String resourceId/*, @RequestHeader("X-Auth-Token") String token*/, HttpServletRequest request) {
-        List<Observation> obsList = null;
-        try {
-            log.info("Received read resource request for ID = " + resourceId);
-            //    checkToken(token);
-            obsList = readResourcePrivate(resourceId, request);
-            /* } catch (TokenValidationException tokenEx) { 
-            log.error(tokenEx.toString());
-            throw tokenEx;*/
-        } catch (Exception e) {
-            String err = "Unable to read resource with id: " + resourceId;
-            log.error(err + "\n" + e.getMessage());
-            throw new GenericException(e.getMessage());
-        }
-        return obsList;
-    }
-
-    private List<Observation> readResourcePrivate(String resourceId, HttpServletRequest request) {
-        List<Observation> obsList = null;
-        ResourceInfo info = getResourceInfo(resourceId);
-        if (info.getPlatformId() != null) {
-            // platform device
-            String url = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-            obsList = forwardReadRequestToUrl(url);
-        } else {
-            // SDEV without platform
-
-            // qui formattare un json e inviarlo all'SDEV via REST (?)
-            // con tutte le info necessarie (ResourceAccessGetMessage?)               
-        }
-        return obsList;
-    }
-
-    @CrossOrigin(origins = "*")
-    @RequestMapping(value = "**('{resourceId}')/**", method = RequestMethod.PUT)
-    public ResponseEntity<?> writeResourceODATA(@PathVariable String resourceId, @RequestBody String body /*, @RequestHeader("X-Auth-Token") String token*/,
+    @RequestMapping(value = "**", method = RequestMethod.POST)
+    public ResponseEntity<?> readResourceREST(@RequestBody String body /*, @RequestHeader("X-Auth-Token") String token*/,
              HttpServletRequest request) {
+        String resourceId = null;
         try {
+            ObjectMapper mapper = new ObjectMapper();
+            RequestMessage requestMessage = mapper.readValue(body, RequestMessage.class);
+            resourceId = requestMessage.getResourceId();
             log.info("Received write resource request for ID = " + resourceId + " with values " + body);
 
             //checkToken(token);
-            writeResourcePrivate(resourceId, body, request);
+            readResourcePrivate(resourceId, body, request);
 
             /*} catch(TokenValidationException e) {
             log.error(e.toString());*/
         } catch (Exception ex) {
-            String err = "Unable to write resource with id: " + resourceId;
+            String err;
+            if(resourceId == null || resourceId.isEmpty())
+                err = "Cannot find resourceId in body request";
+            else
+                err = "Unable to write resource with id: " + resourceId;
             log.error(err + "\n" + ex.getMessage());
             throw new GenericException(ex.getMessage());
         }
         return new ResponseEntity<>(HttpStatus.OK);
     }
-
-    @RequestMapping(value = "**/{resourceId}", method = RequestMethod.POST)
-    public ResponseEntity<?> writeResourceREST(@PathVariable String resourceId, @RequestBody String body /*, @RequestHeader("X-Auth-Token") String token*/,
-             HttpServletRequest request) {
-        try {
-            log.info("Received write resource request for ID = " + resourceId + " with values " + body);
-
-            //checkToken(token);
-            writeResourcePrivate(resourceId, body, request);
-
-            /*} catch(TokenValidationException e) {
-            log.error(e.toString());*/
-        } catch (Exception ex) {
-            String err = "Unable to write resource with id: " + resourceId;
-            log.error(err + "\n" + ex.getMessage());
-            throw new GenericException(ex.getMessage());
-        }
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
-
+    
     public void writeResourcePrivate(String resourceId, String body, HttpServletRequest request) {
         ResourceInfo info = getResourceInfo(resourceId);
 
         if (info.getPlatformId() != null) {
             // platform device
-            String url = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+            String url = info.getHost();
+            url += PathPlatformPost + resourceId;
             forwardWriteRequestToUrl(url, body);
         } else {
             // SDEV without platform
@@ -183,6 +105,30 @@ public class SspRapController {
             // qui formattare un json e inviarlo all'SDEV via REST (?)
             // con tutte le info necessarie (ResourceAccessSetMessage?)
         }
+    }
+
+    public List<Observation> readResourcePrivate(String resourceId, String body, HttpServletRequest request) {
+        List<Observation> obsList;
+        String url;
+        String method ;
+        String bodyReq;
+        ResourceInfo info = getResourceInfo(resourceId);
+
+        if (info.getPlatformId() != null) {
+            // platform device
+            url = info.getHost();
+            url += PathPlatformGet + resourceId;
+            method = "GET";
+            bodyReq = null;
+        } else {
+            // SDEV without platform
+            url = info.getHost();
+            url += PathSdevGet;
+            method = "POST";
+            bodyReq = "{\"id\":\""+resourceId+"\"}";
+        }
+        obsList = forwardReadRequestToUrl(url,method,bodyReq);
+        return obsList;
     }
 
     private ResourceInfo getResourceInfo(String resourceId) {
@@ -194,9 +140,13 @@ public class SspRapController {
         return resInfo.get();
     }
 
-    private List<Observation> forwardReadRequestToUrl(String url) {
+    private List<Observation> forwardReadRequestToUrl(String url, String method, String body) {
         RestTemplate restTemplate = new RestTemplate();
-        List<Observation> response = restTemplate.postForObject(url, "", List.class);
+        List<Observation> response = null;
+        if(method.equals("GET"))
+            response = restTemplate.getForObject(url, List.class);
+        else if (method.equals("POST"))
+            response = restTemplate.postForObject(url, body, List.class);
 
         return response;
     }

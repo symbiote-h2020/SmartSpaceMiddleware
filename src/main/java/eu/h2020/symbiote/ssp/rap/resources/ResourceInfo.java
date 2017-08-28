@@ -31,6 +31,8 @@ public class ResourceInfo {
     private List<String> observedProperties;
     private List<String> sessionIdList;
     
+    private String host;
+    
     
     public ResourceInfo() {
         this.id = "";
@@ -38,6 +40,7 @@ public class ResourceInfo {
         this.platformId = null;
         this.observedProperties = null;
         this.sessionIdList = null;
+        this.host = null;
     }
     
     @JsonCreator
@@ -49,6 +52,17 @@ public class ResourceInfo {
         this.platformId = platformId;
         this.observedProperties = null;
         this.sessionIdList = null;        
+        this.host = null;
+    }
+    
+    public ResourceInfo(String resourceId,String internalId, String platformId,
+            String host) {
+        this.id = resourceId;
+        this.internalId = internalId;
+        this.platformId = platformId;
+        this.observedProperties = null;
+        this.sessionIdList = null;        
+        this.host = host;
     }
     
     public String getSymbioteId() {
@@ -83,5 +97,13 @@ public class ResourceInfo {
         if(this.sessionIdList == null)
             this.sessionIdList = new ArrayList();
         this.sessionIdList.add(sessionId);
+    }
+
+    public String getHost() {
+        return this.host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
     }
 }
