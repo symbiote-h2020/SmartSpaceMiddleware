@@ -1,9 +1,7 @@
 #include <ArduinoJson.h>
 #include <sym_agent.h>
 
-//Res_type resources[3] = { _1_1_1_trichloroethaneConcentration, _1_1_2_trichloroethaneConcentration, windPressure};
-//symAgent sdev1(agent_SDEV, conn_WIFI, resources, 2, 10000);
-symAgent sdev1(agent_SDEV, conn_WIFI, 10000);
+symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test1");
 struct join_resp joinResp;
 extern volatile boolean keepAlive_triggered;
 extern String listResources[RES_NUMBER];

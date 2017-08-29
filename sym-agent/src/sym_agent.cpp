@@ -20,6 +20,7 @@ volatile boolean keepAlive_triggered = false;
 volatile unsigned long keep_alive_interval = 0;
 String listResources[RES_NUMBER];
 String (* functions[RES_NUMBER])();
+boolean (* actuatorsFunction[RES_NUMBER])(int);
 
 
 void printJoinResp(struct join_resp data){
@@ -50,6 +51,15 @@ void keepAliveISR(void){
 	interrupts();
 }
 
+String dummyFunctionSensor(){
+	return "NA";
+}
+
+boolean dummyFunctionActuator(int value){
+	return true;
+}
+
+// return the array containing the observedProperties' names (no value)
 String createObservedPropertiesString()
 {
   String ret = "[";
@@ -62,11 +72,13 @@ String createObservedPropertiesString()
   return ret;
 }
 
+// return the array containing the observedProperties' values
 String readSensorsJSON()
 {
   String ret = "[";
   for (int i = 0; i < RES_NUMBER; i++) {
     ret += "\"" + listResources[i] + "\"" + ": \"" + functions[i]() + "\", ";
+ //   ret += "\"" + functions[i]() + "\", ";    
   }
     // delete the last comma
   ret = ret.substring(0, ret.length() - 2);
@@ -123,6 +135,7 @@ boolean symAgent::connect(String ssid, String psw){
 	return true; 
 }
 
+// callback function to handle the resource request from the ssp
 boolean symAgent::elaborateRequest()
 {
 	P("ELABORATE_REQUEST");
@@ -141,12 +154,57 @@ boolean symAgent::elaborateRequest()
 		if (id == _id){
 			//P("Correctly decoded!");
 			String tmpResp = _readSensorsJSON();
-			tmpResp = "{ \"id\":\"" + _id + "\", \"value\": " + tmpResp + "\"}";
+			tmpResp = "{ \"id\":\"" + _id + "\", \"value\": \"" + tmpResp + "\"}";
 			_server->send(200, "text/plain", tmpResp);
 			return true;
 		} else {
 			P("Wrong id");
 			String tmpResp = "{ \"id\":\"" + _id + "\", \"value\":\"WrongId\"}";
+			_server->send(200, "text/plain", tmpResp);
+			return false;
+		}
+	return true;
+}
+
+
+// callback function to handle the actuation request coming from the ssp(RAP)
+boolean symAgent::actuateRequest()
+{
+	P("ACTUATE_REQUEST");
+	String resp = _server->arg(0);
+	_jsonBuff.clear();
+		JsonObject& _root2 = _jsonBuff.parseObject(resp);
+		if (!_root2.success()) {
+    		P("parseObject() failed");
+    		return false;
+		}
+#if DEBUG_SYM_CLASS == 1
+		_root2.prettyPrintTo(Serial);
+		P(" ");
+#endif
+		String id = _root2["id"].as<String>();
+		if (id == _id){
+			String field = "";
+			String field_value = "";
+			for (int i = 0; i < RES_NUMBER; i++) {
+
+				//TODO CHECK "NA" field
+				field = listResources[i];
+				field_value = _root2["action"][field].as<String>();
+				PI(field);
+				PI(" value[");
+				PI(i);
+				PI("]=");
+				P(field_value);
+				actuatorsFunction[i](field_value.toInt());
+			}
+
+			String tmpResp = "{ \"id\":\"" + _id + "\", \"response\": \"OK\"}";
+			_server->send(200, "text/plain", tmpResp);
+			return true;
+		} else {
+			P("Wrong id");
+			String tmpResp = "{ \"id\":\"" + _id + "\", \"value\":\"Error\"}";
 			_server->send(200, "text/plain", tmpResp);
 			return false;
 		}
@@ -199,12 +257,21 @@ boolean symAgent::begin()
   					P(_mac);
   					P("-------------");
   					_server->on("/RequestResourceAgent", [this](){
-						P("RESOURCEHANDLER");
+						P("RESOURCEHANDLER-REQUEST");
 						String message = "Args found:\n";
 						for (uint8_t i=0; i < _server->args(); i++){
 						   message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
 						}
 						elaborateRequest();
+						//_server->send(200, "text/plain", message);
+				    });
+				    _server->on("/ActuateResourceAgent", [this](){
+						P("RESOURCEHANDLER-ACTUATE");
+						String message = "Args found:\n";
+						for (uint8_t i=0; i < _server->args(); i++){
+						   message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
+						}
+						actuateRequest();
 						//_server->send(200, "text/plain", message);
 				    });
 					_server->onNotFound([this](){

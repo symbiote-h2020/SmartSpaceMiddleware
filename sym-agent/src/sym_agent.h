@@ -53,7 +53,7 @@
 #define KEEPALIVE_LED_OFF      digitalWrite(KEEPALIVE_LED, HIGH);
 #define KEEPALIVE_LED_TOGGLE   digitalWrite(KEEPALIVE_LED, !digitalRead(KEEPALIVE_LED));
 
-#define RES_NUMBER 2
+#define RES_NUMBER 3
 
 enum Conn_type { conn_WIFI, conn_BLE, conn_HTTP };
 
@@ -74,6 +74,10 @@ String readSensorsJSON();
 
 void printJoinResp(struct join_resp data);
 void keepAliveISR(void);
+
+String dummyFunctionSensor();
+boolean dummyFunctionActuator(int value);
+
 
 class symAgent
 {
@@ -110,6 +114,7 @@ class symAgent
     void sendValue(int* value);
 
     boolean elaborateRequest();
+    boolean actuateRequest();
 
     void handleSSPRequest();
 
