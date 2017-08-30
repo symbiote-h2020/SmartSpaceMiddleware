@@ -45,7 +45,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
         properties = {
                 "registrationExpiration=2000000",
                 "makeResourceOffline=500",
-                "symbiote.ssp.database=symbiote-ssp-database-irct"})
+                "symbiote.ssp.database=symbiote-ssp-database-cstot"})
 @WebAppConfiguration
 public class ChangeStatusToOfflineTests {
 
@@ -93,7 +93,8 @@ public class ChangeStatusToOfflineTests {
         String id = "id";
 
         // Register the resource
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "http://url.com",
+                "name", "description",
                 true, AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
@@ -135,7 +136,8 @@ public class ChangeStatusToOfflineTests {
         String id = "id";
 
         // Register the resource
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "http://url.com",
+                "name", "description",
                 true, AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
@@ -200,7 +202,8 @@ public class ChangeStatusToOfflineTests {
         String id = "id";
 
         // Register the resource
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "http://url.com",
+                "name", "description",
                 true, AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));

@@ -3,6 +3,7 @@ package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.ssp.communication.rabbit.SSPRecourceCreatedOrUpdated;
 import eu.h2020.symbiote.ssp.communication.rest.*;
 import eu.h2020.symbiote.ssp.exception.InvalidMacAddressException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
@@ -14,8 +15,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.bson.types.ObjectId;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -46,14 +49,22 @@ public class InnkeeperRestController {
     private static Log log = LogFactory.getLog(InnkeeperRestController.class);
 
     private ResourceRepository resourceRepository;
+    private RabbitTemplate rabbitTemplate;
     private Integer registrationExpiration;
     private Integer makeResourceOffine;
     private Timer timer;
     private Map<String, ScheduledUnregisterTimerTask> unregisteringTimerTaskMap;
     private Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap;
 
+    @Value("${rabbit.exchange.rap.name}")
+    private String rapExchange;
+
+    @Value("${rabbit.routingKey.rap.sspResourceCreated}")
+    private String rapSSPResourceCreatedRoutingKey;
+
     @Autowired
     public InnkeeperRestController(ResourceRepository resourceRepository,
+                                   RabbitTemplate rabbitTemplate,
                                    @Qualifier("registrationExpiration") Integer registrationExpiration,
                                    @Qualifier("makeResourceOffline") Integer makeResourceOffine,
                                    Timer timer,
@@ -62,6 +73,9 @@ public class InnkeeperRestController {
 
         Assert.notNull(resourceRepository,"Resource repository can not be null!");
         this.resourceRepository = resourceRepository;
+
+        Assert.notNull(rabbitTemplate,"Rabbit template can not be null!");
+        this.rabbitTemplate = rabbitTemplate;
 
         Assert.notNull(registrationExpiration,"registrationExpiration can not be null!");
         this.registrationExpiration = registrationExpiration;
@@ -106,6 +120,11 @@ public class InnkeeperRestController {
         InnkeeperResource newResource = resourceRepository.save(new InnkeeperResource(joinRequest,
                 unregisterTimerTask, offlineTimerTask));
         log.info("newResource.getId() = " + newResource.getId());
+
+        // Inform RAP about the new resource
+        SSPRecourceCreatedOrUpdated sspRecourceCreatedOrUpdated = new SSPRecourceCreatedOrUpdated(newResource.getId(),
+                newResource.getDeviceDescriptor().getUrl());
+        rabbitTemplate.convertAndSend(rapExchange, rapSSPResourceCreatedRoutingKey, sspRecourceCreatedOrUpdated);
 
         if (alreadyRegistered)
             joinResponse = new JoinResponse(JoinResponseResult.ALREADY_REGISTERED, newResource.getId(),

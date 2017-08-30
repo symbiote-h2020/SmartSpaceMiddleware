@@ -75,7 +75,8 @@ public class InnkeeperRestControllerTest {
         String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
 
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "http://url.com",
+                "name", "description",
                 true, AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest("id", "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
@@ -130,7 +131,8 @@ public class InnkeeperRestControllerTest {
         String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
 
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00",  "name", "description",
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00",  "http://url.com",
+                "name", "description",
                 true, AgentType.SDEV, 100);
         Field queryIntervalField = deviceDescriptor.getClass().getDeclaredField("mac");
         queryIntervalField.setAccessible(true);
@@ -171,11 +173,13 @@ public class InnkeeperRestControllerTest {
         ListResourcesResponse listResourcesResponse = mapper.readValue(listResourceString, ListResourcesResponse.class);
         assertEquals(0, listResourcesResponse.getInnkeeperListResourceInfoList().size());
 
-        DeviceDescriptor deviceDescriptor1 = new DeviceDescriptor("00:00:00:00:00:00",  "name1", "description1", true,
+        DeviceDescriptor deviceDescriptor1 = new DeviceDescriptor("00:00:00:00:00:00",  "http://url1.com",
+                "name1", "description1", true,
                 AgentType.SDEV, 100);
         InnkeeperResource innkeeperResource1 = new InnkeeperResource("id1", "", deviceDescriptor1,
                 Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE, null, null);
-        DeviceDescriptor deviceDescriptor2 = new DeviceDescriptor("00:00:00:00:00:00",  "name2", "description2", true,
+        DeviceDescriptor deviceDescriptor2 = new DeviceDescriptor("00:00:00:00:00:00",  "http://url2.com",
+                "name2", "description2", true,
                 AgentType.SDEV, 100);
         InnkeeperResource innkeeperResource2 = new InnkeeperResource("id2", "", deviceDescriptor2,
                 Arrays.asList("temperature", "humidity", "air quality"), InnkeeperResourceStatus.OFFLINE, null, null);
@@ -225,7 +229,8 @@ public class InnkeeperRestControllerTest {
         String keepAliveResponseString = result.getResponse().getContentAsString();
         log.info("keepAliveResponseString = " + keepAliveResponseString);
 
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "http://url.com",
+                "name", "description",
                 true, AgentType.SDEV, 100);
         InnkeeperResource innkeeperResource1 = new InnkeeperResource(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE, null, null);
