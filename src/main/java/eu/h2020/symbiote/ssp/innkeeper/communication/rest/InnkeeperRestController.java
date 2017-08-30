@@ -62,6 +62,9 @@ public class InnkeeperRestController {
     @Value("${rabbit.routingKey.rap.sspResourceCreated}")
     private String rapSSPResourceCreatedRoutingKey;
 
+    @Value("${rabbit.routingKey.rap.sspResourceDeleted}")
+    private String rapSSPResourceDeletedRoutingKey;
+
     @Autowired
     public InnkeeperRestController(ResourceRepository resourceRepository,
                                    RabbitTemplate rabbitTemplate,
@@ -232,8 +235,8 @@ public class InnkeeperRestController {
     private ScheduledUnregisterTimerTask createUnregisterTimerTask(String resourceId) {
         cancelUnregisterTimerTask(resourceId);
 
-        ScheduledUnregisterTimerTask timerTask = new ScheduledUnregisterTimerTask(resourceRepository,
-                resourceId, unregisteringTimerTaskMap, offlineTimerTaskMap);
+        ScheduledUnregisterTimerTask timerTask = new ScheduledUnregisterTimerTask(resourceRepository, rabbitTemplate,
+                resourceId, rapExchange, rapSSPResourceDeletedRoutingKey, unregisteringTimerTaskMap, offlineTimerTaskMap);
         timer.schedule(timerTask, registrationExpiration);
         unregisteringTimerTaskMap.put(resourceId, timerTask);
 
