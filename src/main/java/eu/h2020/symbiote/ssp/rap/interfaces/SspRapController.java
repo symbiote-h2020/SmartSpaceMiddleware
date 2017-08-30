@@ -43,7 +43,7 @@ import org.springframework.web.servlet.HandlerMapping;
 
 /*
 *
-* @author Matteo Pardi <m.pardi@nextworks.it>
+* @author Luca Tomaselli <l.tomaselli@nextworks.it>
  */
 @CrossOrigin(origins = "*", methods = {RequestMethod.POST, RequestMethod.OPTIONS, RequestMethod.PUT, RequestMethod.GET})
 @RestController

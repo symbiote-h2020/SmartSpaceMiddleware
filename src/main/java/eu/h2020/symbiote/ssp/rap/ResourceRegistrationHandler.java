@@ -5,17 +5,16 @@
  */
 package eu.h2020.symbiote.ssp.rap;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.resources.ResourcesRepository;
-import eu.h2020.symbiote.cloud.model.internal.CloudResource;
-import eu.h2020.symbiote.core.model.resources.MobileSensor;
-import eu.h2020.symbiote.core.model.resources.Resource;
-import eu.h2020.symbiote.core.model.resources.StationarySensor;
 import eu.h2020.symbiote.ssp.rap.resources.ResourceInfo;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import eu.h2020.symbiote.ssp.communication.rabbit.*;
 
 /**
  *
@@ -27,134 +26,57 @@ public class ResourceRegistrationHandler {
 
     @Autowired
     ResourcesRepository resourcesRepository;
-        
-    @Value("${rabbit.username}")
-    String interworkingInterfaceUrl;
-    
-    /**
-     * Register a list of resources
-     * @param resourceList 
-     */
-    public void registerResources(List<CloudResource> resourceList) {
-        try {
-            log.info("Registering Resources: \n" + resourceList);            
-            for(CloudResource clRes: resourceList){
-                String internalId = clRes.getInternalId();
-                Resource resource = clRes.getResource();
-                String resourceClass = resource.getClass().getName();
-                String symbioteId = resource.getId();                
-                List<String> props = null;
-                if(resource instanceof StationarySensor) {
-                    props = ((StationarySensor)resource).getObservesProperty();
-                } else if(resource instanceof MobileSensor) {
-                    props = ((MobileSensor)resource).getObservesProperty();
-                }
-                String platformId = /*resource.getPlatformId()*/"";
 
-                log.info("Registering "+ resourceClass +" with symbioteId: " + symbioteId + ", internalId: " + internalId);
-                addResource(symbioteId, internalId, props, platformId);
-            }
-        } catch (Exception e) {
-            log.info("Error during registration process\n" + e.getMessage());
+    public void receiveRegistrationMessage(Object obj) throws Exception {
+        String message;
+        if (obj instanceof byte[]) {
+            message = new String((byte[]) obj, "UTF-8");
+        } else {
+            message = (String) obj;
         }
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        SSPRecourceCreatedOrUpdated newResource = mapper.readValue(message, SSPRecourceCreatedOrUpdated.class);
+        if(newResource == null)
+            throw new Exception("receiveRegistrationMessage error format");
+        addResource(newResource.getId(), null, null, null, newResource.getUrl());
     }
     
-    public void registerResource(CloudResource resource) {
-        try {
-            log.info("Registering Resource: \n" + resource);            
-            
-            String internalId = resource.getInternalId();
-            Resource res = resource.getResource();
-            String resourceClass = res.getClass().getName();
-            String symbioteId = res.getId();                
-            List<String> props = null;
-            if(res instanceof StationarySensor) {
-                props = ((StationarySensor)res).getObservesProperty();
-            } else if(res instanceof MobileSensor) {
-                props = ((MobileSensor)res).getObservesProperty();
-            }
-            String platformId = /*resource.getPlatformId()*/"";
-
-            log.info("Registering "+ resourceClass +" with symbioteId: " + symbioteId + ", internalId: " + internalId);
-            addResource(symbioteId, internalId, props, platformId);
-            
-        } catch (Exception e) {
-            log.info("Error during registration process\n" + e.getMessage());
+    public void receiveUpdateMessage(Object obj) throws Exception {
+        String message;
+        if (obj instanceof byte[]) {
+            message = new String((byte[]) obj, "UTF-8");
+        } else {
+            message = (String) obj;
         }
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        SSPRecourceCreatedOrUpdated newResource = mapper.readValue(message, SSPRecourceCreatedOrUpdated.class);
+        if(newResource == null)
+            throw new Exception("receiveRegistrationMessage error format");
+        addResource(newResource.getId(), null, null, null, newResource.getUrl());
     }
     
-    public void unregisterResources(List<String> resourceIdList) {
-        try {            
-            log.info("Unregistering resources: \n" + resourceIdList);
-            for(String id: resourceIdList){
-                // TODO: to check if ID at this level is correct
-                log.debug("Unregistering resource with symbioteId " + id);
-                deleteResource(id);
-            }
-        } catch (Exception e) {
-            log.info("Error during unregistration process\n" + e.getMessage());
+    public void receiveUnregistrationMessage(Object obj) throws Exception{
+        String message;
+        if (obj instanceof byte[]) {
+            message = new String((byte[]) obj, "UTF-8");
+        } else {
+            message = (String) obj;
         }
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        SSPResourceDeleted resourceDelete = mapper.readValue(message, SSPResourceDeleted.class);
+        if(resourceDelete == null)
+            throw new Exception("receiveRegistrationMessage error format");
+        deleteResource(resourceDelete.getId());
     }
     
-    public void unregisterResource(String resourceId) {
-        try {            
-            log.info("Unregistering resource: \n" + resourceId);            
-            // TODO: to check if ID at this level is correct
-            deleteResource(resourceId);            
-        } catch (Exception e) {
-            log.info("Error during unregistration process\n" + e.getMessage());
-        }
-    }
-    
-    public void updateResources(List<CloudResource> resourceList) {
-        try {
-            log.info("Updating resources: \n" + resourceList);
-        
-            for(CloudResource clRes: resourceList){
-                String internalId = clRes.getInternalId();
-                Resource resource = clRes.getResource();
-                String symbioteId = resource.getId();
-                List<String> props = null;
-                if(resource instanceof StationarySensor) {
-                    props = ((StationarySensor)resource).getObservesProperty();
-                } else if(resource instanceof MobileSensor) {
-                    props = ((MobileSensor)resource).getObservesProperty();
-                }
-                String platformId = /*resource.getPlatformId()*/"";
-                
-                log.info("Updating resource with symbioteId: " + symbioteId + ", internalId: " + internalId);
-                addResource(symbioteId, internalId, props, platformId);
-            }
-        } catch (Exception e) {
-            log.info("Error during registration process\n" + e.getMessage());
-        }
-    }
-    
-    public void updateResource(CloudResource resource) {
-        try {
-            log.info("Updating resource: \n" + resource);
-                    
-            String internalId = resource.getInternalId();
-            Resource res = resource.getResource();
-            String symbioteId = res.getId();
-            List<String> props = null;
-            if(res instanceof StationarySensor) {
-                props = ((StationarySensor)res).getObservesProperty();
-            } else if(res instanceof MobileSensor) {
-                props = ((MobileSensor)res).getObservesProperty();
-            }
-            String platformId = /*resource.getPlatformId()*/"";
-
-            log.info("Updating resource with symbioteId: " + symbioteId + ", internalId: " + internalId);
-            addResource(symbioteId, internalId, props, platformId);
-            
-        } catch (Exception e) {
-            log.info("Error during registration process\n" + e.getMessage());
-        }
-    }
-    
-    private void addResource(String resourceId, String platformResourceId, List<String> obsProperties, String platformId) {
-        ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId, platformId);
+    private void addResource(String resourceId, String platformResourceId, List<String> obsProperties, String platformId, String url) {
+        ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId, platformId, url);
         if(obsProperties != null)
             resourceInfo.setObservedProperties(obsProperties);
         
@@ -167,42 +89,7 @@ public class ResourceRegistrationHandler {
             if(resourceList != null && !resourceList.isEmpty())
                 resourcesRepository.delete(resourceList.get(0).getSymbioteId());
         } catch (Exception e) {
-            log.info("Resource with id " + resourceId + " not found");
+            log.info("Resource with id " + resourceId + " not found: "+e);
         }
     }
-    
-    /*
-    private void registerTowardsCloud(List<CloudResource> resourceList) {
-        try {
-            RestTemplate restTemplate = new RestTemplate();
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-            String json = mapper.writeValueAsString(resourceList);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<String> entity = new HttpEntity<String>(requestJson,headers);
-            String response = restTemplate.postForObject(url, entity, String.class);
-        
-        //    log.info(response.getBody());
-        } catch (Exception e) {
-            log.debug("Error during Cloud Registration - " + e.getMessage());
-        }
-    }
-    
-    private void unregisterTowardsCloud(List<CloudResource> resourceList) {
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Boolean> response = restTemplate.postForEntity("http://localhost:8090/availability", "", ResponseEntity.class
-        
-    System.out.println(response.getBody());
-    }
-    
-    private void updateTowardsCloud() {
-        RestTemplate restTemplate = new RestTemplate();
-    restTemplate.setMessageConverters(Arrays.asList(new MappingJackson2HttpMessageConverter()));
-    ResponseEntity<Boolean> response = restTemplate.postForEntity("http://localhost:8090/availability",
-            userModel.getUsername(), Boolean.class);
-    System.out.println(response.getBody());
-    }*/
 }

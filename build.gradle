@@ -41,7 +41,7 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
 
     
-    compile('com.github.symbiote-h2020:SymbIoTeLibraries:develop-SNAPSHOT')
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:WP4_demo-SNAPSHOT')
     // OData
     compile("org.apache.olingo:odata-commons-api:${'4.3.0'}")
     compile("org.apache.olingo:odata-commons-core:${'4.3.0'}")
