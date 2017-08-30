@@ -118,9 +118,9 @@ public class InnkeeperRestController {
     }
 
     @PostMapping(InnkeeperRestControllerConstants.INNKEEPER_LIST_RESOURCES_REQUEST_PATH)
-    ResponseEntity<ListResourcesResponse> listResources(@RequestBody String id) {
+    ResponseEntity<ListResourcesResponse> listResources(@RequestBody ListResourcesRequest request) {
 
-        log.info("New list_resource request was received from symbIoTe device with id = " + id);
+        log.info("New list_resource request was received from symbIoTe device with id = " + request.getId());
 
         ListResourcesResponse listResourcesResponse = new ListResourcesResponse();
         List<InnkeeperListResourceInfo> innkeeperListResourceInfoList = new ArrayList<>();

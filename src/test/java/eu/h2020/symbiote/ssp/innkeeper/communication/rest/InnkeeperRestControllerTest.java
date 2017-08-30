@@ -158,8 +158,9 @@ public class InnkeeperRestControllerTest {
 
         ObjectMapper mapper = new ObjectMapper();
 
+        ListResourcesRequest request = new ListResourcesRequest("id");
         MvcResult result = mockMvc.perform(post(url)
-                .content(this.json("id"))
+                .content(this.json(request))
                 .contentType(contentType))
                 .andExpect(status().isOk())
                 .andReturn();

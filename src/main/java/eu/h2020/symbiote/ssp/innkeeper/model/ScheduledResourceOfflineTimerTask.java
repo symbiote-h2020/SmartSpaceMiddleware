@@ -46,6 +46,8 @@ public class ScheduledResourceOfflineTimerTask extends TimerTask {
                     InnkeeperResourceStatus.OFFLINE);
             resource.setStatus(InnkeeperResourceStatus.OFFLINE);
             resourceRepository.save(resource);
+
+            offlineTimerTaskMap.get(resourceId).cancel();
             offlineTimerTaskMap.remove(resourceId);
         }
 
