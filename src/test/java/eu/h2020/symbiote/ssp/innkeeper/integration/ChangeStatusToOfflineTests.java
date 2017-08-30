@@ -93,8 +93,8 @@ public class ChangeStatusToOfflineTests {
         String id = "id";
 
         // Register the resource
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
-                AgentType.SDEV, 100);
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+                true, AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
@@ -135,8 +135,8 @@ public class ChangeStatusToOfflineTests {
         String id = "id";
 
         // Register the resource
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
-                AgentType.SDEV, 100);
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+                true, AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
@@ -200,8 +200,8 @@ public class ChangeStatusToOfflineTests {
         String id = "id";
 
         // Register the resource
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
-                AgentType.SDEV, 100);
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+                true, AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 

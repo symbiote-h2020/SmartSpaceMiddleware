@@ -127,10 +127,9 @@ public class InnkeeperRestController {
         List<InnkeeperResource> innkeeperResourceList = resourceRepository.findAll();
 
         for (InnkeeperResource resource : innkeeperResourceList) {
-            InnkeeperListResourceInfo innkeeperListResourceInfo = new InnkeeperListResourceInfo();
-            innkeeperListResourceInfo.setId(resource.getId());
-            innkeeperListResourceInfo.setStatus(resource.getStatus());
-            innkeeperListResourceInfo.setObservesProperty(resource.getObservesProperty());
+            InnkeeperListResourceInfo innkeeperListResourceInfo = new InnkeeperListResourceInfo(resource.getId(),
+                    resource.getDeviceDescriptor().getName(), resource.getDeviceDescriptor().getDescription(),
+                    resource.getStatus(), resource.getObservesProperty());
             innkeeperListResourceInfoList.add(innkeeperListResourceInfo);
         }
 

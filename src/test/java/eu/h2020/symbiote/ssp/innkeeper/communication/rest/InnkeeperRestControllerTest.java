@@ -75,8 +75,8 @@ public class InnkeeperRestControllerTest {
         String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
 
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
-                AgentType.SDEV, 100);
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+                true, AgentType.SDEV, 100);
         JoinRequest joinRequest = new JoinRequest("id", "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"));
 
@@ -130,8 +130,8 @@ public class InnkeeperRestControllerTest {
         String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
 
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
-                AgentType.SDEV, 100);
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00",  "name", "description",
+                true, AgentType.SDEV, 100);
         Field queryIntervalField = deviceDescriptor.getClass().getDeclaredField("mac");
         queryIntervalField.setAccessible(true);
         queryIntervalField.set(deviceDescriptor, "invalidMac");
@@ -170,11 +170,11 @@ public class InnkeeperRestControllerTest {
         ListResourcesResponse listResourcesResponse = mapper.readValue(listResourceString, ListResourcesResponse.class);
         assertEquals(0, listResourcesResponse.getInnkeeperListResourceInfoList().size());
 
-        DeviceDescriptor deviceDescriptor1 = new DeviceDescriptor("00:00:00:00:00:00", true,
+        DeviceDescriptor deviceDescriptor1 = new DeviceDescriptor("00:00:00:00:00:00",  "name1", "description1", true,
                 AgentType.SDEV, 100);
         InnkeeperResource innkeeperResource1 = new InnkeeperResource("id1", "", deviceDescriptor1,
                 Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE, null, null);
-        DeviceDescriptor deviceDescriptor2 = new DeviceDescriptor("00:00:00:00:00:00", true,
+        DeviceDescriptor deviceDescriptor2 = new DeviceDescriptor("00:00:00:00:00:00",  "name2", "description2", true,
                 AgentType.SDEV, 100);
         InnkeeperResource innkeeperResource2 = new InnkeeperResource("id2", "", deviceDescriptor2,
                 Arrays.asList("temperature", "humidity", "air quality"), InnkeeperResourceStatus.OFFLINE, null, null);
@@ -194,10 +194,14 @@ public class InnkeeperRestControllerTest {
         listResourcesResponse = mapper.readValue(listResourceString, ListResourcesResponse.class);
         assertEquals(2, listResourcesResponse.getInnkeeperListResourceInfoList().size());
         assertEquals(innkeeperResource1.getId(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getId());
+        assertEquals(innkeeperResource1.getDeviceDescriptor().getName(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getName());
+        assertEquals(innkeeperResource1.getDeviceDescriptor().getDescription(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getDescription());
         assertEquals(innkeeperResource1.getStatus(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getStatus());
         assertEquals(innkeeperResource1.getObservesProperty().size(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).
                 getObservesProperty().size());
         assertEquals(innkeeperResource2.getId(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getId());
+        assertEquals(innkeeperResource2.getDeviceDescriptor().getName(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getName());
+        assertEquals(innkeeperResource2.getDeviceDescriptor().getDescription(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getDescription());
         assertEquals(innkeeperResource2.getStatus(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getStatus());
         assertEquals(innkeeperResource2.getObservesProperty().size(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).
                 getObservesProperty().size());
@@ -220,8 +224,8 @@ public class InnkeeperRestControllerTest {
         String keepAliveResponseString = result.getResponse().getContentAsString();
         log.info("keepAliveResponseString = " + keepAliveResponseString);
 
-        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", true,
-                AgentType.SDEV, 100);
+        DeviceDescriptor deviceDescriptor = new DeviceDescriptor("00:00:00:00:00:00", "name", "description",
+                true, AgentType.SDEV, 100);
         InnkeeperResource innkeeperResource1 = new InnkeeperResource(id, "", deviceDescriptor,
                 Arrays.asList("temperature", "humidity"), InnkeeperResourceStatus.ONLINE, null, null);
 
