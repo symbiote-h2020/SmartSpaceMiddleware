@@ -5,7 +5,7 @@
 #define SDA 4
 #define SCL 5
 
-symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test1");
+symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test1", "Temperature and Humidity");
 SI7021 sensor;
 struct join_resp joinResp;
 extern volatile boolean keepAlive_triggered;

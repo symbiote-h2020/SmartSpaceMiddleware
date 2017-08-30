@@ -5,7 +5,7 @@
 #define SDA 4
 #define SCL 5
 
-symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test1");
+symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test1", "Temperature, Humidity, Relé and Servo");
 Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
 struct join_resp joinResp;
 extern volatile boolean keepAlive_triggered;

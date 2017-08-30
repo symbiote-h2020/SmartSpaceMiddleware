@@ -92,7 +92,7 @@ symAgent::symAgent()
 		// calculate the ssp-id based on the WiFi MAC. TODO: maybe this is possible only when it is connected by wifi, or maybe is better to create this
 }
       //TODO please remember to add parameter for class BLE in the constructor
-symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name)
+symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description)
 {
 	pinMode(JOIN_LED, OUTPUT);
 	pinMode(KEEPALIVE_LED, OUTPUT);
@@ -105,6 +105,7 @@ symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long kee
 		// change the value of the global variable keep_alive_interval accordingly
 	keep_alive_interval = _keep_alive;
 	_name = name;
+	_description = description;
 
 	_server = new ESP8266WebServer();
 	//_hash = readHashFromFlash(); 
@@ -336,6 +337,7 @@ int symAgent::join(struct join_resp * result)
 		//TODO insert sleeping device as constructor parameter
 	deviceDescriptor["sleeping"] = true;
 	deviceDescriptor["name"] = _name;
+	deviceDescriptor["description"] = _description;
 	if (_agent_type == agent_SDEV) {
 		deviceDescriptor["agentType"] = "SDEV";
 	} else if (_agent_type == agent_PLAT) {
