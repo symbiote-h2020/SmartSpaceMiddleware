@@ -63,12 +63,12 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Start...");
   if (! baro.begin()) {
-    Serial.println("Couldnt find sensor");
+    Serial.println("Couldn't find sensor");
     return;
   }
-  Serial.print("Temperatura: ");
+  Serial.print("Temperature: ");
   Serial.println(readTemp());
-  Serial.print("Pressione: ");
+  Serial.print("Pressure: ");
   Serial.println(readPressure());
   if (sdev1.begin() == true) {
     setupBind(listResources, functions, actuatorsFunction);
@@ -84,9 +84,9 @@ void loop() {
   delay(10);
   if (keepAlive_triggered){
     sdev1.sendKeepAlive(resp);
-    Serial.print("Temperatura: ");
+    Serial.print("Temperature: ");
     Serial.println(readTemp());
-    Serial.print("Pressione: ");
+    Serial.print("Pressure: ");
     Serial.println(readPressure());
   }
   sdev1.handleSSPRequest();

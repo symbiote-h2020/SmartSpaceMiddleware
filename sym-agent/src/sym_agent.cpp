@@ -338,6 +338,8 @@ int symAgent::join(struct join_resp * result)
 	deviceDescriptor["sleeping"] = true;
 	deviceDescriptor["name"] = _name;
 	deviceDescriptor["description"] = _description;
+	Serial.println(WiFi.localIP());
+	deviceDescriptor["url"] = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) +":80";
 	if (_agent_type == agent_SDEV) {
 		deviceDescriptor["agentType"] = "SDEV";
 	} else if (_agent_type == agent_PLAT) {

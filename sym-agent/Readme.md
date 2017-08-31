@@ -16,8 +16,12 @@ First release of the agent currently support ESP8266 arduino based platform like
 # Directory descriptions
 
 ## src
+It contains the library for the Arduino sym-agent. Please take in mind that you should create a directory in the `libraries/` path with the name `sym-agent` and you should copy the libraries files into this folder. 
+Note that the `src` folder also contains a file named `symbiote-resources.h`. This is not actually used for firmware, but you should use the formalism enumerated inside it when describing the `observedProperties` of your agent.
 
 ## test-sketch
+It contains a list of example sketch to test various functionality of the agent or define some sensor example.
+
 
 # Library description
 
