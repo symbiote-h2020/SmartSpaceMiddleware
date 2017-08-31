@@ -151,7 +151,7 @@ public class InnkeeperRestController {
         for (InnkeeperResource resource : innkeeperResourceList) {
             InnkeeperListResourceInfo innkeeperListResourceInfo = new InnkeeperListResourceInfo(resource.getId(),
                     resource.getDeviceDescriptor().getName(), resource.getDeviceDescriptor().getDescription(),
-                    resource.getStatus(), resource.getObservesProperty());
+                    resource.getDeviceDescriptor().getUrl(), resource.getStatus(), resource.getObservesProperty());
             innkeeperListResourceInfoList.add(innkeeperListResourceInfo);
         }
 

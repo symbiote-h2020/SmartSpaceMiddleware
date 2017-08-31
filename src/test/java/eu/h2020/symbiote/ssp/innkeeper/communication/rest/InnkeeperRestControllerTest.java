@@ -201,12 +201,14 @@ public class InnkeeperRestControllerTest {
         assertEquals(innkeeperResource1.getId(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getId());
         assertEquals(innkeeperResource1.getDeviceDescriptor().getName(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getName());
         assertEquals(innkeeperResource1.getDeviceDescriptor().getDescription(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getDescription());
+        assertEquals(innkeeperResource1.getDeviceDescriptor().getUrl(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getUrl());
         assertEquals(innkeeperResource1.getStatus(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).getStatus());
         assertEquals(innkeeperResource1.getObservesProperty().size(), listResourcesResponse.getInnkeeperListResourceInfoList().get(0).
                 getObservesProperty().size());
         assertEquals(innkeeperResource2.getId(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getId());
         assertEquals(innkeeperResource2.getDeviceDescriptor().getName(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getName());
         assertEquals(innkeeperResource2.getDeviceDescriptor().getDescription(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getDescription());
+        assertEquals(innkeeperResource2.getDeviceDescriptor().getUrl(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getUrl());
         assertEquals(innkeeperResource2.getStatus(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).getStatus());
         assertEquals(innkeeperResource2.getObservesProperty().size(), listResourcesResponse.getInnkeeperListResourceInfoList().get(1).
                 getObservesProperty().size());
