@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 @RunWith(SpringRunner.class)
 @SpringBootTest(
         properties = {
-                "registrationExpiration=500",
+                "registrationExpiration=1000",
                 "makeResourceOffline=2000000",
                 "symbiote.ssp.database=symbiote-ssp-database-cut"})
 @WebAppConfiguration
@@ -78,6 +78,16 @@ public class CheckUnregistrationTests {
     public void setup() throws Exception {
         this.mockMvc = webAppContextSetup(webApplicationContext).build();
         resourceRepository.deleteAll();
+
+        for (Map.Entry<String, ScheduledUnregisterTimerTask> entry : unregisteringTimerTaskMap.entrySet()) {
+            entry.getValue().cancel();
+            unregisteringTimerTaskMap.remove(entry.getKey());
+        }
+
+        for (Map.Entry<String, ScheduledResourceOfflineTimerTask> entry : offlineTimerTaskMap.entrySet()) {
+            entry.getValue().cancel();
+            offlineTimerTaskMap.remove(entry.getKey());
+        }
     }
 
     @After
@@ -87,6 +97,8 @@ public class CheckUnregistrationTests {
 
     @Test
     public void unregistrationTest() throws Exception {
+        log.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " STARTED!");
+
         String url = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
         String id = "id";
@@ -113,7 +125,7 @@ public class CheckUnregistrationTests {
         assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
         assertEquals(offlineTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getOfflineEventTime());
 
-        TimeUnit.MILLISECONDS.sleep(registrationExpiration);
+        TimeUnit.MILLISECONDS.sleep((long) (1.1 * registrationExpiration));
 
         // Make sure that the resource is deleted from the database after {registrationExpiration} ms have passed
         storedResource = resourceRepository.findOne(id);
@@ -127,6 +139,8 @@ public class CheckUnregistrationTests {
     @Test
     public void reRegistrationTest() throws Exception {
         // Send a unregistration request before the resource is unregistered
+
+        log.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " STARTED!");
 
         String joinUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
@@ -184,6 +198,8 @@ public class CheckUnregistrationTests {
                 unregisteringTimerTaskMap.get(id));
         assertNull("The offlineTimerTask should be removed along with the resource",
                 offlineTimerTaskMap.get(id));
+
+        log.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " FINISHED!");
 
     }
 

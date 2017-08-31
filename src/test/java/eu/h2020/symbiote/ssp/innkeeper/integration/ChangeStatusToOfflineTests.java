@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 @SpringBootTest(
         properties = {
                 "registrationExpiration=2000000",
-                "makeResourceOffline=500",
+                "makeResourceOffline=1000",
                 "symbiote.ssp.database=symbiote-ssp-database-cstot"})
 @WebAppConfiguration
 public class ChangeStatusToOfflineTests {
@@ -78,6 +78,16 @@ public class ChangeStatusToOfflineTests {
     public void setup() throws Exception {
         this.mockMvc = webAppContextSetup(webApplicationContext).build();
         resourceRepository.deleteAll();
+
+        for (Map.Entry<String, ScheduledUnregisterTimerTask> entry : unregisteringTimerTaskMap.entrySet()) {
+            entry.getValue().cancel();
+            unregisteringTimerTaskMap.remove(entry.getKey());
+        }
+
+        for (Map.Entry<String, ScheduledResourceOfflineTimerTask> entry : offlineTimerTaskMap.entrySet()) {
+            entry.getValue().cancel();
+            offlineTimerTaskMap.remove(entry.getKey());
+        }
     }
 
     @After
@@ -87,6 +97,8 @@ public class ChangeStatusToOfflineTests {
 
     @Test
     public void changeStatusToOfflineTest() throws Exception {
+        log.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " STARTED!");
+
         String joinUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
 
@@ -116,7 +128,7 @@ public class ChangeStatusToOfflineTests {
         assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
         assertEquals(offlineTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getOfflineEventTime());
 
-        TimeUnit.MILLISECONDS.sleep(makeResourceOffline);
+        TimeUnit.MILLISECONDS.sleep((long) (1.1 * makeResourceOffline));
 
         // Make sure that the status of the resource has changed after {makeResourceOffline} ms have passed
         storedResource = resourceRepository.findOne(id);
@@ -124,10 +136,14 @@ public class ChangeStatusToOfflineTests {
         assertEquals(InnkeeperResourceStatus.OFFLINE, storedResource.getStatus());
         assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
         assertNull("The offlineTimerTask should be removed", offlineTimerTaskMap.get(id));
+
+        log.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " FINISHED!");
     }
 
     @Test
     public void changeStatusAfterKeepAliveTest() throws Exception {
+        log.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " STARTED!");
+
         String joinUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
         String keepAliveUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
@@ -192,10 +208,14 @@ public class ChangeStatusToOfflineTests {
         assertEquals(InnkeeperResourceStatus.OFFLINE, storedResource.getStatus());
         assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
         assertNull("The offlineTimerTask should be removed", offlineTimerTaskMap.get(id));
+
+        log.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " FINISHED!");
     }
 
     @Test
     public void changeStatusAfterRegistationTest() throws Exception {
+        log.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " STARTED!");
+
         String joinUrl = InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH +
                 InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH;
 
@@ -257,6 +277,8 @@ public class ChangeStatusToOfflineTests {
         assertEquals(InnkeeperResourceStatus.OFFLINE, storedResource.getStatus());
         assertEquals(unregisteringTimerTaskMap.get(id).scheduledExecutionTime(), (long) storedResource.getUnregisterEventTime());
         assertNull("The offlineTimerTask should be removed", offlineTimerTaskMap.get(id));
+
+        log.info(Thread.currentThread().getStackTrace()[1].getMethodName() + " FINISHED!");
     }
 
     private String json(Object o) throws IOException {
