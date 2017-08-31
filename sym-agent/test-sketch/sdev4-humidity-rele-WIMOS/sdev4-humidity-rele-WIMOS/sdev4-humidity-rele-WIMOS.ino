@@ -1,6 +1,7 @@
 #include <ArduinoJson.h>
 #include <sym_agent.h>
 #include <DHT.h>
+#include <Metro.h>
 
 #define RELE_PIN 5
 #define DHTTYPE DHT11
@@ -13,6 +14,8 @@ extern volatile boolean keepAlive_triggered;
 extern String listResources[RES_NUMBER];
 extern String (* functions[RES_NUMBER])();
 extern boolean (* actuatorsFunction[RES_NUMBER])(int);
+// Instanciate a metro object and set the interval to 250 milliseconds (0.25 seconds).
+Metro registrationMetro = Metro();
 
 
 String readTemp()
@@ -56,16 +59,12 @@ void setup() {
   Serial.println("Start...");
   dht.begin();
   pinMode(RELE_PIN, OUTPUT);
-  //Serial.print("Temperatura: ");
-  //Serial.println(readTemp());
-  //Serial.print("Pressione: ");
-  //Serial.println(readPressure());
   if (sdev1.begin() == true) {
     setupBind(listResources, functions, actuatorsFunction);
     sdev1.join(&joinResp);
+    registrationMetro.interval(floor(joinResp.registrationExpiration * 0.9));
   }
   else Serial.print("Failed!");
-
 }
 
 void loop() {
@@ -80,5 +79,11 @@ void loop() {
     Serial.println(readHumidity());
   }
   sdev1.handleSSPRequest();
+  if (registrationMetro.check() == 1){
+    //need another new join request
+    sdev1.join(&joinResp);
+      /// stai under the 90% of the registration expiration
+    registrationMetro.interval(floor(joinResp.registrationExpiration * 0.9));
+  }
 }
 
