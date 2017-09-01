@@ -61,12 +61,12 @@ public class SspRapController {
     
     @CrossOrigin(origins = "*")
     @RequestMapping(value = "Sensor/{resourceId}", method = RequestMethod.GET)
-    public List<Observation> readResourceREST(@PathVariable String resourceId/*, @RequestHeader("X-Auth-Token") String token*/,@RequestBody String body, HttpServletRequest request) {
+    public List<Observation> readResourceREST(@PathVariable String resourceId/*, @RequestHeader("X-Auth-Token") String token,@RequestBody String body*/, HttpServletRequest request) {
         List<Observation> obsList = null;
         try {
             log.info("Received read resource request for ID = " + resourceId);
             //    checkToken(token);
-            obsList = readResourcePrivate(resourceId, body, request);
+            obsList = readResourcePrivate(resourceId, request);
             /* } catch (TokenValidationException tokenEx) { 
             log.error(tokenEx.toString());
             throw tokenEx;*/
@@ -78,7 +78,7 @@ public class SspRapController {
         return obsList;
     }
         
-    public List<Observation> readResourcePrivate(String resourceId, String body, HttpServletRequest request) {
+    public List<Observation> readResourcePrivate(String resourceId, HttpServletRequest request) {
         List<Observation> obsList = null;
         RestTemplate restTemplate = new RestTemplate();
         String url;

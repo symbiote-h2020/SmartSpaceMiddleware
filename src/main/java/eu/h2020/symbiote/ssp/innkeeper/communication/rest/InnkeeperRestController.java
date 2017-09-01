@@ -97,11 +97,15 @@ public class InnkeeperRestController {
     }
 
     @PostMapping(InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH)
-    ResponseEntity<JoinResponse> join(@RequestBody JoinRequest joinRequest) {
+    ResponseEntity<JoinResponse> join(@RequestBody JoinRequest joinRequest) throws Exception {
         boolean alreadyRegistered = false;
         JoinResponse joinResponse;
 
         log.info("New join request was received for resource id = " + joinRequest.getId());
+        
+        if(joinRequest.getDeviceDescriptor() == null || joinRequest.getDeviceDescriptor().getUrl() == null
+                || joinRequest.getObservesProperty() == null || joinRequest.getObservesProperty().isEmpty())
+            throw new Exception("Url of deviceDescriptor in body cannot be empty");
 
         if (joinRequest.getId() == null || joinRequest.getId().isEmpty()) {
             ObjectId objectId = new ObjectId();

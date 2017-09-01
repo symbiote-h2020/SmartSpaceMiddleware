@@ -40,7 +40,11 @@ public class ResourceRegistrationHandler {
         SSPRecourceCreatedOrUpdated newResource = mapper.readValue(message, SSPRecourceCreatedOrUpdated.class);
         if(newResource == null)
             throw new Exception("receiveRegistrationMessage error format");
-        addResource(newResource.getId(), null, null, null, newResource.getUrl());
+        
+        String url = newResource.getUrl();
+        if(!url.startsWith("http://") && !url.startsWith("https://"))
+            url = "http://" + url;
+        addResource(newResource.getId(), null, null, null, url);
     }
     
     public void receiveUpdateMessage(Object obj) throws Exception {
