@@ -1,4 +1,8 @@
 // initial extensions to gradle
+if (!hasProperty('mainClass')) {
+    ext.mainClass = 'eu.h2020.symbiote.ssp.SspApplication'
+}
+
 buildscript {
     ext {
         springBootVersion = '1.5.4.RELEASE'
@@ -82,9 +86,24 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.boot:spring-boot-starter-data-mongodb')
 
+    // OData
+    compile("org.apache.olingo:odata-commons-api:${'4.3.0'}")
+    compile("org.apache.olingo:odata-commons-core:${'4.3.0'}")
+
+    compile("org.apache.olingo:odata-server-api:${'4.3.0'}")
+    compile("org.apache.olingo:odata-server-core:${'4.3.0'}")
+
+    //Owlapi
+    compile('net.sourceforge.owlapi:owlapi-distribution:5.1.0')
+    compile('net.sourceforge.owlapi:owlapi-contract:3.4')
+
+    // Other
+    compile('org.apache.commons:commons-lang3:3.0')
+
     // tests only
     testCompile('junit:junit:4.+')
     testCompile('org.springframework.boot:spring-boot-starter-test')
+
 }
 
 // code quality below
