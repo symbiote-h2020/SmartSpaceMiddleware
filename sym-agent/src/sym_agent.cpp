@@ -72,6 +72,12 @@ String createObservedPropertiesString()
   return ret;
 }
 
+
+String getProperty(int i){
+	return listResources[i];
+}
+
+
 // return the array containing the observedProperties' values
 String readSensorsJSON()
 {
@@ -241,14 +247,18 @@ boolean symAgent::begin()
   						// write the agent id based on the union of MAC + SSP_ID
   						// EG: if the ssid is "sym-2e4467f2a7b03255a2a4" and the MAC is 55:ee:45:ef:51:01 then the _id is "55ee45ef51012e4467f2a7b03255a2a4"
   					for (int j = 0; j < 6; j++) {
+  						if (mac[j] < 16) {
+  							_id += "0";
+  							_mac += "0";
+  						} 
   						_id += String(mac[j], HEX);
   						_mac += String(mac[j], HEX);
-  						_mac += ":";
+  						if (j!=5) _mac += ":";
   					}
   					_mac = _mac.substring(0, 17);
   					_id += _ssp_id;
   						//create a new http client class 
-  					_rest_client = new RestClient(JOIN_URL);
+  					_rest_client = new RestClient(JOIN_URL, SSP_PORT);
   					_rest_client->setContentType("application/json");
   					PI("Got this IDs:\n\tssp_id: ");
   					P(_ssp_id);
@@ -292,7 +302,8 @@ boolean symAgent::begin()
 						_server->send(404, "text/plain", String("Not Found :("));
 				    });
 					_server->begin();
-					this->bind(createObservedPropertiesString, readSensorsJSON);
+					//this->bind(createObservedPropertiesString, readSensorsJSON);
+					this->bind(getProperty, readSensorsJSON);
   					return true;
   				}
   			}
@@ -315,7 +326,15 @@ int symAgent::join(struct join_resp * result)
 	JsonObject& _root = _jsonBuff.createObject();
 	_root["id"] = _id;
 	_root["hash"] = _hash;
-	_root["observesProperty"] = _createObservedPropertiesString(); // TODO: FIXME
+	//_root["observesProperty"] = _createObservedPropertiesString(); // TODO: FIXME
+
+
+	JsonArray& data = _root.createNestedArray("observesProperty");
+  	for (int i=0; i< RES_NUMBER; i++ ) data.add(_getProperty(i));
+
+
+
+
 	/*
 		now create a JSON like this:
 		{
@@ -323,8 +342,10 @@ int symAgent::join(struct join_resp * result)
 		    String hash,
 		    deviceDescriptor{
 		        String mac,
+		        String url,
 		        Boolean sleeping,
 		        String name,
+		        String description,
 		        String agentType,
 		        Integer readingInterval,
 		    }
@@ -334,6 +355,7 @@ int symAgent::join(struct join_resp * result)
 	JsonObject& deviceDescriptor = _root.createNestedObject("deviceDescriptor");
 		//TODO: add mac to private variable
 	deviceDescriptor["mac"] = _mac;
+	deviceDescriptor["url"] = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) + ":80";
 		//TODO insert sleeping device as constructor parameter
 	deviceDescriptor["sleeping"] = true;
 	deviceDescriptor["name"] = _name;
@@ -343,7 +365,7 @@ int symAgent::join(struct join_resp * result)
 	} else if (_agent_type == agent_PLAT) {
 			deviceDescriptor["agentType"] = "Platform";
 		} 
-	deviceDescriptor["readingInterval"] = "TBD"; // TODO: FIXME
+	deviceDescriptor["readingInterval"] = 1500; // TODO: FIXME
 	String temp = "";
 	String resp = "";
 	_root.printTo(temp);
@@ -480,10 +502,19 @@ void symAgent::handleSSPRequest()
 	_server->handleClient();
 }
 
+/*
 void symAgent::bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)())
 {
 	P("BIND");
 	_createObservedPropertiesString = createObservedPropertiesString;
+	_readSensorsJSON = readSensorsJSON;
+}
+*/
+
+void symAgent::bind(String (* getProperty)(int), String (* readSensorsJSON)())
+{
+	P("BIND");
+	_getProperty = getProperty;
 	_readSensorsJSON = readSensorsJSON;
 }
 

@@ -32,10 +32,10 @@
 
 #define MAX_JSON_SIZE 400
 #define JOIN_URL "innkeeper.symbiote.org"
-#define JOIN_PATH "/join.php"
-#define KEEPALIVE_PATH "/keepalive.php"
+#define JOIN_PATH "/innkeeper/join"
+#define KEEPALIVE_PATH "/innkeeper/keepalive"
 
-#define LISTEN_PORT 80
+#define SSP_PORT 8080
 
   // This is the pin led definition to led on board
 #define JOIN_LED 0
@@ -71,6 +71,8 @@ struct join_resp
 String createObservedPropertiesString();
   // This function create the JSON with the key: value of the reading
 String readSensorsJSON();
+
+String getProperty(int i);
 
 void printJoinResp(struct join_resp data);
 void keepAliveISR(void);
@@ -118,9 +120,11 @@ class symAgent
 
     void handleSSPRequest();
 
-    void bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)());
+    //void bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)());
+    void bind(String (* getProperty)(int), String (* readSensorsJSON)());
 
     String (* _createObservedPropertiesString)();
+    String (* _getProperty) (int);
     String (* _readSensorsJSON)();
 
   private:
