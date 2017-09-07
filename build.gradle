@@ -85,6 +85,7 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-data-rest')
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.boot:spring-boot-starter-data-mongodb')
+    compile('org.springframework:spring-web')
 
     // OData
     compile("org.apache.olingo:odata-commons-api:${'4.3.0'}")
