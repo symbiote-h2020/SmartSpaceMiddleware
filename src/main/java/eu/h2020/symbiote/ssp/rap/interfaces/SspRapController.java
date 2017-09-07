@@ -152,6 +152,9 @@ public class SspRapController {
         } else {
             // SDEV without platform
             url += PathSdevPost ;
+            if(!body.contains(resourceId)){
+                body = body.trim().substring(0, body.length() - 1) + "\"id\":\"" + resourceId + "\"}";
+            }
         }
         responseEntity = forwardWriteRequestToUrl(url, body);
         return responseEntity;
