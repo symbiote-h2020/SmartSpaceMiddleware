@@ -125,7 +125,7 @@ public class SspRapController {
     @RequestMapping(value="Actuator/{resourceId}", method=RequestMethod.POST)
     public ResponseEntity<?> writeResource(@PathVariable String resourceId, @RequestBody String body,
                                            /*@RequestHeader("X-Auth-Token") String token,*/ HttpServletRequest request) {
-        ResponseEntity responseEntity = null;
+        String responseEntity = null;
         try {
             log.info("Received write resource request for ID = " + resourceId + " with values " + body);
 
@@ -139,11 +139,11 @@ public class SspRapController {
             log.error(err + "\n" + ex.getMessage());
             throw new GenericException(ex.getMessage());
         }
-        return new ResponseEntity<>(responseEntity,HttpStatus.OK);
+        return new ResponseEntity<String>(responseEntity,HttpStatus.OK);
     }
     
-    public ResponseEntity<?> writeResourcePrivate(String resourceId, String body, HttpServletRequest request) {
-        ResponseEntity responseEntity;
+    public String writeResourcePrivate(String resourceId, String body, HttpServletRequest request) {
+        String responseEntity;
         ResourceInfo info = getResourceInfo(resourceId);
         String url = info.getHost();
         if (info.getPlatformId() != null) {
@@ -157,13 +157,15 @@ public class SspRapController {
         return responseEntity;
     }
 
-    private ResponseEntity<?> forwardWriteRequestToUrl(String url, String requestJson) {
+    private String forwardWriteRequestToUrl(String url, String requestJson) {
         RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+        restTemplate.getMessageConverters().add(new StringHttpMessageConverter());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<String> entity = new HttpEntity(requestJson, headers);
-        ResponseEntity response = restTemplate.postForObject(url, entity, ResponseEntity.class);
+        String response = restTemplate.postForObject(url, entity, String.class);
 
         return response;
     }
