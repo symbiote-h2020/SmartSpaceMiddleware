@@ -55,29 +55,33 @@ public class ScheduledUnregisterTimerTask extends TimerTask {
     }
 
     public void run() {
-        log.debug("Periodic resource unregister task for resourceId = " + resourceId +
-                " STARTED :" + new Date(new Date().getTime()));
+        try {
+            log.debug("Periodic resource unregister task for resourceId = " + resourceId +
+                    " STARTED :" + new Date(new Date().getTime()));
 
-        InnkeeperResource resource = resourceRepository.findOne(resourceId);
+            InnkeeperResource resource = resourceRepository.findOne(resourceId);
 
-        if (resource == null) {
-            log.info("The resource with id = " + resourceId + " is not registered.");
-        } else {
-            log.info("The resource with id = " + resourceId + " has been unregistered.");
-            resourceRepository.delete(resourceId);
+            if (resource == null) {
+                log.info("The resource with id = " + resourceId + " is not registered.");
+            } else {
+                log.info("The resource with id = " + resourceId + " has been unregistered.");
+                resourceRepository.delete(resourceId);
 
-            unregisteringTimerTaskMap.get(resourceId).cancel();
-            unregisteringTimerTaskMap.remove(resourceId);
+                unregisteringTimerTaskMap.get(resourceId).cancel();
+                unregisteringTimerTaskMap.remove(resourceId);
 
-            offlineTimerTaskMap.get(resourceId).cancel();
-            offlineTimerTaskMap.remove(resourceId);
+                offlineTimerTaskMap.get(resourceId).cancel();
+                offlineTimerTaskMap.remove(resourceId);
 
-            // Inform RAP about the removal of the resource
-            SSPResourceDeleted sspResourceDeleted = new SSPResourceDeleted(resourceId);
-            rabbitTemplate.convertAndSend(rapExchange, rapSSPResourceDeletedoutingKey, sspResourceDeleted);
+                // Inform RAP about the removal of the resource
+                SSPResourceDeleted sspResourceDeleted = new SSPResourceDeleted(resourceId);
+                rabbitTemplate.convertAndSend(rapExchange, rapSSPResourceDeletedoutingKey, sspResourceDeleted);
+            }
+
+            log.debug("Periodic resource unregister task for resourceId = " + resourceId +
+                    " FINISHED :" + new Date(new Date().getTime()));
+        } catch (Exception e) {
+            log.info("Exception in ScheduledUnregisterTimerTask: " + e);
         }
-
-        log.debug("Periodic resource unregister task for resourceId = " + resourceId +
-                " FINISHED :" + new Date(new Date().getTime()));
     }
 }
