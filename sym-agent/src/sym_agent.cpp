@@ -81,14 +81,14 @@ String getProperty(int i){
 // return the array containing the observedProperties' values
 String readSensorsJSON()
 {
-  String ret = "[";
+  String ret = "{";
   for (int i = 0; i < RES_NUMBER; i++) {
     ret += "\"" + listResources[i] + "\"" + ": \"" + functions[i]() + "\", ";
  //   ret += "\"" + functions[i]() + "\", ";    
   }
     // delete the last comma
   ret = ret.substring(0, ret.length() - 2);
-  ret += "]";
+  ret += "}";
   return ret;
 }
 
@@ -161,13 +161,13 @@ boolean symAgent::elaborateRequest()
 		if (id == _id){
 			//P("Correctly decoded!");
 			String tmpResp = _readSensorsJSON();
-			tmpResp = "{ \"id\":\"" + _id + "\", \"value\": \"" + tmpResp + "\"}";
-			_server->send(200, "text/plain", tmpResp);
+			tmpResp = "{ \"id\":\"" + _id + "\", \"value\": " + tmpResp + "}";
+			_server->send(200, "application/json", tmpResp);
 			return true;
 		} else {
 			P("Wrong id");
 			String tmpResp = "{ \"id\":\"" + _id + "\", \"value\":\"WrongId\"}";
-			_server->send(200, "text/plain", tmpResp);
+			_server->send(200, "application/json", tmpResp);
 			return false;
 		}
 	return true;
@@ -207,12 +207,12 @@ boolean symAgent::actuateRequest()
 			}
 
 			String tmpResp = "{ \"id\":\"" + _id + "\", \"response\": \"OK\"}";
-			_server->send(200, "text/plain", tmpResp);
+			_server->send(200, "application/json", tmpResp);
 			return true;
 		} else {
 			P("Wrong id");
 			String tmpResp = "{ \"id\":\"" + _id + "\", \"value\":\"Error\"}";
-			_server->send(200, "text/plain", tmpResp);
+			_server->send(200, "application/json", tmpResp);
 			return false;
 		}
 	return true;
@@ -274,7 +274,6 @@ boolean symAgent::begin()
 						   message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
 						}
 						elaborateRequest();
-						//_server->send(200, "text/plain", message);
 				    });
 				    _server->on("/ActuateResourceAgent", [this](){
 						P("RESOURCEHANDLER-ACTUATE");
@@ -283,7 +282,6 @@ boolean symAgent::begin()
 						   message += " " + _server->argName(i) + ": " + _server->arg(i) + "\n";
 						}
 						actuateRequest();
-						//_server->send(200, "text/plain", message);
 				    });
 					_server->onNotFound([this](){
 						P("NOTFOUND");
@@ -383,6 +381,8 @@ int symAgent::join(struct join_resp * result)
 	if (statusCode < 300 and statusCode >= 200){
 		//got a valid response
 		_jsonBuff.clear();
+		//remove any additional byte from response like dimension of the buffer
+		resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
 		JsonObject& _root2 = _jsonBuff.parseObject(resp);
 		if (!_root2.success()) {
     		P("parseObject() failed");
@@ -397,8 +397,28 @@ int symAgent::join(struct join_resp * result)
 		result->id = _root2["id"].as<String>();
 		result->hash = _root2["hash"].as<String>();
 		result->registrationExpiration = _root2["registrationExpiration"].as<unsigned int>();
+	} else {
+			//error response from server
+			_jsonBuff.clear();
+			//remove any additional byte from response like dimension of the buffer
+			resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
+			JsonObject& _root2 = _jsonBuff.parseObject(resp);
+			if (!_root2.success()) {
+	    		P("parseObject() failed");
+	    		return statusCode;
+			}
+	#if DEBUG_SYM_CLASS == 1
+			_root2.prettyPrintTo(Serial);
+			P("");
+	#endif
+				//write result on the struct
+			result->result = "ERROR";
+			result->id = _root2["id"].as<String>();
+			result->hash = _root2["hash"].as<String>();
+			result->registrationExpiration = _root2["registrationExpiration"].as<unsigned int>();
 	}
 	if (_keep_alive > 0) {
+		//set up keepalive
 		volatile unsigned long next;
 		noInterrupts();
 	  	timer0_isr_init();
@@ -468,6 +488,8 @@ int symAgent::sendKeepAlive(String& response)
 	if (statusCode < 300 and statusCode >= 200){
 		//got a valid response
 		_jsonBuff.clear();
+			//remove any additional byte from response like dimension of the buffer
+		resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
 		JsonObject& _root2 = _jsonBuff.parseObject(resp);
 		if (!_root2.success()) {
     		P("parseObject() failed");
@@ -479,11 +501,32 @@ int symAgent::sendKeepAlive(String& response)
 		_root2.prettyPrintTo(Serial);
 		P(" ");
 	#endif
-		response = _root2["result"].as<String>();
+		//response = _root2["result"].as<String>();
+		keepAlive_triggered = false;
+		KEEPALIVE_LED_OFF
+		return statusCode;
+	} else {
+		// error code from innkeeper
+		_jsonBuff.clear();
+			//remove any additional byte from response like dimension of the buffer
+		resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
+		JsonObject& _root2 = _jsonBuff.parseObject(resp);
+		if (!_root2.success()) {
+    		P("parseObject() failed");
+    		keepAlive_triggered = false;
+    		KEEPALIVE_LED_OFF
+    		return statusCode;
+		}
+	#if DEBUG_SYM_CLASS == 1
+		_root2.prettyPrintTo(Serial);
+		P(" ");
+	#endif
+		//response = _root2["result"].as<String>();
 		keepAlive_triggered = false;
 		KEEPALIVE_LED_OFF
 		return statusCode;
 	}
+	//never arrive here
 	keepAlive_triggered = false;
 	KEEPALIVE_LED_OFF
 	return statusCode;

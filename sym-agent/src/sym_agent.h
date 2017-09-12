@@ -14,7 +14,7 @@
 
 #if defined ESP8266
   #include <ESP8266WiFi.h> 
-  #warning "CIAOOOOOOOOO"
+  #warning "You are using the ESP2866 Arduino platform"
 #else
   #error "Platform not defined"
 #endif
@@ -30,10 +30,10 @@
   #define PI(__VA_ARGS__)
 #endif 
 
-#define MAX_JSON_SIZE 400
+#define MAX_JSON_SIZE 500
 #define JOIN_URL "innkeeper.symbiote.org"
 #define JOIN_PATH "/innkeeper/join"
-#define KEEPALIVE_PATH "/innkeeper/keepalive"
+#define KEEPALIVE_PATH "/innkeeper/keep_alive"
 
 #define SSP_PORT 8080
 

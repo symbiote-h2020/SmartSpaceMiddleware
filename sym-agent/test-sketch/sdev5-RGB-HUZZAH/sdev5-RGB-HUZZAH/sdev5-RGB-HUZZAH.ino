@@ -1,14 +1,17 @@
 #include <ArduinoJson.h>
 #include <sym_agent.h>
-#include <DHT.h>
+#include <Adafruit_NeoPixel.h>
 #include <Metro.h>
 
-#define RELE_PIN 5
-#define DHTTYPE DHT11
-#define DHT_PIN 2
+#define WS2812_PIN 5
+// How many NeoPixels are attached to the Arduino?
+#define NUMPIXELS 32
 
-symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test1", "Temperature, Humidity and Relé");
-DHT dht(DHT_PIN, DHTTYPE);
+symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent on HUZZAH", "RGB Leds HAT");
+// When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
+// Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
+// example for more information on possible values.
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, WS2812_PIN, NEO_GRB + NEO_KHZ800);
 struct join_resp joinResp;
 extern volatile boolean keepAlive_triggered;
 extern String listResources[RES_NUMBER];
@@ -18,37 +21,53 @@ extern boolean (* actuatorsFunction[RES_NUMBER])(int);
 Metro registrationMetro = Metro();
 int join_success = 0;
 
-String readTemp()
-{
-  float h = dht.readTemperature();
-  return String (h) + " °C";
+boolean actuateRed(int value){
+  uint32_t color; 
+  for(int i=0;i<NUMPIXELS;i++) {
+    color = pixels.getPixelColor(i);
+    //set red color in the RGB 32 bit color variable
+    color = (value << 16) & color;
+    pixels.setPixelColor(i, color); // Moderately bright green color.
+  }
+  pixels.show();
 }
 
-String readHumidity()
-{
-  float h = dht.readHumidity();
-  return String (h) + " %";
+boolean actuateGreen(int value){
+  uint32_t color; 
+  for(int i=0;i<NUMPIXELS;i++) {
+    color = pixels.getPixelColor(i);
+    //set red color in the RGB 32 bit color variable
+    color = (value << 8) & color;
+    pixels.setPixelColor(i, color); // Moderately bright green color.
+  }
+  pixels.show();
 }
 
-boolean actuateRele(int value){
-  if (value == 1) digitalWrite(RELE_PIN, HIGH);
-  else if (value == 0) digitalWrite(RELE_PIN, LOW);
+boolean actuateBlue(int value){
+  uint32_t color; 
+  for(int i=0;i<NUMPIXELS;i++) {
+    color = pixels.getPixelColor(i);
+    //set red color in the RGB 32 bit color variable
+    color = value & color;
+    pixels.setPixelColor(i, color); // Moderately bright green color.
+  }
+  pixels.show();
 }
 
 boolean setupBind(String* listResources, String (* functions[])(), boolean (* actuatorsFunction[])(int) )
 {
     //write all your resources
-  listResources[0] = "temperature";
-  listResources[1] = "humidity";
-  listResources[2] = "rele";
+  listResources[0] = "red";
+  listResources[1] = "green";
+  listResources[2] = "blue";
     // assign to "functions" referencies to functions that return sensors values
-  functions[0] = readTemp;
-  functions[1] = readHumidity;
+  functions[0] = dummyFunctionSensor;
+  functions[1] = dummyFunctionSensor;
   functions[2] = dummyFunctionSensor;
   // assign to "functions" referencies to functions that actuate the things
-  actuatorsFunction[0] = dummyFunctionActuator;
-  actuatorsFunction[1] = dummyFunctionActuator;
-  actuatorsFunction[2] = actuateRele;
+  actuatorsFunction[0] = actuateRed;
+  actuatorsFunction[1] = actuateGreen;
+  actuatorsFunction[2] = actuateBlue;
   return true;
 }
 
@@ -57,7 +76,7 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.println("Start...");
-  dht.begin();
+  pixels.begin(); // This initializes the NeoPixel library
   pinMode(RELE_PIN, OUTPUT);
   if (sdev1.begin() == true) {
     setupBind(listResources, functions, actuatorsFunction);
@@ -74,27 +93,20 @@ void setup() {
     }
     registrationMetro.interval(floor(joinResp.registrationExpiration * 0.9));
   }
-  else Serial.println("Failed!");
+  else Serial.print("Failed!");
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   String resp;
   delay(10);
-  //if (keepAlive_triggered && join_success == 1){
-  if (keepAlive_triggered){
+  if (keepAlive_triggered && join_success == 1){
+  //if (keepAlive_triggered){
     sdev1.sendKeepAlive(resp);
-    Serial.print("Temperatura: ");
-    Serial.println(readTemp());
-    Serial.print("Humidity: ");
-    Serial.println(readHumidity());
   }
   sdev1.handleSSPRequest();
   if (registrationMetro.check() == 1 && join_success == 1){
     //need another new join request
-    Serial.println("****************");
-    Serial.println("*** NEW JOIN ***");
-    Serial.println("****************");
     sdev1.join(&joinResp);
     printJoinResp(joinResp);
     if (joinResp.result == "OK") join_success = 1;
@@ -110,4 +122,5 @@ void loop() {
     registrationMetro.interval(floor(joinResp.registrationExpiration * 0.9));
   }
 }
+
 
