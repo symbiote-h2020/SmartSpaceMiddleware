@@ -11,17 +11,15 @@ package eu.h2020.symbiote.ssp.rap.interfaces;
  */
 import eu.h2020.symbiote.cloud.model.data.observation.Observation;
 import eu.h2020.symbiote.cloud.model.data.observation.ObservationValue;
-import eu.h2020.symbiote.cloud.model.data.observation.Property;
 import eu.h2020.symbiote.ssp.rap.exceptions.EntityNotFoundException;
 import eu.h2020.symbiote.ssp.rap.exceptions.GenericException;
 import eu.h2020.symbiote.ssp.rap.resources.ResourceInfo;
 import eu.h2020.symbiote.ssp.rap.resources.ResourcesRepository;
-import eu.h2020.symbiote.ssp.rap.resources.messages.RequestResponseMessage;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -99,20 +97,12 @@ public class SspRapController {
             url += PathSdevGet;
             String bodyReq = "{\"id\":\""+resourceId+"\"}";
             
-            RequestResponseMessage responseMessage = restTemplate.postForObject(url, bodyReq, RequestResponseMessage.class);
-            if(responseMessage != null && responseMessage.getValue() != null){
+            ObservationValue[] obsValue = restTemplate.postForObject(url, bodyReq, ObservationValue[].class);
+            if(obsValue != null && obsValue.length > 0){
                 Date dateNow = new Date();
                 SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
                 String dateNowStr = df.format(dateNow);
-                
-                List<ObservationValue> obsValue = new ArrayList<ObservationValue>();
-                Map<String,String> values = responseMessage.getValue();
-                for(String key: values.keySet()){
-                    Property p = new Property(key,"");
-                    ObservationValue obValue = new ObservationValue(values.get(key), p, null);
-                    obsValue.add(obValue);
-                }
-                Observation o = new Observation(resourceId,null,dateNowStr,dateNowStr,obsValue);
+                Observation o = new Observation(resourceId,null,dateNowStr,dateNowStr,Arrays.asList(obsValue));
                 obsList = new ArrayList<>();
                 obsList.add(o);
             }
