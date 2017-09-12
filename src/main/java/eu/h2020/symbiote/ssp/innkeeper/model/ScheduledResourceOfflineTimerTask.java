@@ -34,24 +34,29 @@ public class ScheduledResourceOfflineTimerTask extends TimerTask {
     }
 
     public void run() {
-        log.debug("Periodic resource unregister task for resourceId = " + resourceId +
-                " STARTED :" + new Date(new Date().getTime()));
+        try {
+            log.debug("Periodic resource unregister task for resourceId = " + resourceId +
+                    " STARTED :" + new Date(new Date().getTime()));
 
-        InnkeeperResource resource = resourceRepository.findOne(resourceId);
 
-        if (resource == null) {
-            log.info("The resource with id = " + resourceId + " is not registered.");
-        } else {
-            log.info("The status of resource with id = " + resourceId + " has turned to " +
-                    InnkeeperResourceStatus.OFFLINE);
-            resource.setStatus(InnkeeperResourceStatus.OFFLINE);
-            resourceRepository.save(resource);
+            InnkeeperResource resource = resourceRepository.findOne(resourceId);
 
-            offlineTimerTaskMap.get(resourceId).cancel();
-            offlineTimerTaskMap.remove(resourceId);
+            if (resource == null) {
+                log.info("The resource with id = " + resourceId + " is not registered.");
+            } else {
+                log.info("The status of resource with id = " + resourceId + " has turned to " +
+                        InnkeeperResourceStatus.OFFLINE);
+                resource.setStatus(InnkeeperResourceStatus.OFFLINE);
+                resourceRepository.save(resource);
+
+                offlineTimerTaskMap.get(resourceId).cancel();
+                offlineTimerTaskMap.remove(resourceId);
+            }
+
+            log.debug("Periodic resource unregister task for resourceId = " + resourceId +
+                    " FINISHED :" + new Date(new Date().getTime()));
+        } catch (Exception e) {
+            log.info("Exception in ScheduledResourceOfflineTimerTask: " + e);
         }
-
-        log.debug("Periodic resource unregister task for resourceId = " + resourceId +
-                " FINISHED :" + new Date(new Date().getTime()));
     }
 }
