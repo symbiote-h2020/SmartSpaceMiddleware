@@ -85,7 +85,6 @@ To correctly start up the agent please use this behaviour:
 Then call in your firmware the following method:
 
 symAgent::begin()
-setupBind();
 symAgent::join()
 
 This makes the agent to search some symbiotic wifi SSID (where wifi connection is used) and sends a message join to the ssp identified by the dns name `inkeeper.symbiote.org`. It also set up the keep alive timer update the global variable keepAlive_triggered to check where you need to send a keep alive message. Then to handle the ssp request you should call in your main loop the method symAgent::handleSSPRequest().

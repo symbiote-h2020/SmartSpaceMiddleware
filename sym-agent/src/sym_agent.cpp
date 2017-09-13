@@ -72,26 +72,6 @@ String createObservedPropertiesString()
   return ret;
 }
 
-
-String getProperty(int i){
-	return listResources[i];
-}
-
-
-// return the array containing the observedProperties' values
-String readSensorsJSON()
-{
-  String ret = "{";
-  for (int i = 0; i < RES_NUMBER; i++) {
-    ret += "\"" + listResources[i] + "\"" + ": \"" + functions[i]() + "\", ";
- //   ret += "\"" + functions[i]() + "\", ";    
-  }
-    // delete the last comma
-  ret = ret.substring(0, ret.length() - 2);
-  ret += "}";
-  return ret;
-}
-
 symAgent::symAgent()
 {
 		//create the json object, refers to https://github.com/bblanchon/ArduinoJson/blob/master/examples/JsonGeneratorExample/JsonGeneratorExample.ino
@@ -160,9 +140,47 @@ boolean symAgent::elaborateRequest()
 		String id = _root2["id"].as<String>();
 		if (id == _id){
 			//P("Correctly decoded!");
-			String tmpResp = _readSensorsJSON();
-			tmpResp = "{ \"id\":\"" + _id + "\", \"value\": " + tmpResp + "}";
-			_server->send(200, "application/json", tmpResp);
+			int res_index = 0;
+				// this return "{"temperature": "20 °C", "humidity": "33 %"}
+  			_jsonBuff.clear();
+			JsonObject& _rootFather = _jsonBuff.createObject();
+  			JsonArray& _resources = _rootFather.createNestedArray("resources");
+			//String tmpResp = _readSensorsJSON();
+			P("\n*************+\nPREPARING PACKET TO RAP:");
+			//StaticJsonBuffer<200> pJson[RES_NUMBER];
+			DynamicJsonBuffer pJson[RES_NUMBER];
+			while (res_index < RES_NUMBER) {
+					//iterate this step for each resources
+				JsonObject& _root = pJson[res_index].createObject();
+					// this return something like "33 °C"
+				String tmpString = functions[res_index]();
+					//this save only the value before the " ", so in this case "33"
+				_root["value"] = tmpString.substring(0, tmpString.indexOf(" "));
+				JsonObject& obsProperty = _root.createNestedObject("obsProperty");
+					obsProperty["label"] = listResources[res_index];
+					obsProperty["comment"] = "NA";
+				JsonObject& uom = _root.createNestedObject("uom");
+					uom["symbol"] = tmpString.substring((tmpString.indexOf(" ") + 1));
+					uom["label"] = "NA";
+					uom["comment"] = "NA";
+#if DEBUG_SYM_CLASS == 1
+				_root.prettyPrintTo(Serial);
+				P(" ");
+#endif
+				_resources.add(_root);
+				res_index++;
+			}
+			String resp = "";
+			_rootFather.printTo(resp);
+			resp = "\r\n" + resp;
+			P("\n*************+\nPACKET SENT TO RAP:");
+#if DEBUG_SYM_CLASS == 1
+		_rootFather.prettyPrintTo(Serial);
+		P(" ");
+#endif
+			_server->send(200, "application/json", resp);
+
+			for (int j = 0; j < RES_NUMBER; j++) pJson[res_index].clear();
 			return true;
 		} else {
 			P("Wrong id");
@@ -301,7 +319,7 @@ boolean symAgent::begin()
 				    });
 					_server->begin();
 					//this->bind(createObservedPropertiesString, readSensorsJSON);
-					this->bind(getProperty, readSensorsJSON);
+					//this->bind(getProperty, readSensorsJSON);
   					return true;
   				}
   			}
@@ -328,10 +346,7 @@ int symAgent::join(struct join_resp * result)
 
 
 	JsonArray& data = _root.createNestedArray("observesProperty");
-  	for (int i=0; i< RES_NUMBER; i++ ) data.add(_getProperty(i));
-
-
-
+  	for (int i=0; i< RES_NUMBER; i++ ) data.add(listResources[i]);
 
 	/*
 		now create a JSON like this:
@@ -545,22 +560,6 @@ void symAgent::sendValue(int* value)
 void symAgent::handleSSPRequest()
 {
 	_server->handleClient();
-}
-
-/*
-void symAgent::bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)())
-{
-	P("BIND");
-	_createObservedPropertiesString = createObservedPropertiesString;
-	_readSensorsJSON = readSensorsJSON;
-}
-*/
-
-void symAgent::bind(String (* getProperty)(int), String (* readSensorsJSON)())
-{
-	P("BIND");
-	_getProperty = getProperty;
-	_readSensorsJSON = readSensorsJSON;
 }
 
 String symAgent::calculateWifiPSW(String ssid)

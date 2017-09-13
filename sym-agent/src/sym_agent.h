@@ -31,6 +31,7 @@
 #endif 
 
 #define MAX_JSON_SIZE 500
+#define MAX_JSON_RES_SIZE 300
 #define JOIN_URL "innkeeper.symbiote.org"
 #define JOIN_PATH "/innkeeper/join"
 #define KEEPALIVE_PATH "/innkeeper/keep_alive"
@@ -121,11 +122,11 @@ class symAgent
     void handleSSPRequest();
 
     //void bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)());
-    void bind(String (* getProperty)(int), String (* readSensorsJSON)());
+    //void bind(String (* getProperty)(int), String (* readSensorsJSON)());
 
-    String (* _createObservedPropertiesString)();
-    String (* _getProperty) (int);
-    String (* _readSensorsJSON)();
+    //String (* _createObservedPropertiesString)();
+    //String (* _getProperty) (int);
+    //String (* _readSensorsJSON)();
 
   private:
       //This function calculate the password of the symbiotic ssid.
@@ -157,6 +158,7 @@ class symAgent
       they are not intended to be reused. As a consequence, using a global JsonBuffer is not recommended.
     */
     StaticJsonBuffer<MAX_JSON_SIZE> _jsonBuff;
+    StaticJsonBuffer<MAX_JSON_RES_SIZE> _resourceJsonBuff;
 
     RestClient* _rest_client;
     ESP8266WebServer* _server;

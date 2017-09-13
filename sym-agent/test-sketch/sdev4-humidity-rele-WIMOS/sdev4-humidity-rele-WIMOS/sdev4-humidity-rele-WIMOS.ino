@@ -30,6 +30,12 @@ String readHumidity()
   return String (h) + " %";
 }
 
+String readRele()
+{
+  if (digitalRead(RELE_PIN) == HIGH) return "1 Digital";
+  else return "0 Digital";
+}
+
 boolean actuateRele(int value){
   if (value == 1) digitalWrite(RELE_PIN, HIGH);
   else if (value == 0) digitalWrite(RELE_PIN, LOW);
@@ -44,7 +50,7 @@ boolean setupBind(String* listResources, String (* functions[])(), boolean (* ac
     // assign to "functions" referencies to functions that return sensors values
   functions[0] = readTemp;
   functions[1] = readHumidity;
-  functions[2] = dummyFunctionSensor;
+  functions[2] = readRele;
   // assign to "functions" referencies to functions that actuate the things
   actuatorsFunction[0] = dummyFunctionActuator;
   actuatorsFunction[1] = dummyFunctionActuator;
