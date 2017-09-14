@@ -88,6 +88,20 @@ class symAgent
     symAgent();
       //TODO please remember to add parameter for class BLE in the constructor
     symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description);
+    /* This second constructor instantiate also the value for field comment inside obsProperty
+      {
+        "value": "value",
+        "obsProperty": {
+            "label" : "label",
+            "comment": "comment"
+        },
+        "uom": {
+            "symbol": "symbol",
+            "label": "label",
+            "comment": "comment"
+        }
+  */
+    symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, char** obsPropertyComment);
     ~symAgent();
 
       // search for well-known symbiotic ssid and try to connect to it.
@@ -147,6 +161,8 @@ class symAgent
     String _hash;
     String _name;
     String _description;
+
+    char** _obsPropertyComment;
 
     Agent_type _agent_type;
     Conn_type _conn_type;

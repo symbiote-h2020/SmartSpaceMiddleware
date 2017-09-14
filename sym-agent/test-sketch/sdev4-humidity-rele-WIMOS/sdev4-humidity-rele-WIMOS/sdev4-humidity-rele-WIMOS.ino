@@ -7,7 +7,9 @@
 #define DHTTYPE DHT11
 #define DHT_PIN 2
 
-symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test1", "Temperature, Humidity and Relé");
+//symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test3", "Temperature, Humidity and Relé");
+char* obsPropertyComment_[] = { "Air Temperature", "Relative humidity of the air", "Lamp connected to Relé"};
+symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent Test2", "Temperature, Humidity and Relé", obsPropertyComment_);
 DHT dht(DHT_PIN, DHTTYPE);
 struct join_resp joinResp;
 extern volatile boolean keepAlive_triggered;

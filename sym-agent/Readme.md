@@ -80,7 +80,7 @@ extern boolean (* actuatorsFunction[RES_NUMBER])(int);
 
 To correctly start up the agent please use this behaviour:
 
-- Define the number of your resources in the sym-agent.h
+- Define the number of your resources in the sym-agent.h ( RES_NUMBER )
 
 Then call in your firmware the following method:
 

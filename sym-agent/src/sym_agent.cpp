@@ -92,14 +92,39 @@ symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long kee
 	keep_alive_interval = _keep_alive;
 	_name = name;
 	_description = description;
+		// if nothing is provided, initialize to NA the field comment of the obsProperty
+	for (int i = 0; i < RES_NUMBER; i++) _obsPropertyComment[i] = "NA";
 
 	_server = new ESP8266WebServer();
 	//_hash = readHashFromFlash(); 
 	if (_hash != "none") {
 		//saveHashInFlash();
 	}
-
 }
+
+symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, char** obsPropertyComment)
+{
+	pinMode(JOIN_LED, OUTPUT);
+	pinMode(KEEPALIVE_LED, OUTPUT);
+	JOIN_LED_OFF
+	KEEPALIVE_LED_OFF
+	_agent_type = agent_type;
+	_conn_type = conn_type;
+		//set internal keep alive interval to the correct value to be used in the timer0_write()
+	_keep_alive = keep_alive * TICK_MILLISECONDS;
+		// change the value of the global variable keep_alive_interval accordingly
+	keep_alive_interval = _keep_alive;
+	_name = name;
+	_description = description;
+	_obsPropertyComment = obsPropertyComment;
+
+	_server = new ESP8266WebServer();
+	//_hash = readHashFromFlash(); 
+	if (_hash != "none") {
+		//saveHashInFlash();
+	}
+}
+
 symAgent::~symAgent()
 {
 
@@ -138,49 +163,44 @@ boolean symAgent::elaborateRequest()
 		P(" ");
 #endif
 		String id = _root2["id"].as<String>();
+		P(" ");
 		if (id == _id){
-			//P("Correctly decoded!");
 			int res_index = 0;
-				// this return "{"temperature": "20 °C", "humidity": "33 %"}
-  			_jsonBuff.clear();
-			JsonObject& _rootFather = _jsonBuff.createObject();
-  			JsonArray& _resources = _rootFather.createNestedArray("resources");
-			//String tmpResp = _readSensorsJSON();
-			P("\n*************+\nPREPARING PACKET TO RAP:");
-			//StaticJsonBuffer<200> pJson[RES_NUMBER];
-			DynamicJsonBuffer pJson[RES_NUMBER];
+			DynamicJsonBuffer dinamicJsonBuffer;
+				//create main array
+			JsonArray& root = dinamicJsonBuffer.createArray();
+			//JsonObject& main = root.createNestedObject();
 			while (res_index < RES_NUMBER) {
-					//iterate this step for each resources
-				JsonObject& _root = pJson[res_index].createObject();
 					// this return something like "33 °C"
 				String tmpString = functions[res_index]();
+					//create the nested object for each resource
+				JsonObject& root_internal = root.createNestedObject();
 					//this save only the value before the " ", so in this case "33"
-				_root["value"] = tmpString.substring(0, tmpString.indexOf(" "));
-				JsonObject& obsProperty = _root.createNestedObject("obsProperty");
+				root_internal["value"] = tmpString.substring(0, tmpString.indexOf(" "));
+				JsonObject& obsProperty = root_internal.createNestedObject("obsProperty");
 					obsProperty["label"] = listResources[res_index];
-					obsProperty["comment"] = "NA";
-				JsonObject& uom = _root.createNestedObject("uom");
+					obsProperty["comment"] = _obsPropertyComment[res_index];
+				JsonObject& uom = root_internal.createNestedObject("uom");
 					uom["symbol"] = tmpString.substring((tmpString.indexOf(" ") + 1));
 					uom["label"] = "NA";
 					uom["comment"] = "NA";
-#if DEBUG_SYM_CLASS == 1
-				_root.prettyPrintTo(Serial);
-				P(" ");
-#endif
-				_resources.add(_root);
+	#if DEBUG_SYM_CLASS == 1
+					P(" ");
+					root.prettyPrintTo(Serial);
+					P(" ");
+	#endif
 				res_index++;
 			}
 			String resp = "";
-			_rootFather.printTo(resp);
+			root.printTo(resp);
 			resp = "\r\n" + resp;
 			P("\n*************+\nPACKET SENT TO RAP:");
 #if DEBUG_SYM_CLASS == 1
-		_rootFather.prettyPrintTo(Serial);
+		root.prettyPrintTo(Serial);
 		P(" ");
 #endif
 			_server->send(200, "application/json", resp);
-
-			for (int j = 0; j < RES_NUMBER; j++) pJson[res_index].clear();
+			dinamicJsonBuffer.clear();
 			return true;
 		} else {
 			P("Wrong id");
@@ -318,8 +338,6 @@ boolean symAgent::begin()
 						_server->send(404, "text/plain", String("Not Found :("));
 				    });
 					_server->begin();
-					//this->bind(createObservedPropertiesString, readSensorsJSON);
-					//this->bind(getProperty, readSensorsJSON);
   					return true;
   				}
   			}
