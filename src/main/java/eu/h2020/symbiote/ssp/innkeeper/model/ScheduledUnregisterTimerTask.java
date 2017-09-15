@@ -67,11 +67,13 @@ public class ScheduledUnregisterTimerTask extends TimerTask {
                 log.info("The resource with id = " + resourceId + " has been unregistered.");
                 resourceRepository.delete(resourceId);
 
-                unregisteringTimerTaskMap.get(resourceId).cancel();
+//                unregisteringTimerTaskMap.get(resourceId).cancel();
                 unregisteringTimerTaskMap.remove(resourceId);
 
-                offlineTimerTaskMap.get(resourceId).cancel();
-                offlineTimerTaskMap.remove(resourceId);
+                if (offlineTimerTaskMap.get(resourceId) != null) {
+                    offlineTimerTaskMap.get(resourceId).cancel();
+                    offlineTimerTaskMap.remove(resourceId);
+                }
 
                 // Inform RAP about the removal of the resource
                 SSPResourceDeleted sspResourceDeleted = new SSPResourceDeleted(resourceId);

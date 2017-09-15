@@ -76,6 +76,7 @@ public class InnkeeperRestController {
 
         Assert.notNull(resourceRepository,"Resource repository can not be null!");
         this.resourceRepository = resourceRepository;
+        this.resourceRepository.deleteAll();
 
         Assert.notNull(rabbitTemplate,"Rabbit template can not be null!");
         this.rabbitTemplate = rabbitTemplate;
