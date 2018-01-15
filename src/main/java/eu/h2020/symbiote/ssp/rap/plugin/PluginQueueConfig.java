@@ -46,7 +46,7 @@ public class PluginQueueConfig {
     Binding specificPluginBindings(@Qualifier(SpecificPlugin.PLUGIN_RES_ACCESS_QUEUE) Queue queue,
                                    @Qualifier(RapDefinitions.PLUGIN_EXCHANGE_OUT) TopicExchange exchange) {
         
-        return BindingBuilder.bind(queue).to(exchange).with(SpecificPlugin.PLUGIN_PLATFORM_ID + ".*");
+        return BindingBuilder.bind(queue).to(exchange).with(SpecificPlugin.PLUGIN_ID + ".*");
     }
 
     @Bean(name=SpecificPlugin.PLUGIN_RES_ACCESS_QUEUE + "Container")

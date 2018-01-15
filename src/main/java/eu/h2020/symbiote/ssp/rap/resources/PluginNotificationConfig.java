@@ -5,7 +5,7 @@
  */
 package eu.h2020.symbiote.ssp.rap.resources;
 
-import eu.h2020.symbiote.ssp.rap.interfaces.PluginNotification;
+import eu.h2020.symbiote.ssp.rap.interfaces.PluginPushNotificationConsumer;
 import eu.h2020.symbiote.ssp.rap.interfaces.conditions.NBInterfaceWebSocketCondition;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,12 +59,12 @@ public class PluginNotificationConfig {
     }
 
     @Bean(name=RapDefinitions.PLUGIN_NOTIFICATION_QUEUE + "Receiver")
-    PluginNotification platformPluginReceiver() {
-        return new PluginNotification();
+    PluginPushNotificationConsumer platformPluginReceiver() {
+        return new PluginPushNotificationConsumer();
     }
     
     @Bean(name=RapDefinitions.PLUGIN_NOTIFICATION_QUEUE + "Listener")
-    MessageListenerAdapter platformPluginListenerAdapter(@Qualifier(RapDefinitions.PLUGIN_NOTIFICATION_QUEUE + "Receiver") PluginNotification receiver) {
+    MessageListenerAdapter platformPluginListenerAdapter(@Qualifier(RapDefinitions.PLUGIN_NOTIFICATION_QUEUE + "Receiver") PluginPushNotificationConsumer receiver) {
         return new MessageListenerAdapter(receiver, "receiveNotification");
     }
 }

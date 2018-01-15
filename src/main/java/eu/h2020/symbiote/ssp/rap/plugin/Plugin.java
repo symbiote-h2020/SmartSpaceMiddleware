@@ -17,7 +17,7 @@ import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessSubscribeMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessUnSubscribeMessage;
 import eu.h2020.symbiote.ssp.rap.messages.registration.RegisterPluginMessage;
 import eu.h2020.symbiote.ssp.rap.resources.RapDefinitions;
-import eu.h2020.symbiote.ssp.rap.resources.db.ResourceInfo;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -6,7 +6,7 @@
 package eu.h2020.symbiote.ssp.rap.interfaces;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import eu.h2020.symbiote.ssp.rap.resources.db.ResourcesRepository;
+import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -20,13 +20,13 @@ import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessHistoryMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessMessage.AccessType;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessSetMessage;
 import eu.h2020.symbiote.model.cim.Observation;
-import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessMessageInfo;
+import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
 import eu.h2020.symbiote.ssp.rap.resources.RapDefinitions;
-import eu.h2020.symbiote.ssp.rap.resources.db.AccessPolicy;
-import eu.h2020.symbiote.ssp.rap.resources.db.AccessPolicyRepository;
-import eu.h2020.symbiote.ssp.rap.resources.db.PlatformInfo;
-import eu.h2020.symbiote.ssp.rap.resources.db.PluginRepository;
-import eu.h2020.symbiote.ssp.rap.resources.db.ResourceInfo;
+import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
+import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
+import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
+import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.rap.resources.query.Query;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
@@ -128,11 +128,11 @@ public class ResourceAccessRestController {
             
             String pluginId = info.getPluginId();
             if(pluginId == null) {
-                List<PlatformInfo> lst = pluginRepo.findAll();
+                List<PluginInfo> lst = pluginRepo.findAll();
                 if(lst == null || lst.isEmpty())
                     throw new Exception("No plugin found");
                 
-                pluginId = lst.get(0).getPlatformId();
+                pluginId = lst.get(0).getPluginId();
             }
             String routingKey =  pluginId + "." + AccessType.GET.toString().toLowerCase();
             
@@ -154,15 +154,16 @@ public class ResourceAccessRestController {
                     response = ob;
                 }
             }catch (Exception ex) {
+                // if it's not an Observation, response is formatted as a String
             }
-            sendSuccessfulAccessMessage(resourceId, SuccessfulAccessMessageInfo.AccessType.NORMAL.name());
+            sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
         
             httpStatus = HttpStatus.OK;
             
         } catch(EntityNotFoundException enf) {
             e = enf;
             log.error(e.toString(),e);
-            httpStatus = HttpStatus.NOT_FOUND;
+            httpStatus = enf.getHttpStatus();
         } catch (Exception ex) {
             e = ex;
             String err = "Unable to read resource with id: " + resourceId;
@@ -222,11 +223,11 @@ public class ResourceAccessRestController {
             
             String pluginId = info.getPluginId();
             if(pluginId == null) {
-                List<PlatformInfo> lst = pluginRepo.findAll();
+                List<PluginInfo> lst = pluginRepo.findAll();
                 if(lst == null || lst.isEmpty())
                     throw new Exception("No plugin found");
                 
-                pluginId = lst.get(0).getPlatformId();
+                pluginId = lst.get(0).getPluginId();
             }
             String routingKey =  pluginId + "." + AccessType.HISTORY.toString().toLowerCase();
             Object obj = rabbitTemplate.convertSendAndReceive(exchange.getName(), routingKey, json);       
@@ -246,15 +247,16 @@ public class ResourceAccessRestController {
                     response = observationsList;
                 }
             }catch (Exception ex) {
+                // if it's not an Observation, response is formatted as a String
             }
-            sendSuccessfulAccessMessage(resourceId, SuccessfulAccessMessageInfo.AccessType.NORMAL.name());
+            sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
 
             httpStatus = HttpStatus.OK;
             
         } catch(EntityNotFoundException enf) {
             e = enf;
             log.error(e.toString(),e);
-            httpStatus = HttpStatus.NOT_FOUND;
+            httpStatus = enf.getHttpStatus();
         } catch (Exception ex) {
             e = ex;
             String err = "Unable to read resource with id: " + resourceId;
@@ -289,12 +291,13 @@ public class ResourceAccessRestController {
      * @param body 
      * @param request 
      * @return              the http response code
+     * @throws java.lang.Exception
      */
     @RequestMapping(value={"/rap/Actuator/{resourceId}","/rap/Service/{resourceId}"}, method=RequestMethod.POST)
-    public ResponseEntity<?> writeResource(@PathVariable String resourceId, @RequestBody String body, HttpServletRequest request) throws Exception{
+    public ResponseEntity<?> writeResource(@PathVariable String resourceId, @RequestBody String body, HttpServletRequest request) throws Exception {
         Exception e = null;
         String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-        HttpStatus httpStatus = null;
+        HttpStatus httpStatus;
         String response = null;
         HttpHeaders responseHeaders = new HttpHeaders();
         try {
@@ -313,11 +316,11 @@ public class ResourceAccessRestController {
             
             String pluginId = info.getPluginId();
             if(pluginId == null) {
-                List<PlatformInfo> lst = pluginRepo.findAll();
+                List<PluginInfo> lst = pluginRepo.findAll();
                 if(lst == null || lst.isEmpty())
                     throw new Exception("No plugin found");
                 
-                pluginId = lst.get(0).getPlatformId();
+                pluginId = lst.get(0).getPluginId();
             }
             String routingKey =  pluginId + "." + AccessType.SET.toString().toLowerCase();
             Object obj = rabbitTemplate.convertSendAndReceive(exchange.getName(), routingKey, json);
@@ -329,13 +332,13 @@ public class ResourceAccessRestController {
                     response = (String) obj;
                 }
             }
-            sendSuccessfulAccessMessage(resourceId, SuccessfulAccessMessageInfo.AccessType.NORMAL.name());
+            sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
             httpStatus = HttpStatus.OK;
             
         } catch(EntityNotFoundException enf) {
             e = enf;
             log.error(e.toString(),e);
-            httpStatus = HttpStatus.NOT_FOUND;
+            httpStatus = enf.getHttpStatus();
         } catch (Exception ex) {
             e = ex;
             String err = "Unable to read resource with id: " + resourceId;
@@ -423,7 +426,7 @@ public class ResourceAccessRestController {
 
             String code;
             if(e.getClass().equals(EntityNotFoundException.class))
-                code = Integer.toString(HttpStatus.NOT_FOUND.value());
+                code = Integer.toString(((EntityNotFoundException) e).getHttpStatus().value());
             else
                 code = Integer.toString(HttpStatus.FORBIDDEN.value());
 
@@ -451,7 +454,7 @@ public class ResourceAccessRestController {
         try{
             String jsonNotificationMessage = null;
             if(accessType == null || accessType.isEmpty())
-                accessType = SuccessfulAccessMessageInfo.AccessType.NORMAL.name();
+                accessType = SuccessfulAccessInfoMessage.AccessType.NORMAL.name();
             ObjectMapper map = new ObjectMapper();
             map.configure(SerializationFeature.INDENT_OUTPUT, true);
             map.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);

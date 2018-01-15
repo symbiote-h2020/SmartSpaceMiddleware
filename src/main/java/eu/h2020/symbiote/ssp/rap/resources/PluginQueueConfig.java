@@ -5,7 +5,7 @@
  */
 package eu.h2020.symbiote.ssp.rap.resources;
 
-import eu.h2020.symbiote.ssp.rap.interfaces.PluginRegistration;
+import eu.h2020.symbiote.ssp.rap.interfaces.PluginRegistrationConsumer;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.amqp.core.BindingBuilder;
@@ -64,12 +64,12 @@ public class PluginQueueConfig {
     }
 
     @Bean
-    PluginRegistration platformPluginReceiver() {
-        return new PluginRegistration();
+    PluginRegistrationConsumer platformPluginReceiver() {
+        return new PluginRegistrationConsumer();
     }
 
     @Bean(name=RapDefinitions.PLUGIN_REGISTRATION_QUEUE + "Listener")
-    MessageListenerAdapter platformPluginListenerAdapter(PluginRegistration receiver) {
+    MessageListenerAdapter platformPluginListenerAdapter(PluginRegistrationConsumer receiver) {
         return new MessageListenerAdapter(receiver, "receiveMessage");
     }
 }

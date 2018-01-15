@@ -7,7 +7,7 @@ package eu.h2020.symbiote.ssp.rap.messages.access;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import eu.h2020.symbiote.ssp.rap.resources.db.ResourceInfo;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.rap.resources.query.Query;
 import java.util.List;
 

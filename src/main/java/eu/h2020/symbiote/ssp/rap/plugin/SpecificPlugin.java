@@ -29,15 +29,15 @@ public class SpecificPlugin extends Plugin {
     
     private static final Logger log = LoggerFactory.getLogger(SpecificPlugin.class);
     
-    private static final boolean PLUGIN_PLATFORM_FILTERS_FLAG = true;
-    private static final boolean PLUGIN_PLATFORM_NOTIFICATIONS_FLAG = true;
+    private static final boolean PLUGIN_FILTERS_FLAG = true;
+    private static final boolean PLUGIN_NOTIFICATIONS_FLAG = true;
 
-    public static final String PLUGIN_PLATFORM_ID = "platform_01";
-    public static final String PLUGIN_RES_ACCESS_QUEUE = "rap-platform-queue_" + PLUGIN_PLATFORM_ID;   
+    public static final String PLUGIN_ID = "plugin_01";
+    public static final String PLUGIN_RES_ACCESS_QUEUE = "rap-platform-queue_" + PLUGIN_ID;   
     
 
     public SpecificPlugin(RabbitTemplate rabbitTemplate, TopicExchange exchange) {
-        super(rabbitTemplate, exchange, PLUGIN_PLATFORM_ID, PLUGIN_PLATFORM_FILTERS_FLAG, PLUGIN_PLATFORM_NOTIFICATIONS_FLAG);
+        super(rabbitTemplate, exchange, PLUGIN_ID, PLUGIN_FILTERS_FLAG, PLUGIN_NOTIFICATIONS_FLAG);
     }
 
     @Override
@@ -57,7 +57,7 @@ public class SpecificPlugin extends Plugin {
     public String writeResource(String resourceId, String body) {
         // INSERT HERE: call to the platform with internal resource id
         // setting the actuator value
-        return PLUGIN_PLATFORM_ID;
+        return PLUGIN_ID;
     }
     
     @Override

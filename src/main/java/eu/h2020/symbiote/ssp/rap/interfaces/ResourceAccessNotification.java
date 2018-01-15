@@ -7,9 +7,9 @@ package eu.h2020.symbiote.ssp.rap.interfaces;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.FailedAccessMessageInfo;
-import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessMessageInfo;
-import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulPushesMessageInfo;
+import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.FailedAccessInfoMessage;
+import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
+import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulPushInfoMessage;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
 import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
@@ -38,13 +38,13 @@ public class ResourceAccessNotification {
     private static final Logger log = LoggerFactory.getLogger(ResourceAccessNotification.class);
     
     @JsonProperty("successfulAttempts")
-    private List<SuccessfulAccessMessageInfo> successfulAttempts;
+    private List<SuccessfulAccessInfoMessage> successfulAttempts;
     
     @JsonProperty("successfulPushes")
-    private List<SuccessfulPushesMessageInfo> successfulPushes;
+    private List<SuccessfulPushInfoMessage> successfulPushes;
     
     @JsonProperty("failedAttempts")
-    private List<FailedAccessMessageInfo> failedAttempts;
+    private List<FailedAccessInfoMessage> failedAttempts;
     
     public ResourceAccessNotification(IComponentSecurityHandler securityHandler, String notificationUrl) {
         this.securityHandler = securityHandler;
@@ -52,7 +52,7 @@ public class ResourceAccessNotification {
     }
             
     public void SetSuccessfulAttempts (String symbioTeId, List<Date> timestamp, String accessType){
-        SuccessfulAccessMessageInfo succAccMess = new SuccessfulAccessMessageInfo(symbioTeId, timestamp, accessType);
+        SuccessfulAccessInfoMessage succAccMess = new SuccessfulAccessInfoMessage(symbioTeId, timestamp, accessType);
         this.successfulAttempts = new ArrayList<>();
         this.successfulAttempts.add(succAccMess);
     }
@@ -60,13 +60,13 @@ public class ResourceAccessNotification {
     public void SetSuccessfulAttemptsList (List<String> symbioTeIdList, List<Date> timestamp, String accessType){
         this.successfulAttempts = new ArrayList<>();
         for(String symbioteId: symbioTeIdList){
-            SuccessfulAccessMessageInfo succAccMess = new SuccessfulAccessMessageInfo(symbioteId, timestamp, accessType);
+            SuccessfulAccessInfoMessage succAccMess = new SuccessfulAccessInfoMessage(symbioteId, timestamp, accessType);
             this.successfulAttempts.add(succAccMess);
         }
     }
     
     public void SetSuccessfulPushes (String symbioTeId, List<Date> timestamp){
-        SuccessfulPushesMessageInfo succPushMess = new SuccessfulPushesMessageInfo(symbioTeId, timestamp);
+        SuccessfulPushInfoMessage succPushMess = new SuccessfulPushInfoMessage(symbioTeId, timestamp);
         this.successfulPushes = new ArrayList<>();
         this.successfulPushes.add(succPushMess);
     }
@@ -74,7 +74,7 @@ public class ResourceAccessNotification {
     public void SetFailedAttempts (String symbioTeId, List<Date> timestamp, 
             String code, String message, String appId, String issuer, 
             String validationStatus, String requestParams) {
-        FailedAccessMessageInfo failMess= new FailedAccessMessageInfo(symbioTeId, timestamp, 
+        FailedAccessInfoMessage failMess= new FailedAccessInfoMessage(symbioTeId, timestamp, 
                 code, message, appId, issuer, validationStatus, requestParams);
         this.failedAttempts = new ArrayList<>();
         this.failedAttempts.add(failMess);
