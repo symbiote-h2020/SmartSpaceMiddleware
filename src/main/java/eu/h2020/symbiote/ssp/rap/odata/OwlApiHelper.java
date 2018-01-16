@@ -5,7 +5,6 @@
  */
 package eu.h2020.symbiote.ssp.rap.odata;
 
-//import org.semanticweb.owlapi.api.test.baseclasses.TestBase;
 import com.google.common.collect.Multimap;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import eu.h2020.symbiote.model.cim.Actuator;
@@ -20,7 +19,6 @@ import eu.h2020.symbiote.model.cim.Service;
 import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
-import eu.h2020.symbiote.ssp.rap.odata.CustomField;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -123,7 +121,7 @@ public class OwlApiHelper {
     }
     
     private HashMap<String, HashMap<String, String>> fromMapToClasses() throws Exception { 
-        classes = new HashMap<String, HashMap<String, String>>();
+        classes = new HashMap();
         //this populate this.classes
         for(String key: map.keySet()){
             HashMap<String,String> attribute2type = fromOwlToClassesPrivate(key,map.get(key),map);

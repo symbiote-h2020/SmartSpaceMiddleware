@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import eu.h2020.symbiote.ssp.rap.interfaces.ResourceAccessRestController;
+import eu.h2020.symbiote.ssp.rap.interfaces.NorthboundRestController;
 import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
@@ -56,7 +56,7 @@ public class TestRestController {
     
     @InjectMocks
     @Autowired
-    ResourceAccessRestController controller;
+    NorthboundRestController controller;
     
     @Value("${securityEnabled}")
     private Boolean securityEnabled;

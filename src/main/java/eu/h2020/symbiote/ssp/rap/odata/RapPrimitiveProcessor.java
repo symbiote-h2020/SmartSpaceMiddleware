@@ -88,13 +88,15 @@ public class RapPrimitiveProcessor implements PrimitiveProcessor {
     @Value("${securityEnabled}")
     private Boolean securityEnabled;
     
+    @Value("${rabbit.replyTimeout}")
+    private int rabbitReplyTimeout;    
 
     private StorageHelper storageHelper;
     
     @Override
     public void init(OData odata, ServiceMetadata sm) {
-        storageHelper = new StorageHelper(resourcesRepo, pluginRepo, accessPolicyRepo,
-                                        securityHandler, rabbitTemplate, exchange,notificationUrl);
+        storageHelper = new StorageHelper(resourcesRepo, pluginRepo, accessPolicyRepo, securityHandler, 
+                                        rabbitTemplate, rabbitReplyTimeout, exchange, notificationUrl);
     }
     
     @Override

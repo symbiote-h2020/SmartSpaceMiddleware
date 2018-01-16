@@ -32,6 +32,7 @@ import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
 import java.util.*;
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,9 +62,9 @@ import org.springframework.web.servlet.HandlerMapping;
  */
 @Conditional(NBInterfaceRESTCondition.class)
 @RestController
-public class ResourceAccessRestController {
+public class NorthboundRestController {
 
-    private static final Logger log = LoggerFactory.getLogger(ResourceAccessRestController.class);
+    private static final Logger log = LoggerFactory.getLogger(RestController.class);
 
     private final int TOP_LIMIT = 100;
     public final String SECURITY_RESPONSE_HEADER = "x-auth-response";
@@ -93,7 +94,14 @@ public class ResourceAccessRestController {
     @Value("${securityEnabled}")
     private Boolean securityEnabled;
     
-
+    @Value("${rabbit.replyTimeout}")
+    private int rabbitReplyTimeout;
+    
+    @PostConstruct
+    public void init() {
+        rabbitTemplate.setReplyTimeout(rabbitReplyTimeout);
+    }
+    
     /**
      * Used to retrieve the current value of a registered resource
      * 

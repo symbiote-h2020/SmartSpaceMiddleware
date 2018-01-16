@@ -17,7 +17,7 @@ import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
-import eu.h2020.symbiote.ssp.rap.interfaces.ResourceAccessEdmController;
+import eu.h2020.symbiote.ssp.rap.interfaces.NorthboundEdmController;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +53,7 @@ public class TestODataController {
     
     @InjectMocks
     @Autowired
-    ResourceAccessEdmController controller;
+    NorthboundEdmController controller;
     
     @Value("${securityEnabled}")
     private Boolean securityEnabled;

@@ -85,6 +85,7 @@ dependencies {
     compile('org.springframework.cloud:spring-cloud-starter-eureka')
     compile('org.springframework.cloud:spring-cloud-starter-zipkin')
     compile('org.springframework.boot:spring-boot-starter-amqp')
+    compile("org.springframework.integration:spring-integration-mqtt:4+")
     compile('org.springframework.boot:spring-boot-starter-data-rest')
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.boot:spring-boot-starter-data-mongodb')

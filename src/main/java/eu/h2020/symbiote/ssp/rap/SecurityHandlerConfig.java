@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package eu.h2020.symbiote;
+package eu.h2020.symbiote.ssp.rap;
 
 import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import eu.h2020.symbiote.security.ComponentSecurityHandlerFactory;
@@ -45,19 +45,7 @@ public class SecurityHandlerConfig {
     private Boolean alwaysUseLocalAAMForValidation;
     
     @Value("${securityEnabled}")
-    private Boolean securityEnabler;
-        
-/*  
-    @Value("${rabbit.host}")
-    String rabbitMQHostIP;
-
-    @Value("${rabbit.username}")
-    String rabbitMQUsername;  
-
-    @Value("${rabbit.password}")
-    String rabbitMQPassword;
-*/
-    
+    private Boolean securityEnabler;    
 
     @Bean
     public IComponentSecurityHandler securityHandler() throws SecurityHandlerException {

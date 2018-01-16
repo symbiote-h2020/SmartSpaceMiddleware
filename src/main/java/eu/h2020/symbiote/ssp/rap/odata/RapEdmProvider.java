@@ -24,7 +24,7 @@ import org.apache.olingo.commons.api.edm.provider.CsdlSchema;
 import org.apache.olingo.commons.api.ex.ODataException;
 import org.springframework.stereotype.Component;
 
-import eu.h2020.symbiote.ssp.rap.interfaces.ResourceAccessRestController;
+import eu.h2020.symbiote.ssp.rap.interfaces.NorthboundRestController;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -46,9 +46,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @author Matteo Pardi m.pardi@nextworks.it
  */
 @Component
-public class EdmProvider extends CsdlAbstractEdmProvider {
+public class RapEdmProvider extends CsdlAbstractEdmProvider {
 
-    private static final Logger log = LoggerFactory.getLogger(ResourceAccessRestController.class);
+    private static final Logger log = LoggerFactory.getLogger(NorthboundRestController.class);
 
     // Service Namespace
     public static final String NAMESPACE = "OData.Model";
@@ -117,7 +117,7 @@ public class EdmProvider extends CsdlAbstractEdmProvider {
 
             return schemas;
         } catch (Exception ex) {
-            java.util.logging.Logger.getLogger(EdmProvider.class.getName()).log(Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(RapEdmProvider.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         return null;
@@ -431,7 +431,7 @@ public class EdmProvider extends CsdlAbstractEdmProvider {
 
             return cpx;
         } catch (Exception e) {
-            java.util.logging.Logger.getLogger(EdmProvider.class.getName()).log(Level.SEVERE, null, e);
+            java.util.logging.Logger.getLogger(RapEdmProvider.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }

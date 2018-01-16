@@ -75,7 +75,7 @@ public class StorageHelper {
     private final PluginRepository pluginRepo;
     private final RabbitTemplate rabbitTemplate;
     private final TopicExchange exchange;
-    private String notificationUrl;
+    private final String notificationUrl;
 
     private static final Pattern PATTERN = Pattern.compile(
             "\\p{Digit}{1,4}-\\p{Digit}{1,2}-\\p{Digit}{1,2}"
@@ -84,13 +84,14 @@ public class StorageHelper {
 
     public StorageHelper(ResourcesRepository resourcesRepository, PluginRepository pluginRepository,
                         AccessPolicyRepository accessPolicyRepository, IComponentSecurityHandler securityHandlerComponent,
-                         RabbitTemplate rabbit, TopicExchange topicExchange, String notificationUrl) {
+                         RabbitTemplate rabbit, int rabbitReplyTimeout, TopicExchange topicExchange, String notificationUrl) {
         //initSampleData();
         resourcesRepo = resourcesRepository;
         pluginRepo = pluginRepository;
         accessPolicyRepo = accessPolicyRepository;
         securityHandler = securityHandlerComponent;
         rabbitTemplate = rabbit;
+        rabbitTemplate.setReplyTimeout(rabbitReplyTimeout);
         exchange = topicExchange;
         this.notificationUrl = notificationUrl;
     }

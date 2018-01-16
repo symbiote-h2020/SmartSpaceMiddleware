@@ -31,11 +31,11 @@ import org.springframework.web.client.RestTemplate;
  * @author Luca Tomaselli <l.tomaselli@nextworks.it>
  */
 public class ResourceAccessNotification {
-    private String notificationUrl;
-    
-    private IComponentSecurityHandler securityHandler;
     
     private static final Logger log = LoggerFactory.getLogger(ResourceAccessNotification.class);
+    
+    private final String notificationUrl;    
+    private final IComponentSecurityHandler securityHandler;
     
     @JsonProperty("successfulAttempts")
     private List<SuccessfulAccessInfoMessage> successfulAttempts;
@@ -99,22 +99,21 @@ public class ResourceAccessNotification {
         restTemplate.getMessageConverters().add(new StringHttpMessageConverter());
         
         HttpHeaders httpHeaders = getHeader();
-        HttpEntity<String> httpEntity = new HttpEntity<String>(message,httpHeaders);
+        HttpEntity<String> httpEntity = new HttpEntity(message,httpHeaders);
         
         Object response = restTemplate.postForObject(notificationUrl, httpEntity, Object.class);
         log.info("Response resource access notification message: "+ (String)response);
     }
     
     public HttpHeaders getHeader(){
-        Map<String, String> securityRequestHeaders = null;
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 
-        if(securityHandler != null){
-            try {
+        if(securityHandler != null){            
+            try {                
                 SecurityRequest securityRequest = securityHandler.generateSecurityRequestUsingLocalCredentials();
-                securityRequestHeaders = securityRequest.getSecurityRequestHeaderParams();
+                Map<String, String> securityRequestHeaders = securityRequest.getSecurityRequestHeaderParams();
 
                 for (Map.Entry<String, String> entry : securityRequestHeaders.entrySet()) {
                     httpHeaders.add(entry.getKey(), entry.getValue());

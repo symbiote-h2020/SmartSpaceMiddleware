@@ -49,7 +49,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
-import eu.h2020.symbiote.ssp.rap.odata.EdmProvider;
+import eu.h2020.symbiote.ssp.rap.odata.RapEdmProvider;
 import eu.h2020.symbiote.ssp.rap.odata.RapEntityCollectionProcessor;
 import eu.h2020.symbiote.ssp.rap.odata.RapEntityProcessor;
 import eu.h2020.symbiote.ssp.rap.odata.RapPrimitiveProcessor;
@@ -65,16 +65,16 @@ import org.springframework.beans.factory.annotation.Value;
 @CrossOrigin(origins = "*", methods = {RequestMethod.POST, RequestMethod.OPTIONS, RequestMethod.PUT, RequestMethod.GET})
 @RestController
 @RequestMapping("rap")
-public class ResourceAccessEdmController {
+public class NorthboundEdmController {
 
-    private static final Logger log = LoggerFactory.getLogger(ResourceAccessEdmController.class);
+    private static final Logger log = LoggerFactory.getLogger(NorthboundEdmController.class);
 
     private static final String URI = "rap/";
     private int split = 0;
     public final String SECURITY_RESPONSE_HEADER = "x-auth-response";
 
     @Autowired
-    private EdmProvider edmProvider;
+    private RapEdmProvider edmProvider;
 
     @Autowired
     private RapEntityCollectionProcessor entityCollectionProcessor;
