@@ -1,0 +1,842 @@
+@prefix : <http://www.symbiote-h2020.eu/ontology/core#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix time: <http://www.w3.org/2006/time#> .
+@base <http://www.symbiote-h2020.eu/ontology/core> .
+
+<http://www.symbiote-h2020.eu/ontology/core> rdf:type owl:Ontology ;
+                                             
+                                             rdfs:label "symbIoTe Core Information Model"@en ;
+                                             
+                                             owl:versionInfo "v 0.6 2017/3/14 12:00:00"^^xsd:string ;
+                                             
+                                             rdfs:comment "Core Information Model of the symbIoTe project."@en ;
+                                             
+                                             owl:versionIRI <http://www.symbiote-h2020.eu/ontology/core/0.6> ;
+                                             
+                                             owl:imports rdf: ,
+                                                         rdfs: .
+
+
+#################################################################
+#
+#    Annotation properties
+#
+#################################################################
+
+
+###  http://purl.org/dc/elements/1.1/date
+
+<http://purl.org/dc/elements/1.1/date> rdf:type owl:AnnotationProperty .
+
+
+
+###  http://purl.org/dc/elements/1.1/description
+
+<http://purl.org/dc/elements/1.1/description> rdf:type owl:AnnotationProperty .
+
+
+
+###  http://purl.org/dc/elements/1.1/title
+
+<http://purl.org/dc/elements/1.1/title> rdf:type owl:AnnotationProperty .
+
+
+
+###  http://www.w3.org/2003/01/geo/wgs84_pos#alt
+
+geo:alt rdf:type owl:AnnotationProperty ;
+        
+        rdfs:label "altitude" ;
+        
+        rdfs:comment """The WGS84 altitude of a SpatialThing (decimal meters 
+above the local reference ellipsoid).""" ;
+        
+        rdfs:domain geo:SpatialThing .
+
+
+
+###  http://www.w3.org/2003/01/geo/wgs84_pos#lat
+
+geo:lat rdf:type owl:AnnotationProperty ;
+        
+        rdfs:label "latitude" ;
+        
+        rdfs:comment "The WGS84 latitude of a SpatialThing (decimal degrees)." ;
+        
+        rdfs:domain geo:SpatialThing .
+
+
+
+###  http://www.w3.org/2003/01/geo/wgs84_pos#long
+
+geo:long rdf:type owl:AnnotationProperty ;
+         
+         rdfs:label "longitude" ;
+         
+         rdfs:comment "The WGS84 longitude of a SpatialThing (decimal degrees)." ;
+         
+         rdfs:domain geo:SpatialThing .
+
+
+
+
+
+#################################################################
+#
+#    Datatypes
+#
+#################################################################
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#ID
+
+:ID rdf:type rdfs:Datatype ;
+    
+    owl:equivalentClass :ID .
+
+
+
+
+
+#################################################################
+#
+#    Object Properties
+#
+#################################################################
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#actsOn
+
+:actsOn rdf:type owl:FunctionalProperty ,
+                 owl:ObjectProperty ;
+        
+        rdfs:domain :ActuatingService ;
+        
+        rdfs:range :FeatureOfInterest .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#affects
+
+:affects rdf:type owl:ObjectProperty ;
+         
+         rdfs:domain :ActuatingService ;
+         
+         rdfs:range :Property .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#datatype
+
+:datatype rdf:type owl:FunctionalProperty ,
+                   owl:ObjectProperty ;
+          
+          rdfs:range rdfs:Datatype .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasCapability
+
+:hasCapability rdf:type owl:ObjectProperty ;
+               
+               rdfs:range :ActuatingService ;
+               
+               rdfs:domain :Actuator .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasFeatureOfInterest
+
+:hasFeatureOfInterest rdf:type owl:FunctionalProperty ,
+                               owl:ObjectProperty ;
+                      
+                      rdfs:range :FeatureOfInterest ;
+                      
+                      rdfs:domain [ rdf:type owl:Class ;
+                                    owl:unionOf ( :ObservationValue
+                                                  :StationarySensor
+                                                )
+                                  ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasInputParameter
+
+:hasInputParameter rdf:type owl:ObjectProperty ;
+                   
+                   rdfs:range :InputParameter ;
+                   
+                   rdfs:domain :Service .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasObservation
+
+:hasObservation rdf:type owl:InverseFunctionalProperty ,
+                         owl:ObjectProperty ;
+                
+                rdfs:range :Observation ;
+                
+                rdfs:domain :Sensor ;
+                
+                owl:inverseOf :observedBy .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasObservationValue
+
+:hasObservationValue rdf:type owl:ObjectProperty ;
+                     
+                     rdfs:domain :Observation ;
+                     
+                     rdfs:range :ObservationValue .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasObservedProperty
+
+:hasObservedProperty rdf:type owl:FunctionalProperty ,
+                              owl:ObjectProperty ;
+                     
+                     rdfs:domain :ObservationValue ;
+                     
+                     rdfs:range :Property .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasOutputParameter
+
+:hasOutputParameter rdf:type owl:FunctionalProperty ,
+                             owl:ObjectProperty ;
+                    
+                    rdfs:range :Parameter ;
+                    
+                    rdfs:domain :Service .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasProperty
+
+:hasProperty rdf:type owl:ObjectProperty ;
+             
+             rdfs:domain :FeatureOfInterest ;
+             
+             rdfs:range :Property .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasRestriction
+
+:hasRestriction rdf:type owl:ObjectProperty ;
+                
+                rdfs:domain :InputParameter ;
+                
+                rdfs:range :Restriction .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#hasUnitOfMeasurement
+
+:hasUnitOfMeasurement rdf:type owl:FunctionalProperty ,
+                               owl:ObjectProperty ;
+                      
+                      rdfs:domain :ObservationValue ;
+                      
+                      rdfs:range :UnitOfMeasurement .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#locatedAt
+
+:locatedAt rdf:type owl:FunctionalProperty ,
+                    owl:ObjectProperty ;
+           
+           rdfs:range :Location .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#madeFrom
+
+:madeFrom rdf:type owl:FunctionalProperty ,
+                   owl:ObjectProperty ;
+          
+          rdfs:range :Location ;
+          
+          rdfs:domain :Observation .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#observedBy
+
+:observedBy rdf:type owl:FunctionalProperty ,
+                     owl:ObjectProperty ;
+            
+            rdfs:domain :Observation ;
+            
+            rdfs:range :Sensor .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#observesProperty
+
+:observesProperty rdf:type owl:ObjectProperty ;
+                  
+                  rdfs:range :Property ;
+                  
+                  rdfs:domain :Sensor .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#resultTime
+
+:resultTime rdf:type owl:FunctionalProperty ,
+                     owl:ObjectProperty ;
+            
+            rdfs:domain :Observation ;
+            
+            rdfs:range time:Instant .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#samplingTime
+
+:samplingTime rdf:type owl:FunctionalProperty ,
+                       owl:ObjectProperty ;
+              
+              rdfs:domain :Observation ;
+              
+              rdfs:range time:TemporalEntity .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#value
+
+:value rdf:type owl:ObjectProperty ;
+       
+       rdfs:range rdfs:Literal .
+
+
+
+###  http://www.w3.org/2000/01/rdf-schema#comment
+
+rdfs:comment rdf:type owl:ObjectProperty ;
+             
+             rdfs:range rdf:langString .
+
+
+
+###  http://www.w3.org/2000/01/rdf-schema#label
+
+rdfs:label rdf:type owl:ObjectProperty ;
+           
+           rdfs:range rdf:langString .
+
+
+
+
+
+#################################################################
+#
+#    Data properties
+#
+#################################################################
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#id
+
+:id rdf:type owl:DatatypeProperty ,
+             owl:FunctionalProperty ;
+    
+    rdfs:range :ID ;
+    
+    rdfs:domain :Resource .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#isArray
+
+:isArray rdf:type owl:DatatypeProperty ,
+                  owl:FunctionalProperty ;
+         
+         rdfs:domain :Parameter ;
+         
+         rdfs:range xsd:boolean .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#mandatory
+
+:mandatory rdf:type owl:DatatypeProperty ,
+                    owl:FunctionalProperty ;
+           
+           rdfs:range xsd:boolean .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#max
+
+:max rdf:type owl:DatatypeProperty ,
+              owl:FunctionalProperty .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#min
+
+:min rdf:type owl:DatatypeProperty ,
+              owl:FunctionalProperty .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#name
+
+:name rdf:type owl:DatatypeProperty ,
+               owl:FunctionalProperty ;
+      
+      rdfs:range xsd:string .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#symbol
+
+:symbol rdf:type owl:DatatypeProperty ;
+        
+        rdfs:domain :UnitOfMeasurement ;
+        
+        rdfs:range xsd:string .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#value
+
+:value rdf:type owl:DatatypeProperty .
+
+
+
+###  http://www.w3.org/2000/01/rdf-schema#comment
+
+rdfs:comment rdf:type owl:DatatypeProperty .
+
+
+
+###  http://www.w3.org/2000/01/rdf-schema#label
+
+rdfs:label rdf:type owl:DatatypeProperty .
+
+
+
+###  http://www.w3.org/2003/01/geo/wgs84_pos#alt
+
+geo:alt rdf:type owl:DatatypeProperty ,
+                 owl:FunctionalProperty ;
+        
+        rdfs:label "altitude" ;
+        
+        rdfs:comment """The WGS84 altitude of a SpatialThing (decimal meters 
+above the local reference ellipsoid).""" ;
+        
+        rdfs:range xsd:double .
+
+
+
+###  http://www.w3.org/2003/01/geo/wgs84_pos#lat
+
+geo:lat rdf:type owl:DatatypeProperty ,
+                 owl:FunctionalProperty ;
+        
+        rdfs:label "latitude" ;
+        
+        rdfs:comment "The WGS84 latitude of a SpatialThing (decimal degrees)." ;
+        
+        rdfs:range xsd:double .
+
+
+
+###  http://www.w3.org/2003/01/geo/wgs84_pos#long
+
+geo:long rdf:type owl:DatatypeProperty ,
+                  owl:FunctionalProperty ;
+         
+         rdfs:label "longitude" ;
+         
+         rdfs:comment "The WGS84 longitude of a SpatialThing (decimal degrees)." ;
+         
+         rdfs:range xsd:double .
+
+
+
+
+
+#################################################################
+#
+#    Classes
+#
+#################################################################
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#ActuatingService
+
+:ActuatingService rdf:type owl:Class ;
+                  
+                  rdfs:subClassOf :Service ,
+                                  [ rdf:type owl:Restriction ;
+                                    owl:onProperty :affects ;
+                                    owl:onClass :Property ;
+                                    owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                  ] ,
+                                  [ rdf:type owl:Restriction ;
+                                    owl:onProperty :actsOn ;
+                                    owl:onClass :FeatureOfInterest ;
+                                    owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                  ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#Actuator
+
+:Actuator rdf:type owl:Class ;
+          
+          rdfs:subClassOf :Resource ,
+                          [ rdf:type owl:Restriction ;
+                            owl:onProperty :hasCapability ;
+                            owl:onClass :ActuatingService ;
+                            owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                          ] ,
+                          [ rdf:type owl:Restriction ;
+                            owl:onProperty :locatedAt ;
+                            owl:onClass :Location ;
+                            owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                          ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#EnumRestriction
+
+:EnumRestriction rdf:type owl:Class ;
+                 
+                 rdfs:subClassOf :Restriction ,
+                                 [ rdf:type owl:Restriction ;
+                                   owl:onProperty :value ;
+                                   owl:minQualifiedCardinality "2"^^xsd:nonNegativeInteger ;
+                                   owl:onDataRange xsd:string
+                                 ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#FeatureOfInterest
+
+:FeatureOfInterest rdf:type owl:Class ;
+                   
+                   rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                     owl:onProperty rdfs:label ;
+                                     owl:onClass rdf:langString ;
+                                     owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                   ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#InputParameter
+
+:InputParameter rdf:type owl:Class ;
+                
+                rdfs:subClassOf :Parameter ,
+                                [ rdf:type owl:Restriction ;
+                                  owl:onProperty :name ;
+                                  owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                  owl:onDataRange xsd:string
+                                ] ,
+                                [ rdf:type owl:Restriction ;
+                                  owl:onProperty :mandatory ;
+                                  owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                  owl:onDataRange xsd:boolean
+                                ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#LengthRestriction
+
+:LengthRestriction rdf:type owl:Class ;
+                   
+                   rdfs:subClassOf :Restriction ,
+                                   [ rdf:type owl:Restriction ;
+                                     owl:onProperty :max ;
+                                     owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                     owl:onDataRange xsd:integer
+                                   ] ,
+                                   [ rdf:type owl:Restriction ;
+                                     owl:onProperty :min ;
+                                     owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                     owl:onDataRange xsd:integer
+                                   ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#Location
+
+:Location rdf:type owl:Class ;
+          
+          rdfs:subClassOf [ rdf:type owl:Restriction ;
+                            owl:onProperty rdfs:label ;
+                            owl:onClass rdf:langString ;
+                            owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                          ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#MobileSensor
+
+:MobileSensor rdf:type owl:Class ;
+              
+              rdfs:subClassOf :Sensor ;
+              
+              owl:disjointWith :StationarySensor .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#Observation
+
+:Observation rdf:type owl:Class ;
+             
+             rdfs:subClassOf [ rdf:type owl:Restriction ;
+                               owl:onProperty :observedBy ;
+                               owl:onClass :Sensor ;
+                               owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                             ] ,
+                             [ rdf:type owl:Restriction ;
+                               owl:onProperty :resultTime ;
+                               owl:onClass time:Instant ;
+                               owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                             ] ,
+                             [ rdf:type owl:Restriction ;
+                               owl:onProperty :samplingTime ;
+                               owl:onClass time:TemporalEntity ;
+                               owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                             ] ,
+                             [ rdf:type owl:Restriction ;
+                               owl:onProperty :madeFrom ;
+                               owl:onClass :Location ;
+                               owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                             ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#ObservationValue
+
+:ObservationValue rdf:type owl:Class ;
+                  
+                  rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                    owl:onProperty :hasObservedProperty ;
+                                    owl:onClass :Property ;
+                                    owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                  ] ,
+                                  [ rdf:type owl:Restriction ;
+                                    owl:onProperty :hasUnitOfMeasurement ;
+                                    owl:onClass :UnitOfMeasurement ;
+                                    owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                  ] ,
+                                  [ rdf:type owl:Restriction ;
+                                    owl:onProperty :hasFeatureOfInterest ;
+                                    owl:onClass :FeatureOfInterest ;
+                                    owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                  ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#Parameter
+
+:Parameter rdf:type owl:Class ;
+           
+           rdfs:subClassOf [ rdf:type owl:Restriction ;
+                             owl:onProperty :datatype ;
+                             owl:onClass rdfs:Datatype ;
+                             owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                           ] ,
+                           [ rdf:type owl:Restriction ;
+                             owl:onProperty :isArray ;
+                             owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                             owl:onDataRange xsd:boolean
+                           ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#Property
+
+:Property rdf:type owl:Class ;
+          
+          rdfs:subClassOf [ rdf:type owl:Restriction ;
+                            owl:onProperty rdfs:label ;
+                            owl:onClass rdf:langString ;
+                            owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                          ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#RangeRestriction
+
+:RangeRestriction rdf:type owl:Class ;
+                  
+                  rdfs:subClassOf :Restriction ,
+                                  [ rdf:type owl:Restriction ;
+                                    owl:onProperty :min ;
+                                    owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                    owl:onDataRange xsd:double
+                                  ] ,
+                                  [ rdf:type owl:Restriction ;
+                                    owl:onProperty :max ;
+                                    owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                    owl:onDataRange xsd:double
+                                  ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#Resource
+
+:Resource rdf:type owl:Class ;
+          
+          rdfs:subClassOf [ rdf:type owl:Restriction ;
+                            owl:onProperty rdfs:label ;
+                            owl:onClass rdf:langString ;
+                            owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                          ] ,
+                          [ rdf:type owl:Restriction ;
+                            owl:onProperty :id ;
+                            owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                            owl:onDataRange :ID
+                          ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#Restriction
+
+:Restriction rdf:type owl:Class .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#Sensor
+
+:Sensor rdf:type owl:Class ;
+        
+        rdfs:subClassOf :Resource ,
+                        [ rdf:type owl:Restriction ;
+                          owl:onProperty :locatedAt ;
+                          owl:onClass :Location ;
+                          owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                        ] ,
+                        [ rdf:type owl:Restriction ;
+                          owl:onProperty :observesProperty ;
+                          owl:onClass :Property ;
+                          owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                        ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#Service
+
+:Service rdf:type owl:Class ;
+         
+         rdfs:subClassOf :Resource ,
+                         [ rdf:type owl:Restriction ;
+                           owl:onProperty :name ;
+                           owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                           owl:onDataRange xsd:string
+                         ] ,
+                         [ rdf:type owl:Restriction ;
+                           owl:onProperty :hasOutputParameter ;
+                           owl:onClass :Parameter ;
+                           owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                         ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#StationarySensor
+
+:StationarySensor rdf:type owl:Class ;
+                  
+                  rdfs:subClassOf :Sensor ,
+                                  [ rdf:type owl:Restriction ;
+                                    owl:onProperty :hasFeatureOfInterest ;
+                                    owl:onClass :FeatureOfInterest ;
+                                    owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                  ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#SymbolicLocation
+
+:SymbolicLocation rdf:type owl:Class ;
+                  
+                  rdfs:subClassOf :Location .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#UnitOfMeasurement
+
+:UnitOfMeasurement rdf:type owl:Class ;
+                   
+                   rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                     owl:onProperty :symbol ;
+                                     owl:cardinality "1"^^xsd:nonNegativeInteger
+                                   ] ,
+                                   [ rdf:type owl:Restriction ;
+                                     owl:onProperty rdfs:label ;
+                                     owl:onClass rdf:langString ;
+                                     owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger
+                                   ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#WGS84Location
+
+:WGS84Location rdf:type owl:Class ;
+               
+               rdfs:subClassOf :Location ,
+                               [ rdf:type owl:Restriction ;
+                                 owl:onProperty geo:lat ;
+                                 owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                 owl:onDataRange xsd:double
+                               ] ,
+                               [ rdf:type owl:Restriction ;
+                                 owl:onProperty geo:long ;
+                                 owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                 owl:onDataRange xsd:double
+                               ] ,
+                               [ rdf:type owl:Restriction ;
+                                 owl:onProperty geo:alt ;
+                                 owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                 owl:onDataRange xsd:double
+                               ] .
+
+
+
+###  http://www.symbiote-h2020.eu/ontology/core#WKTLocation
+
+:WKTLocation rdf:type owl:Class ;
+             
+             rdfs:subClassOf :Location ,
+                             [ rdf:type owl:Restriction ;
+                               owl:onProperty :value ;
+                               owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                               owl:onDataRange xsd:string
+                             ] .
+
+
+
+###  http://www.w3.org/2006/time#Instant
+
+time:Instant rdf:type owl:Class .
+
+
+
+###  http://www.w3.org/2006/time#TemporalEntity
+
+time:TemporalEntity rdf:type owl:Class .
+
+
+
+
+###  Generated by the OWL API (version 3.4.2) http://owlapi.sourceforge.net
+
