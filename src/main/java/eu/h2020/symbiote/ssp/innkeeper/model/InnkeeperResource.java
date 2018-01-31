@@ -52,7 +52,7 @@ public class InnkeeperResource {
 			 * 3. update mongoDB
 			 * 4. give some feedback to SDEV 
 			 */
-			resourceInfo.save(resourceInfo);
+
 			
 
 			
