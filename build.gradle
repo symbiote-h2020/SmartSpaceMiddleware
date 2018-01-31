@@ -77,7 +77,8 @@ dependencies {
             4) never commit build.gradle which has project dependencies active as it will break CI builds
     */
     //compile project(':SymbIoTeLibraries')
-    compile('com.github.symbiote-h2020:SymbIoTeLibraries:WP4_demo-SNAPSHOT') { changing = true }
+    //compile('com.github.symbiote-h2020:SymbIoTeLibraries:WP4_demo-SNAPSHOT') { changing = true }
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:4+') { changing = true }
     compile('com.github.symbiote-h2020:SymbIoTeSecurity:23.+'){ changing = true }
     // allows to select the downloaded matching sources in IntelliJ Idea as it fails to do so automatically from jitpack repo
     compile('com.github.symbiote-h2020:SymbIoTeSecurity:23.+:sources'){ changing = true }

@@ -1,17 +1,10 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.security.communication.IAAMClient;
-import eu.h2020.symbiote.ssp.communication.rest.*;
-import eu.h2020.symbiote.ssp.exception.InvalidMacAddressException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
-import eu.h2020.symbiote.ssp.innkeeper.model.ScheduledResourceOfflineTimerTask;
-import eu.h2020.symbiote.ssp.innkeeper.model.ScheduledUnregisterTimerTask;
 import eu.h2020.symbiote.ssp.innkeeper.repository.ResourceRepository;
 
 import org.apache.commons.logging.Log;
@@ -21,36 +14,20 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
-import java.util.stream.Collectors;
 
 /**
  * Created by vasgl on 8/24/2017.
  */
-
-
-
-
-
 
 
 @RestController
@@ -58,171 +35,35 @@ import java.util.stream.Collectors;
 public class InnkeeperRestController {
 
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
-	protected IAAMClient aamClient;
 	private ResourceRepository resourceRepository;
-	private RabbitTemplate rabbitTemplate;
 	private Integer registrationExpiration;
-	private Integer makeResourceOffine;
-	private Timer timer;
-	private Map<String, ScheduledUnregisterTimerTask> unregisteringTimerTaskMap;
-	private Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap;
-
-	@Value("${rabbit.exchange.rap.name}")
-	private String rapExchange;
-
-	@Value("${rabbit.routingKey.rap.sspResourceCreated}")
-	private String rapSSPResourceCreatedRoutingKey;
-
-	@Value("${rabbit.routingKey.rap.sspResourceDeleted}")
-	private String rapSSPResourceDeletedRoutingKey;
-
-
 	@Autowired
 	public InnkeeperRestController(ResourceRepository resourceRepository, RabbitTemplate rabbitTemplate,
 			@Qualifier("registrationExpiration") Integer registrationExpiration,
-			@Qualifier("makeResourceOffline") Integer makeResourceOffine, Timer timer,
-			@Qualifier("unregisteringTimerTaskMap") Map<String, ScheduledUnregisterTimerTask> unregisteringTimerTaskMap,
-			@Qualifier("offlineTimerTaskMap") Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap) {
-
-		Assert.notNull(resourceRepository, "Resource repository can not be null!");
-		this.resourceRepository = resourceRepository;
-		this.resourceRepository.deleteAll();
-
-		Assert.notNull(rabbitTemplate, "Rabbit template can not be null!");
-		this.rabbitTemplate = rabbitTemplate;
+			@Qualifier("makeResourceOffline") Integer makeResourceOffine, Timer timer) {
 
 		Assert.notNull(registrationExpiration, "registrationExpiration can not be null!");
 		this.registrationExpiration = registrationExpiration;
-
-		Assert.notNull(makeResourceOffine, "makeResourceOffine can not be null!");
-		this.makeResourceOffine = makeResourceOffine;
-
-		Assert.notNull(timer, "Timer can not be null!");
-		this.timer = timer;
-
-		Assert.notNull(unregisteringTimerTaskMap, "unregisteringTimerTaskMap can not be null!");
-		this.unregisteringTimerTaskMap = unregisteringTimerTaskMap;
-
-		Assert.notNull(offlineTimerTaskMap, "offlineTimerTaskMap can not be null!");
-		this.offlineTimerTaskMap = offlineTimerTaskMap;
-		
-		//dbconnect();
 	}
-
 	
-	public ResponseEntity<Object> setResponseJoinEntity() {
-		HttpHeaders headers =new HttpHeaders();
-		headers.add("1", "JOINuno");
-		headers.add("2", "due");
-		headers.add("7", "settebbabbau");
-		String mybody="<html>THIS IS A BODY</html>\n";
-		ResponseEntity<Object> myresponse = new ResponseEntity<>(mybody,headers, HttpStatus.OK);
-		return myresponse;
-	}	
-	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> join(@RequestBody Map<String, String> requestParams) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
-//		public ResponseEntity<Object> join(@RequestParam Map<String, String> requestParams) {
-		log.info("New join request was received  requestParams = " + requestParams);
-		String id = requestParams.get("id");
-		String mac = requestParams.get("mac");
-		String semanticDescription = requestParams.get("semanticDescription");
-		
-		log.info("------------------------------------");
-		log.info("requestParams	   		= " + requestParams);
-		log.info("id                  	= " + id);
-		log.info("mac        		   	= " + mac);
-		log.info("semanticDescription 	= " + semanticDescription);
-		log.info("------------------------------------");
-		
-		
-		return this.setResponseJoinEntity();
 
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
+	public ResponseEntity<Object> join(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+		
+		InnkeeperResource innkeeperResource = new InnkeeperResource(payload);
+				
+		return innkeeperResource.requestHandler();
 	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> registry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 
-		
-
-		log.info("New registry request was received  payload = " + payload);
-		log.info(payload.keySet());
-		log.info(InnkeeperRestControllerConstants.PLATFORM_PAYLOAD_VALS);
-
-		ResponseEntity<Object> myresponse = null;
-		
-		if (new HashSet<String>( payload.keySet()).equals( 
-				new HashSet<String>(InnkeeperRestControllerConstants.PLATFORM_PAYLOAD_VALS))){
-			log.info("Platform Registration do something here...");
-
-			//Platform sends explicit payload 
-			// Object response=requestParams;
-			
-			String id = payload.get("id");
-			String name = payload.get("name");
-			String description = payload.get("description");
-			String url = payload.get("url");
-			String informationModel = payload.get("informationModel");
-	
-			log.info("------------------------------------");
-			log.info("id          		= " + id);
-			log.info("name        		= " + name);
-			log.info("description 		= " + description);
-			log.info("url         		= " + url);
-			log.info("informationModel	= " + informationModel);
-			log.info("------------------------------------");
-			
-			//Handle Platform Registry here...
-			//TODO: LAAM communication 
-			//TODO: Core Communication
-			
-			//forge response
-			HttpHeaders headers =new HttpHeaders();
-			headers.add("1", "this is a platform");
-			String mybody="<html>OK, this is a Platform, here some BODY</html>\n";
-			myresponse = new ResponseEntity<>(mybody,headers, HttpStatus.OK);
-			
-		}else {
-			if (new HashSet<String>( payload.keySet()).equals( 
-					new HashSet<String>(InnkeeperRestControllerConstants.SDEV_PAYLOAD_VALS))){
-				log.info("SDEV Registration do something here...");
-				//TODO: use 'session' field to check the session status (logic TBD)
-				//TODO: use 'data' field as input to obtain "id","name","description","url","informationModel"
-				//TODO: check this idea with LWSP guys
-				//Handle SDEV Registry here...
 				
-				//forge response
-				HttpHeaders headers =new HttpHeaders();
-				headers.add("1", "this is a SDEV");
-				String mybody="<html>OK, this is a SDEV, here some BODY</html>\n";
-				myresponse = new ResponseEntity<>(mybody,headers, HttpStatus.OK);
-			}else {
-				log.info("UNKNOWN PAYLOAD");
-				
-				//forge response
-				HttpHeaders headers =new HttpHeaders();
-				headers.add("1", "NOT FOUND UNKNOWN PAYLOAD");
-				String mybody="<html>NOT FOUND UNKOWN PAYLOAD</html>\n";
-				myresponse = new ResponseEntity<>(mybody,headers, HttpStatus.NOT_FOUND);
-			}
-			
-		}
-
-		// TODO: when a registry request arrives innkeeper forward those info to the
-		// Core
-		// 1. forge a response to symbiote agent 
-		
-		// 1. LAAM Request
-
-		// 2. Core Registration (forward payload)
-
-		// 3. SSP-RAP Registration (forward payload)
-
-		return myresponse;
-
-
-		
+		InnkeeperResource innkeeperResource = new InnkeeperResource(payload);
+		return innkeeperResource.requestHandler();
 	}
 
+	
 	/*
 	 * ResponseEntity<JoinResponse> join(@RequestBody JoinRequest joinRequest)
 	 * throws Exception { System.out.println("test"); boolean alreadyRegistered =
@@ -269,7 +110,7 @@ public class InnkeeperRestController {
 	 * 
 	 * return ResponseEntity.ok(joinResponse); }
 	 */
-
+/*
 	@PostMapping(InnkeeperRestControllerConstants.INNKEEPER_LIST_RESOURCES_REQUEST_PATH)
 	ResponseEntity<ListResourcesResponse> listResources(@RequestBody ListResourcesRequest request) {
 
@@ -385,4 +226,5 @@ public class InnkeeperRestController {
 
 		return timerTask;
 	}
+	*/
 }

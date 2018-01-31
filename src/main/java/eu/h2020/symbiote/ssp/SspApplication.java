@@ -1,7 +1,5 @@
 package eu.h2020.symbiote.ssp;
 
-import eu.h2020.symbiote.ssp.innkeeper.model.ScheduledResourceOfflineTimerTask;
-import eu.h2020.symbiote.ssp.innkeeper.model.ScheduledUnregisterTimerTask;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -56,16 +54,6 @@ public class SspApplication {
     @Bean
     public Timer timer() {
         return new Timer();
-    }
-
-    @Bean(name="unregisteringTimerTaskMap")
-    public Map<String, ScheduledUnregisterTimerTask> unregisteringTimerTaskMap() {
-        return new HashMap<>();
-    }
-
-    @Bean(name="offlineTimerTaskMap")
-    public Map<String, ScheduledResourceOfflineTimerTask> offlineTimerTaskMap() {
-        return new HashMap<>();
     }
 
     @Bean
