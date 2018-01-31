@@ -185,6 +185,9 @@ public class InnkeeperRestController {
 			if (new HashSet<String>( payload.keySet()).equals( 
 					new HashSet<String>(InnkeeperRestControllerConstants.SDEV_PAYLOAD_VALS))){
 				log.info("SDEV Registration do something here...");
+				//TODO: use 'session' field to check the session status (logic TBD)
+				//TODO: use 'data' field as input to obtain "id","name","description","url","informationModel"
+				//TODO: check this idea with LWSP guys
 				//Handle SDEV Registry here...
 				
 				//forge response
@@ -206,7 +209,7 @@ public class InnkeeperRestController {
 
 		// TODO: when a registry request arrives innkeeper forward those info to the
 		// Core
-		// 1. forge a response to symbiote agent
+		// 1. forge a response to symbiote agent 
 		
 		// 1. LAAM Request
 
