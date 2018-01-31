@@ -5,14 +5,18 @@ package eu.h2020.symbiote.ssp.innkeeper.model;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 
 public class InnkeeperResource {
-	
+	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
+
 	private Map<String,String> payload;
 	private Integer expirationTime;
 	public InnkeeperResource(Map<String,String> payload) {
@@ -27,6 +31,8 @@ public class InnkeeperResource {
 		ResponseEntity<Object> responseEntity= null;
 		if (new HashSet<String>( this.payload.keySet()).equals( 
 				new HashSet<String>(InnkeeperRestControllerConstants.JOIN_RESOURCE_PAYLOAD_VALS))){
+			log.info("JOIN RESOURCE");
+			log.info(payload);
 			// DO SOMETHING FOR JOIN RESOURCE
 			/* TODO:
 			 * 1. check if SDEV is registered
@@ -46,6 +52,8 @@ public class InnkeeperResource {
 		
 		if (new HashSet<String>( this.payload.keySet()).equals( 
 				new HashSet<String>(InnkeeperRestControllerConstants.PLATFORM_REGISTRY_PAYLOAD_VALS))){
+			log.info("registry PLATFORM");
+			log.info(payload);
 			// DO SOMETHING FOR PLATFORM REGISTRY
 			/* TODO:
 			 * 1. check if PLATFORM is registered in the CORE
@@ -61,6 +69,8 @@ public class InnkeeperResource {
 		
 		if (new HashSet<String>( this.payload.keySet()).equals( 
 				new HashSet<String>(InnkeeperRestControllerConstants.SDEV_REGISTRY_PAYLOAD_VALS))){
+			log.info("registry SDEV");
+			log.info(payload);
 			// DO SOMETHING FOR SDEV REGISTRY
 			
 			/* TODO:
