@@ -37,6 +37,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -137,37 +138,71 @@ public class InnkeeperRestController {
 		return this.setResponseJoinEntity();
 
 	}
-	
-		
-	public ResponseEntity<Object> setResponseRegistryEntity() {
-		HttpHeaders headers =new HttpHeaders();
-		headers.add("1", "uno");
-		headers.add("2", "due");
-		headers.add("7", "settebbabbau");
-		String mybody="<html>THIS IS A BODY</html>\n";
-		ResponseEntity<Object> myresponse = new ResponseEntity<>(mybody,headers, HttpStatus.OK);
-		return myresponse;
-	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
-//	public ResponseEntity<Object> registry(@RequestParam Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 	public ResponseEntity<Object> registry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 
-		// Object response=requestParams;
-		log.info("New registry request was received  payload = " + payload);
-		String id = payload.get("id");
-		String name = payload.get("name");
-		String description = payload.get("description");
-		String url = payload.get("url");
-		String informationModel = payload.get("informationModel");
+		
 
-		log.info("------------------------------------");
-		log.info("id          		= " + id);
-		log.info("name        		= " + name);
-		log.info("description 		= " + description);
-		log.info("url         		= " + url);
-		log.info("informationModel	= " + informationModel);
-		log.info("------------------------------------");
+		log.info("New registry request was received  payload = " + payload);
+		log.info(payload.keySet());
+		log.info(InnkeeperRestControllerConstants.PLATFORM_PAYLOAD_VALS);
+
+		ResponseEntity<Object> myresponse = null;
+		
+		if (new HashSet<String>( payload.keySet()).equals( 
+				new HashSet<String>(InnkeeperRestControllerConstants.PLATFORM_PAYLOAD_VALS))){
+			log.info("Platform Registration do something here...");
+
+			//Platform sends explicit payload 
+			// Object response=requestParams;
+			
+			String id = payload.get("id");
+			String name = payload.get("name");
+			String description = payload.get("description");
+			String url = payload.get("url");
+			String informationModel = payload.get("informationModel");
+	
+			log.info("------------------------------------");
+			log.info("id          		= " + id);
+			log.info("name        		= " + name);
+			log.info("description 		= " + description);
+			log.info("url         		= " + url);
+			log.info("informationModel	= " + informationModel);
+			log.info("------------------------------------");
+			
+			//Handle Platform Registry here...
+			//TODO: LAAM communication 
+			//TODO: Core Communication
+			
+			//forge response
+			HttpHeaders headers =new HttpHeaders();
+			headers.add("1", "this is a platform");
+			String mybody="<html>OK, this is a Platform, here some BODY</html>\n";
+			myresponse = new ResponseEntity<>(mybody,headers, HttpStatus.OK);
+			
+		}else {
+			if (new HashSet<String>( payload.keySet()).equals( 
+					new HashSet<String>(InnkeeperRestControllerConstants.SDEV_PAYLOAD_VALS))){
+				log.info("SDEV Registration do something here...");
+				//Handle SDEV Registry here...
+				
+				//forge response
+				HttpHeaders headers =new HttpHeaders();
+				headers.add("1", "this is a SDEV");
+				String mybody="<html>OK, this is a SDEV, here some BODY</html>\n";
+				myresponse = new ResponseEntity<>(mybody,headers, HttpStatus.OK);
+			}else {
+				log.info("UNKNOWN PAYLOAD");
+				
+				//forge response
+				HttpHeaders headers =new HttpHeaders();
+				headers.add("1", "NOT FOUND UNKNOWN PAYLOAD");
+				String mybody="<html>NOT FOUND UNKOWN PAYLOAD</html>\n";
+				myresponse = new ResponseEntity<>(mybody,headers, HttpStatus.NOT_FOUND);
+			}
+			
+		}
 
 		// TODO: when a registry request arrives innkeeper forward those info to the
 		// Core
@@ -179,8 +214,10 @@ public class InnkeeperRestController {
 
 		// 3. SSP-RAP Registration (forward payload)
 
+		return myresponse;
 
-		return this.setResponseRegistryEntity();
+
+		
 	}
 
 	/*
