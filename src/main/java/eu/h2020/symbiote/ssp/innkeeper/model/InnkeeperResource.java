@@ -7,18 +7,30 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import com.google.common.reflect.ClassPath.ResourceInfo;
+
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
+import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 
 public class InnkeeperResource {
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
 
 	private Map<String,String> payload;
 	private Integer expirationTime;
+	
+	
+	
+	@Autowired
+	private ResourceInfo resourceInfo;
+	
+	
+	
 	public InnkeeperResource(Map<String,String> payload) {
 		this.payload = payload;
 	}
@@ -40,6 +52,8 @@ public class InnkeeperResource {
 			 * 3. update mongoDB
 			 * 4. give some feedback to SDEV 
 			 */
+			resourceInfo.save(resourceInfo);
+			
 
 			
 			//forge response
