@@ -24,13 +24,6 @@ public class InnkeeperResource {
 	private Map<String,String> payload;
 	private Integer expirationTime;
 	
-	
-	
-	@Autowired
-	private ResourceInfo resourceInfo;
-	
-	
-	
 	public InnkeeperResource(Map<String,String> payload) {
 		this.payload = payload;
 	}
@@ -53,9 +46,7 @@ public class InnkeeperResource {
 			 * 4. give some feedback to SDEV 
 			 */
 
-			
 
-			
 			//forge response
 			HttpHeaders headers =new HttpHeaders();
 			headers.add("1", "this is a SDEV");
