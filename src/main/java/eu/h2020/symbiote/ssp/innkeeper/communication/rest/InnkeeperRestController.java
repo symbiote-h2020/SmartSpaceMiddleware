@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 
@@ -44,6 +45,7 @@ public class InnkeeperRestController {
 
 		Assert.notNull(registrationExpiration, "registrationExpiration can not be null!");
 		this.registrationExpiration = registrationExpiration;
+		this.resourceRepository = resourceRepository;
 	}
 	
 
@@ -60,6 +62,8 @@ public class InnkeeperRestController {
 
 				
 		InnkeeperResource innkeeperResource = new InnkeeperResource(payload);
+		
+		
 		return innkeeperResource.requestHandler();
 	}
 
