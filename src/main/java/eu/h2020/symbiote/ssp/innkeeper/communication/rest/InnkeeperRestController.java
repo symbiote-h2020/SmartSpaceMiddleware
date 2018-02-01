@@ -5,7 +5,8 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerExcep
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.security.communication.IAAMClient;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
-import eu.h2020.symbiote.ssp.innkeeper.repository.ResourceRepository;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
+import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,16 +37,16 @@ import java.util.Timer;
 public class InnkeeperRestController {
 
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
-	private ResourceRepository resourceRepository;
+	private ResourcesRepository resourcesRepository;
 	private Integer registrationExpiration;
 	@Autowired
-	public InnkeeperRestController(ResourceRepository resourceRepository, RabbitTemplate rabbitTemplate,
+	public InnkeeperRestController(ResourcesRepository resourcesRepository, RabbitTemplate rabbitTemplate,
 			@Qualifier("registrationExpiration") Integer registrationExpiration,
 			@Qualifier("makeResourceOffline") Integer makeResourceOffine, Timer timer) {
 
 		Assert.notNull(registrationExpiration, "registrationExpiration can not be null!");
 		this.registrationExpiration = registrationExpiration;
-		this.resourceRepository = resourceRepository;
+		this.resourcesRepository = resourcesRepository;
 	}
 	
 
@@ -62,8 +63,10 @@ public class InnkeeperRestController {
 
 				
 		InnkeeperResource innkeeperResource = new InnkeeperResource(payload);
-		
-		
+		List<ResourceInfo> current_res = resourcesRepository.findAll();
+		ResourceInfo res = new ResourceInfo("001","002");
+		resourcesRepository.save(res);
+		log.info("current_res="+current_res.get(0).getInternalId());
 		return innkeeperResource.requestHandler();
 	}
 	
