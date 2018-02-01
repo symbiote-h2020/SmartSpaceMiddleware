@@ -42,6 +42,9 @@ class AppConfig extends AbstractMongoConfiguration {
     @Bean
     @Override
     public MongoTemplate mongoTemplate() throws Exception {
+    	log.info("============================================");
+    	log.info("New MongoClient host="+mongoHost+", databaseName="+databaseName);
+    	log.info("============================================");
         return new MongoTemplate(new MongoClient(mongoHost), databaseName);
     }
 

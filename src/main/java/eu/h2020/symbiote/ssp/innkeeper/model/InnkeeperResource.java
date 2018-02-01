@@ -4,7 +4,6 @@ package eu.h2020.symbiote.ssp.innkeeper.model;
 
 import java.util.HashSet;
 import java.util.Map;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,11 +11,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import com.google.common.reflect.ClassPath.ResourceInfo;
-
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
+import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
+import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
+import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
 public class InnkeeperResource {
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
@@ -24,8 +24,17 @@ public class InnkeeperResource {
 	private Map<String,String> payload;
 	private Integer expirationTime;
 	
-	public InnkeeperResource(Map<String,String> payload) {
+	
+	SessionRepository sessionRepository;
+	ResourcesRepository resourcesRepository;
+	
+	public InnkeeperResource(Map<String,String> payload,	
+					SessionRepository sessionRepository,
+					ResourcesRepository resourcesRepository) {
 		this.payload = payload;
+		this.sessionRepository = sessionRepository;
+		this.resourcesRepository = resourcesRepository;
+		
 	}
 	
 	public Map<String, String> getPayload(){
@@ -34,6 +43,7 @@ public class InnkeeperResource {
 
 	public ResponseEntity<Object> requestHandler() {
 		ResponseEntity<Object> responseEntity= null;
+		
 		if (new HashSet<String>( this.payload.keySet()).equals( 
 				new HashSet<String>(InnkeeperRestControllerConstants.JOIN_RESOURCE_PAYLOAD_VALS))){
 			log.info("JOIN RESOURCE");
@@ -83,7 +93,26 @@ public class InnkeeperResource {
 			 * 2. check if SDEV is registered L3/L4
 			 * 2. update mongoDB 
 			 * 3. give some feedback to SDEV 
-			 */			
+			 */
+			
+			
+					
+			
+//			if (sessionRepository.findById(payload.get("session")) == null) {
+//				log.info(payload.get("session") + " does not exists, need run LWSP key exchange... maybe..." );
+//			}else {
+//				log.info("I got a session, let's check if session is expired");
+//			}
+			String expiration_time="100";
+			SessionInfo res1 = new SessionInfo("id",payload.get("session"),expiration_time);
+//			ResourceInfo res = new ResourceInfo("id",payload.get("session"));
+			
+			Object o = sessionRepository.save(res1);
+			if (o == null) {
+				log.info("NOTHING DONE");
+			}else {
+				log.info("Collection updated");
+			}
 			
 			HttpHeaders headers =new HttpHeaders();
 			headers.add("1", "this is a SDEV");

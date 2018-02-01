@@ -3,29 +3,20 @@ package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
-import eu.h2020.symbiote.security.communication.IAAMClient;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
+import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
-import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Timer;
 
 /**
  * Created by vasgl on 8/24/2017.
@@ -37,8 +28,13 @@ import java.util.Timer;
 public class InnkeeperRestController {
 
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
-	private ResourcesRepository resourcesRepository;
+	@Autowired
+	ResourcesRepository resourcesRepository;
+	
+	@Autowired
+	SessionRepository sessionRepository;
 	private Integer registrationExpiration;
+	/*
 	@Autowired
 	public InnkeeperRestController(ResourcesRepository resourcesRepository, RabbitTemplate rabbitTemplate,
 			@Qualifier("registrationExpiration") Integer registrationExpiration,
@@ -48,48 +44,45 @@ public class InnkeeperRestController {
 		this.registrationExpiration = registrationExpiration;
 		this.resourcesRepository = resourcesRepository;
 	}
-	
+	 */
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
-		
-		InnkeeperResource innkeeperResource = new InnkeeperResource(payload);
-				
+
+		InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
+
 		return innkeeperResource.requestHandler();
 	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> registry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 
-				
-		InnkeeperResource innkeeperResource = new InnkeeperResource(payload);
-		List<ResourceInfo> current_res = resourcesRepository.findAll();
-		ResourceInfo res = new ResourceInfo("001","002");
-		resourcesRepository.save(res);
-		log.info("current_res="+current_res.get(0).getInternalId());
+		
+		InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
+		
 		return innkeeperResource.requestHandler();
 	}
-	
+
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> unregistry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 
-				
+
 		log.info("UNREGISTRATION: TBD");
-		
+
 		return null;
 	}
-	
-	
+
+
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> keep_alive(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 
-				
+
 		log.info("KEEP ALIVE: TBD");
-		
+
 		return null;
 	}
 
-	
+
 	/*
 	 * ResponseEntity<JoinResponse> join(@RequestBody JoinRequest joinRequest)
 	 * throws Exception { System.out.println("test"); boolean alreadyRegistered =
@@ -136,7 +129,7 @@ public class InnkeeperRestController {
 	 * 
 	 * return ResponseEntity.ok(joinResponse); }
 	 */
-/*
+	/*
 	@PostMapping(InnkeeperRestControllerConstants.INNKEEPER_LIST_RESOURCES_REQUEST_PATH)
 	ResponseEntity<ListResourcesResponse> listResources(@RequestBody ListResourcesRequest request) {
 
@@ -252,5 +245,5 @@ public class InnkeeperRestController {
 
 		return timerTask;
 	}
-	*/
+	 */
 }
