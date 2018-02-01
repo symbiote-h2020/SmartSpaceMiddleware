@@ -66,6 +66,25 @@ public class InnkeeperRestController {
 		
 		return innkeeperResource.requestHandler();
 	}
+	
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)
+	public ResponseEntity<Object> unregistry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+
+				
+		log.info("UNREGISTRATION: TBD");
+		
+		return null;
+	}
+	
+	
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH, method = RequestMethod.POST)
+	public ResponseEntity<Object> keep_alive(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+
+				
+		log.info("KEEP ALIVE: TBD");
+		
+		return null;
+	}
 
 	
 	/*
