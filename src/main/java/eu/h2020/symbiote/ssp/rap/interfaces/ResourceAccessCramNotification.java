@@ -30,9 +30,9 @@ import org.springframework.web.client.RestTemplate;
  *
  * @author Luca Tomaselli <l.tomaselli@nextworks.it>
  */
-public class ResourceAccessNotification {
+public class ResourceAccessCramNotification {
     
-    private static final Logger log = LoggerFactory.getLogger(ResourceAccessNotification.class);
+    private static final Logger log = LoggerFactory.getLogger(ResourceAccessCramNotification.class);
     
     private final String notificationUrl;    
     private final IComponentSecurityHandler securityHandler;
@@ -46,7 +46,7 @@ public class ResourceAccessNotification {
     @JsonProperty("failedAttempts")
     private List<FailedAccessInfoMessage> failedAttempts;
     
-    public ResourceAccessNotification(IComponentSecurityHandler securityHandler, String notificationUrl) {
+    public ResourceAccessCramNotification(IComponentSecurityHandler securityHandler, String notificationUrl) {
         this.securityHandler = securityHandler;
         this.notificationUrl = notificationUrl;
     }
@@ -81,16 +81,16 @@ public class ResourceAccessNotification {
     }
     
     
-    public void SendSuccessfulAttemptsMessage(String message){
-        sendMessage(message);
+    public void SendSuccessfulAttempts(String message){
+    //    sendMessage(message);
     }
     
-    public void SendFailAccessMessage(String message){
-        sendMessage(message);
+    public void SendFailAttempts(String message){
+    //    sendMessage(message);
     }
     
-    public void SendSuccessfulPushMessage(String message){
-        sendMessage(message);
+    public void SendSuccessfulPushes(String message){
+    //    sendMessage(message);
     }
     
     private void sendMessage(String message){

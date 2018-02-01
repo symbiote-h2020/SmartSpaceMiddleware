@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
-import eu.h2020.symbiote.ssp.rap.resources.RapDefinitions;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
@@ -47,12 +46,10 @@ import org.apache.olingo.server.api.uri.UriResourceNavigation;
 import org.apache.olingo.server.core.uri.UriResourcePrimitivePropertyImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 /**
  *
@@ -76,27 +73,23 @@ public class RapPrimitiveProcessor implements PrimitiveProcessor {
     private IComponentSecurityHandler securityHandler;
     
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private RestTemplate restTemplate;
 
-    @Autowired
-    @Qualifier(RapDefinitions.PLUGIN_EXCHANGE_OUT)
-    TopicExchange exchange;
-    
-    @Value("${symbiote.notification.url}") 
+    @Value("${symbiote.rap.cram.url}") 
     private String notificationUrl;
     
-    @Value("${securityEnabled}")
-    private Boolean securityEnabled;
-    
-    @Value("${rabbit.replyTimeout}")
-    private int rabbitReplyTimeout;    
+    @Value("${rap.debug.disableSecurity}")
+    private Boolean disableSecurity;
 
+    @Value("${rap.plugin.requestEndpoint}") 
+    private String pluginRequestEndpoint;
+    
     private StorageHelper storageHelper;
     
     @Override
     public void init(OData odata, ServiceMetadata sm) {
         storageHelper = new StorageHelper(resourcesRepo, pluginRepo, accessPolicyRepo, securityHandler, 
-                                        rabbitTemplate, rabbitReplyTimeout, exchange, notificationUrl);
+                                        restTemplate, pluginRequestEndpoint, notificationUrl);
     }
     
     @Override
@@ -175,7 +168,7 @@ public class RapPrimitiveProcessor implements PrimitiveProcessor {
             return;
         }
         
-        if(securityEnabled){
+        if(!disableSecurity){
         // checking access policies
             try {
                 for(ResourceInfo resource : resourceInfoList) {

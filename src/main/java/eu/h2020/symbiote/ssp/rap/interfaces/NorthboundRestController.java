@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
@@ -17,32 +16,28 @@ import eu.h2020.symbiote.ssp.rap.exceptions.*;
 import eu.h2020.symbiote.ssp.rap.interfaces.conditions.NBInterfaceRESTCondition;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessGetMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessHistoryMessage;
-import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessMessage.AccessType;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessSetMessage;
-import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
-import eu.h2020.symbiote.ssp.rap.resources.RapDefinitions;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
 import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
-import eu.h2020.symbiote.ssp.rap.resources.query.Query;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
 import java.util.*;
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.olingo.commons.api.http.HttpStatusCode;
+import org.apache.olingo.server.api.ODataApplicationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,6 +45,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.HandlerMapping;
 
 
@@ -61,7 +57,7 @@ import org.springframework.web.servlet.HandlerMapping;
  * 
  */
 @Conditional(NBInterfaceRESTCondition.class)
-@RestController
+@RestController("/rap")
 public class NorthboundRestController {
 
     private static final Logger log = LoggerFactory.getLogger(RestController.class);
@@ -70,11 +66,7 @@ public class NorthboundRestController {
     public final String SECURITY_RESPONSE_HEADER = "x-auth-response";
     
     @Autowired
-    private RabbitTemplate rabbitTemplate;
-    
-    @Autowired
-    @Qualifier(RapDefinitions.PLUGIN_EXCHANGE_OUT)
-    private TopicExchange exchange;
+    private RestTemplate restTemplate;
     
     @Autowired
     private ResourcesRepository resourcesRepo;
@@ -88,19 +80,15 @@ public class NorthboundRestController {
     @Autowired
     private AccessPolicyRepository accessPolicyRepo;
    
-    @Value("${symbiote.notification.url}") 
+    @Value("${symbiote.rap.cram.url}") 
     private String notificationUrl;
     
-    @Value("${securityEnabled}")
-    private Boolean securityEnabled;
+    @Value("${rap.plugin.requestEndpoint}") 
+    private String pluginRequestEndpoint;
     
-    @Value("${rabbit.replyTimeout}")
-    private int rabbitReplyTimeout;
-    
-    @PostConstruct
-    public void init() {
-        rabbitTemplate.setReplyTimeout(rabbitReplyTimeout);
-    }
+    @Value("${rap.debug.disableSecurity}")
+    private Boolean disableSecurity;
+      
     
     /**
      * Used to retrieve the current value of a registered resource
@@ -111,15 +99,13 @@ public class NorthboundRestController {
      * @return  the current value read from the resource
      * @throws java.lang.Exception
      */
-    @RequestMapping(value="/rap/Sensor/{resourceId}", method=RequestMethod.GET)
+    @RequestMapping(value="/Sensor/{resourceId}", method=RequestMethod.GET)
     public ResponseEntity<Object> readResource(@PathVariable String resourceId, HttpServletRequest request) throws Exception {
-        Exception e = null;
-        String path = "/rap/Sensor/"+resourceId;
-        HttpStatus httpStatus = null;
+        String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         HttpHeaders responseHeaders = new HttpHeaders();
-        //Observation ob = null;
         Object response = null;
         try {
+        
             log.info("Received read resource request for ID = " + resourceId);       
             
             // checking access policies
@@ -128,6 +114,7 @@ public class NorthboundRestController {
             ResourceInfo info = getResourceInfo(resourceId);
             List<ResourceInfo> infoList = new ArrayList();
             infoList.add(info);
+            
             ResourceAccessGetMessage msg = new ResourceAccessGetMessage(infoList);
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
@@ -136,66 +123,51 @@ public class NorthboundRestController {
             
             String pluginId = info.getPluginId();
             if(pluginId == null) {
-                List<PluginInfo> lst = pluginRepo.findAll();
-                if(lst == null || lst.isEmpty())
-                    throw new Exception("No plugin found");
-                
-                pluginId = lst.get(0).getPluginId();
+                log.error("No plugin found");
+                throw new Exception("No plugin associated with resource");
+            }            
+            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
+            if(lst == null || !lst.isPresent()) {
+                log.error("No plugin registered with id " + pluginId);
+                throw new Exception("No plugin registered with id " + pluginId);
             }
-            String routingKey =  pluginId + "." + AccessType.GET.toString().toLowerCase();
+            String pluginUrl = lst.get().getPluginURL();
             
+            String url = pluginUrl + pluginRequestEndpoint;
+            log.info("Sending POST request to " + url);
+            log.debug("Message: ");
+            log.debug(json);
             
-            Object obj = rabbitTemplate.convertSendAndReceive(exchange.getName(), routingKey, json);          
-            
-            response = obj;
-            if (obj instanceof byte[]) {
-                response = new String((byte[]) obj, "UTF-8");
+            HttpEntity<String> httpEntity = new HttpEntity<>(json);
+            response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            if (response == null) {
+                log.error("No response from plugin");
+                throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
             }
-            if(response == null)
-                throw new Exception("No response from plugin");
             
-            try{
-                List<Observation> observations = mapper.readValue(response.toString(), new TypeReference<List<Observation>>() {});
-                if(observations != null && !observations.isEmpty()){
-                    Observation o = observations.get(0);
-                    Observation ob = new Observation(resourceId, o.getLocation(), o.getResultTime(), o.getSamplingTime(), o.getObsValues());
-                    response = ob;
+            if(!disableSecurity){
+                try {
+                    String serResponse = securityHandler.generateServiceResponse();
+                    responseHeaders.set(SECURITY_RESPONSE_HEADER, serResponse);
+                } catch (SecurityHandlerException sce){
+                    log.error(sce.getMessage(), sce);
+                    throw sce;
                 }
-            }catch (Exception ex) {
-                // if it's not an Observation, response is formatted as a String
+            
             }
             sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
-        
-            httpStatus = HttpStatus.OK;
             
-        } catch(EntityNotFoundException enf) {
-            e = enf;
-            log.error(e.toString(),e);
-            httpStatus = enf.getHttpStatus();
-        } catch (Exception ex) {
-            e = ex;
-            String err = "Unable to read resource with id: " + resourceId;
-            log.error(err + "\n" + e.getMessage(),e);
-            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-        }     
-        
-        if(!httpStatus.equals(HttpStatus.OK)){
-            if(e == null)
-                e = new GenericException("Generic error");
-            sendFailMessage(path, resourceId, e);
+        } catch(EntityNotFoundException e) {
+            log.error(e.getMessage(),e);           
+            sendFailAccessMessage(path, resourceId, e);
+            return new ResponseEntity<>(e.getMessage(), responseHeaders, e.getHttpStatus());
+        } catch (Exception e) {            
+            log.error(e.getMessage(), e);
+            sendFailAccessMessage(path, resourceId, e);
+            return new ResponseEntity<>(e.getMessage(), responseHeaders, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         
-        if(securityEnabled){
-            try{
-                String serResponse = securityHandler.generateServiceResponse();
-                responseHeaders.set(SECURITY_RESPONSE_HEADER, serResponse);
-            }
-            catch(SecurityHandlerException sce){
-                log.error(sce.getMessage(), sce);
-                throw sce;
-            }
-        }
-        return new ResponseEntity<>(response , responseHeaders, httpStatus);
+        return new ResponseEntity<>(response , responseHeaders, HttpStatus.OK);
     }
     
     /**
@@ -206,24 +178,22 @@ public class NorthboundRestController {
      * @param request 
      * @return  the current value read from the resource
      */
-    @RequestMapping(value="/rap/Sensor/{resourceId}/history", method=RequestMethod.GET)
+    @RequestMapping(value="/Sensor/{resourceId}/history", method=RequestMethod.GET)
     public ResponseEntity<Object> readResourceHistory(@PathVariable String resourceId, HttpServletRequest request) throws Exception {
-        Exception e = null;
-        String path = "/rap/Sensor/"+resourceId+"/history";
-        HttpStatus httpStatus = null;
+        String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         HttpHeaders responseHeaders = new HttpHeaders();
-        //List<Observation> observationsList = null;
         Object response = null;
-        try {
-            log.info("Received read resource request for ID = " + resourceId);           
+        try {        
+            log.info("Received read history resource request for ID = " + resourceId);
             
+            // checking access policies
             checkAccessPolicies(request, resourceId);
-        
+            
             ResourceInfo info = getResourceInfo(resourceId);
             List<ResourceInfo> infoList = new ArrayList();
             infoList.add(info);
-            Query q = null;
-            ResourceAccessHistoryMessage msg = new ResourceAccessHistoryMessage(infoList, TOP_LIMIT, q);
+            
+            ResourceAccessHistoryMessage msg = new ResourceAccessHistoryMessage(infoList, TOP_LIMIT, null);
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             mapper.setSerializationInclusion(Include.NON_EMPTY);
@@ -231,64 +201,51 @@ public class NorthboundRestController {
             
             String pluginId = info.getPluginId();
             if(pluginId == null) {
-                List<PluginInfo> lst = pluginRepo.findAll();
-                if(lst == null || lst.isEmpty())
-                    throw new Exception("No plugin found");
-                
-                pluginId = lst.get(0).getPluginId();
+                log.error("No plugin found");
+                throw new Exception("No plugin associated with resource");
+            }            
+            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
+            if(lst == null || !lst.isPresent()) {
+                log.error("No plugin registered with id " + pluginId);
+                throw new Exception("No plugin registered with id " + pluginId);
             }
-            String routingKey =  pluginId + "." + AccessType.HISTORY.toString().toLowerCase();
-            Object obj = rabbitTemplate.convertSendAndReceive(exchange.getName(), routingKey, json);       
-            response = obj;
-            if (obj instanceof byte[]) {
-                response = new String((byte[]) obj, "UTF-8");
+            String pluginUrl = lst.get().getPluginURL();
+            
+            String url = pluginUrl + pluginRequestEndpoint;
+            log.info("Sending POST request to " + url);
+            log.debug("Message: ");
+            log.debug(json);
+            
+            HttpEntity<String> httpEntity = new HttpEntity<>(json);
+            response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            if (response == null) {
+                log.error("No response from plugin");
+                throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
             }
             
-            try{
-                List<Observation> observations = mapper.readValue(response.toString(), new TypeReference<List<Observation>>() {});
-                if(observations != null && !observations.isEmpty()){
-                    List<Observation> observationsList = new ArrayList();
-                    for(Observation o: observations){
-                        Observation ob = new Observation(resourceId, o.getLocation(), o.getResultTime(), o.getSamplingTime(), o.getObsValues());
-                        observationsList.add(ob);
-                    }
-                    response = observationsList;
+            if(!disableSecurity){
+                try {
+                    String serResponse = securityHandler.generateServiceResponse();
+                    responseHeaders.set(SECURITY_RESPONSE_HEADER, serResponse);
+                } catch (SecurityHandlerException sce){
+                    log.error(sce.getMessage(), sce);
+                    throw sce;
                 }
-            }catch (Exception ex) {
-                // if it's not an Observation, response is formatted as a String
+            
             }
             sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
-
-            httpStatus = HttpStatus.OK;
             
-        } catch(EntityNotFoundException enf) {
-            e = enf;
-            log.error(e.toString(),e);
-            httpStatus = enf.getHttpStatus();
-        } catch (Exception ex) {
-            e = ex;
-            String err = "Unable to read resource with id: " + resourceId;
-            log.error(err + "\n" + e.getMessage(),e);
-            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-        }     
-        
-        if(!httpStatus.equals(HttpStatus.OK)){
-            if(e == null)
-                e = new GenericException("Generic error");
-            sendFailMessage(path, resourceId, e);
+        } catch(EntityNotFoundException e) {
+            log.error(e.getMessage(),e);           
+            sendFailAccessMessage(path, resourceId, e);
+            return new ResponseEntity<>(e.getMessage(), responseHeaders, e.getHttpStatus());
+        } catch (Exception e) {            
+            log.error(e.getMessage(), e);
+            sendFailAccessMessage(path, resourceId, e);
+            return new ResponseEntity<>(e.getMessage(), responseHeaders, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         
-        if(securityEnabled){
-            try{
-                String serResponse = securityHandler.generateServiceResponse();
-                responseHeaders.set(SECURITY_RESPONSE_HEADER, serResponse);
-            }
-            catch(SecurityHandlerException sce){
-                log.error(sce.getMessage(), sce);
-                throw sce;
-            }
-        }
-        return new ResponseEntity<>(response, responseHeaders, httpStatus);
+        return new ResponseEntity<>(response , responseHeaders, HttpStatus.OK);
     }
     
     /**
@@ -301,21 +258,21 @@ public class NorthboundRestController {
      * @return              the http response code
      * @throws java.lang.Exception
      */
-    @RequestMapping(value={"/rap/Actuator/{resourceId}","/rap/Service/{resourceId}"}, method=RequestMethod.POST)
+    @RequestMapping(value={"/Actuator/{resourceId}", "/Service/{resourceId}"}, method=RequestMethod.POST)
     public ResponseEntity<?> writeResource(@PathVariable String resourceId, @RequestBody String body, HttpServletRequest request) throws Exception {
-        Exception e = null;
-        String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
-        HttpStatus httpStatus;
-        String response = null;
         HttpHeaders responseHeaders = new HttpHeaders();
-        try {
+        Object response = null;
+        String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+        try {        
             log.info("Received write resource request for ID = " + resourceId + " with values " + body);
             
+            // checking access policies
             checkAccessPolicies(request, resourceId);
-
+            
             ResourceInfo info = getResourceInfo(resourceId);
             List<ResourceInfo> infoList = new ArrayList();
             infoList.add(info);
+            
             ResourceAccessSetMessage msg = new ResourceAccessSetMessage(infoList, body);            
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
@@ -324,53 +281,51 @@ public class NorthboundRestController {
             
             String pluginId = info.getPluginId();
             if(pluginId == null) {
-                List<PluginInfo> lst = pluginRepo.findAll();
-                if(lst == null || lst.isEmpty())
-                    throw new Exception("No plugin found");
-                
-                pluginId = lst.get(0).getPluginId();
+                log.error("No plugin found");
+                throw new Exception("No plugin associated with resource");
+            }            
+            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
+            if(lst == null || !lst.isPresent()) {
+                log.error("No plugin registered with id " + pluginId);
+                throw new Exception("No plugin registered with id " + pluginId);
             }
-            String routingKey =  pluginId + "." + AccessType.SET.toString().toLowerCase();
-            Object obj = rabbitTemplate.convertSendAndReceive(exchange.getName(), routingKey, json);
-            response = "";
-            if(obj != null){
-                if (obj instanceof byte[]) {
-                    response = new String((byte[]) obj, "UTF-8");
-                } else {
-                    response = (String) obj;
+            String pluginUrl = lst.get().getPluginURL();
+            
+            String url = pluginUrl + pluginRequestEndpoint;
+            log.info("Sending POST request to " + url);
+            log.debug("Message: ");
+            log.debug(json);
+            
+            HttpEntity<String> httpEntity = new HttpEntity<>(json);
+            response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            if (response == null) {
+                log.error("No response from plugin");
+                throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
+            }
+            
+            if(!disableSecurity){
+                try {
+                    String serResponse = securityHandler.generateServiceResponse();
+                    responseHeaders.set(SECURITY_RESPONSE_HEADER, serResponse);
+                } catch (SecurityHandlerException sce){
+                    log.error(sce.getMessage(), sce);
+                    throw sce;
                 }
+            
             }
             sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
-            httpStatus = HttpStatus.OK;
             
-        } catch(EntityNotFoundException enf) {
-            e = enf;
-            log.error(e.toString(),e);
-            httpStatus = enf.getHttpStatus();
-        } catch (Exception ex) {
-            e = ex;
-            String err = "Unable to read resource with id: " + resourceId;
-            log.error(err + "\n" + e.getMessage(),e);
-            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-        }     
-        
-        if(!httpStatus.equals(HttpStatus.OK)){
-            if(e == null)
-                e = new GenericException("Generic error");
-            sendFailMessage(path, resourceId, e);
+        } catch(EntityNotFoundException e) {
+            log.error(e.getMessage(),e);           
+            sendFailAccessMessage(path, resourceId, e);
+            return new ResponseEntity<>(e.getMessage(), responseHeaders, e.getHttpStatus());
+        } catch (Exception e) {            
+            log.error(e.getMessage(), e);
+            sendFailAccessMessage(path, resourceId, e);
+            return new ResponseEntity<>(e.getMessage(), responseHeaders, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         
-        if(securityEnabled){
-            try{
-                String serResponse = securityHandler.generateServiceResponse();
-                responseHeaders.set(SECURITY_RESPONSE_HEADER, serResponse);
-            }
-            catch(SecurityHandlerException sce){
-                log.error(sce.getMessage(), sce);
-                throw sce;
-            }
-        }
-        return new ResponseEntity<>(response, responseHeaders, httpStatus);
+        return new ResponseEntity<>(response , responseHeaders, HttpStatus.OK);
     }
     
     private ResourceInfo getResourceInfo(String resourceId) {
@@ -393,7 +348,7 @@ public class NorthboundRestController {
         }
         
         log.info("secHeaders: " + secHdrs);
-        if(securityEnabled){
+        if(!disableSecurity) {
             SecurityRequest securityReq = new SecurityRequest(secHdrs);
             checkAuthorization(securityReq, resourceId);
         }
@@ -422,7 +377,7 @@ public class NorthboundRestController {
             throw new Exception("Security Policy is not valid");
     }
     
-    private String sendFailMessage(String path, String symbioteId, Exception e) {
+    private String sendFailAccessMessage(String path, String symbioteId, Exception e) {
         String message = null;
         try{
             String jsonNotificationMessage = null;
@@ -442,14 +397,14 @@ public class NorthboundRestController {
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             List<Date> dateList = new ArrayList();
             dateList.add(new Date());
-            ResourceAccessNotification notificationMessage = new ResourceAccessNotification(securityHandler,notificationUrl);
+            ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
             try {
                 notificationMessage.SetFailedAttempts(symbioteId, dateList,code, message, appId, issuer, validationStatus, path); 
                 jsonNotificationMessage = mapper.writeValueAsString(notificationMessage);
             } catch (JsonProcessingException jsonEx) {
                 //log.error(jsonEx.getMessage());
             }
-            notificationMessage.SendFailAccessMessage(jsonNotificationMessage);
+            notificationMessage.SendFailAttempts(jsonNotificationMessage);
         }catch(Exception ex){
             log.error("Error to send FailAccessMessage to CRAM");
             log.error(ex.getMessage(),ex);
@@ -469,14 +424,14 @@ public class NorthboundRestController {
 
             List<Date> dateList = new ArrayList();
             dateList.add(new Date());
-            ResourceAccessNotification notificationMessage = new ResourceAccessNotification(securityHandler,notificationUrl);
+            ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
             try{
                 notificationMessage.SetSuccessfulAttempts(symbioteId, dateList, accessType);
                 jsonNotificationMessage = map.writeValueAsString(notificationMessage);
             } catch (JsonProcessingException e) {
                 //log.error(e.getMessage());
             }
-            notificationMessage.SendSuccessfulAttemptsMessage(jsonNotificationMessage);
+            notificationMessage.SendSuccessfulAttempts(jsonNotificationMessage);
         }catch(Exception e){
             log.error("Error to send SetSuccessfulAttempts to CRAM");
             log.error(e.getMessage(),e);

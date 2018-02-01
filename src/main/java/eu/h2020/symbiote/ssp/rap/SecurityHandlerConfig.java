@@ -26,9 +26,6 @@ public class SecurityHandlerConfig {
     @Value("${symbIoTe.component.keystore.password}")
     private String keystorePasswd;
     
-    @Value("${platform.id}") 
-    private String platformId;
-    
     @Value("${symbIoTe.core.interface.url}")
     private String coreAAMUrl;
     
@@ -44,16 +41,16 @@ public class SecurityHandlerConfig {
     @Value("${symbIoTe.validation.localaam}")
     private Boolean alwaysUseLocalAAMForValidation;
     
-    @Value("${securityEnabled}")
-    private Boolean securityEnabler;    
+    @Value("${rap.debug.disableSecurity}")
+    private Boolean disableSecurity;    
 
     @Bean
     public IComponentSecurityHandler securityHandler() throws SecurityHandlerException {
         
-        String componentId = RAP_KEY + "@" + platformId;
+        String componentId = RAP_KEY + "@S3M";
         // generating the CSH
         IComponentSecurityHandler rapCSH = null;
-        if(securityEnabler){
+        if(!disableSecurity) {
             rapCSH = ComponentSecurityHandlerFactory.getComponentSecurityHandler(
                     coreAAMUrl,
                     keystorePath,

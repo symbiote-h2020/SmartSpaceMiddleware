@@ -98,26 +98,27 @@ public class TestDb {
     @Test
     public void testPlatformInfo() throws Exception{
         //insert
-        String platformId = "plugin_1";
+        String pluginId = "plugin_1";
+        String pluginUrl = "http://example.com";
         boolean hasFilters = false;
         boolean hasNotifications = false;
-        PluginInfo platformInfo = addPlugin(platformId, hasFilters, hasNotifications);
-        assert(platformInfo != null);
+        PluginInfo pluginInfo = addPlugin(pluginId, pluginUrl, hasFilters, hasNotifications);
+        assert(pluginInfo != null);
         //search
-        Optional<PluginInfo> platformInfoOptional = pluginRepository.findById(platformId);
-        assert(platformInfoOptional.isPresent());
-        platformInfoOptional = pluginRepository.findById(platformId+"2");
-        assert(!platformInfoOptional.isPresent());
+        Optional<PluginInfo> pluginInfoOptional = pluginRepository.findById(pluginId);
+        assert(pluginInfoOptional.isPresent());
+        pluginInfoOptional = pluginRepository.findById(pluginId+"2");
+        assert(!pluginInfoOptional.isPresent());
         //delete
-        pluginRepository.delete(platformId);
-        platformInfoOptional = pluginRepository.findById(platformId+"2");
-        assert(!platformInfoOptional.isPresent());
+        pluginRepository.delete(pluginId);
+        pluginInfoOptional = pluginRepository.findById(pluginId+"2");
+        assert(!pluginInfoOptional.isPresent());
     }
     
-    private PluginInfo addPlugin(String platformId, boolean hasFilters, boolean hasNotifications) {
-        PluginInfo platformInfo = new PluginInfo(platformId, hasFilters, hasNotifications);
-        PluginInfo platformInfoResponse = pluginRepository.save(platformInfo);
-        return platformInfoResponse;
+    private PluginInfo addPlugin(String platformId, String pluginUrl, boolean hasFilters, boolean hasNotifications) {
+        PluginInfo pluginInfo = new PluginInfo(platformId, pluginUrl, hasFilters, hasNotifications);
+        PluginInfo pluginInfoResponse = pluginRepository.save(pluginInfo);
+        return pluginInfoResponse;
     }
     
     @Test 

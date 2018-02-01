@@ -16,7 +16,7 @@ import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessHistoryMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessSetMessage;
 import eu.h2020.symbiote.model.cim.Observation;
-import eu.h2020.symbiote.ssp.rap.interfaces.ResourceAccessNotification;
+import eu.h2020.symbiote.ssp.rap.interfaces.ResourceAccessCramNotification;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.rap.resources.query.Comparison;
@@ -57,8 +57,11 @@ import org.apache.olingo.server.api.uri.queryoption.expression.Literal;
 import org.apache.olingo.server.api.uri.queryoption.expression.Member;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 /**
  *
@@ -73,10 +76,10 @@ public class StorageHelper {
     private final AccessPolicyRepository accessPolicyRepo;
     private final ResourcesRepository resourcesRepo;
     private final PluginRepository pluginRepo;
-    private final RabbitTemplate rabbitTemplate;
-    private final TopicExchange exchange;
+    private final RestTemplate restTemplate;
     private final String notificationUrl;
-
+    private final String pluginRequestEndpoint;
+    
     private static final Pattern PATTERN = Pattern.compile(
             "\\p{Digit}{1,4}-\\p{Digit}{1,2}-\\p{Digit}{1,2}"
             + "T\\p{Digit}{1,2}:\\p{Digit}{1,2}(?::\\p{Digit}{1,2})?"
@@ -84,16 +87,14 @@ public class StorageHelper {
 
     public StorageHelper(ResourcesRepository resourcesRepository, PluginRepository pluginRepository,
                         AccessPolicyRepository accessPolicyRepository, IComponentSecurityHandler securityHandlerComponent,
-                         RabbitTemplate rabbit, int rabbitReplyTimeout, TopicExchange topicExchange, String notificationUrl) {
-        //initSampleData();
-        resourcesRepo = resourcesRepository;
-        pluginRepo = pluginRepository;
-        accessPolicyRepo = accessPolicyRepository;
-        securityHandler = securityHandlerComponent;
-        rabbitTemplate = rabbit;
-        rabbitTemplate.setReplyTimeout(rabbitReplyTimeout);
-        exchange = topicExchange;
+                         RestTemplate restTemplate,  String pluginRequestEndpoint, String notificationUrl) {
+        this.resourcesRepo = resourcesRepository;
+        this.pluginRepo = pluginRepository;
+        this.accessPolicyRepo = accessPolicyRepository;
+        this.securityHandler = securityHandlerComponent;
+        this.restTemplate = restTemplate;
         this.notificationUrl = notificationUrl;
+        this.pluginRequestEndpoint = pluginRequestEndpoint;
     }
 
     public ResourceInfo getResourceInfo(List<UriParameter> keyParams) {
@@ -112,7 +113,6 @@ public class StorageHelper {
                     }
                 }
             } catch (Exception e) {
-                int a = 0;
             }
         }
 
@@ -121,13 +121,12 @@ public class StorageHelper {
 
     public Object getRelatedObject(ArrayList<ResourceInfo> resourceInfoList, Integer top, Query filterQuery) throws ODataApplicationException {
         String symbioteId = null;
-        Object response = null;
         try {
             top = (top == null) ? TOP_LIMIT : top;
             ResourceAccessMessage msg;
             
             String pluginId = null;
-            for(ResourceInfo resourceInfo: resourceInfoList){
+            for(ResourceInfo resourceInfo: resourceInfoList) {
                 String symbioteIdTemp = resourceInfo.getSymbioteId();
                 if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
                     symbioteId = symbioteIdTemp;
@@ -135,74 +134,52 @@ public class StorageHelper {
                 if(pluginIdTemp != null && !pluginIdTemp.isEmpty())
                     pluginId = pluginIdTemp;
             }
+            
             if(pluginId == null) {
-                List<PluginInfo> lst = pluginRepo.findAll();
-                if(lst == null || lst.isEmpty())
-                    throw new Exception("No plugin found");
-                
-                pluginId = lst.get(0).getPluginId();
+                log.error("No plugin associated with resource");
+                throw new Exception("No plugin associated with resource");
             }
-            String routingKey;
+            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
+            if(lst == null || !lst.isPresent()) {
+                log.error("No plugin registered with id " + pluginId);
+                throw new Exception("No plugin registered with id " + pluginId);
+            }
+            String pluginUrl = lst.get().getPluginURL();
+            
             if (top == 1) {
                 msg = new ResourceAccessGetMessage(resourceInfoList);
-                routingKey =  pluginId + "." + ResourceAccessMessage.AccessType.GET.toString().toLowerCase();
-                
             } else {
                 msg = new ResourceAccessHistoryMessage(resourceInfoList, top, filterQuery);
-                routingKey =  pluginId + "." + ResourceAccessMessage.AccessType.HISTORY.toString().toLowerCase();
             }
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
             String json = mapper.writeValueAsString(msg);
-
+            
+            String url = pluginUrl + pluginRequestEndpoint;
+            log.info("Sending POST request to " + url);
             log.debug("Message: ");
             log.debug(json);
-            Object obj = rabbitTemplate.convertSendAndReceive(exchange.getName(), routingKey, json);
-            if (obj == null) {
+            
+            HttpEntity<String> httpEntity = new HttpEntity<>(json);
+            ResponseEntity<?> responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            if (responseEntity == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
-            }
-
-            if (obj instanceof byte[]) {
-                response = new String((byte[]) obj, "UTF-8");
-            } else {
-                response = obj;
-            }
+            }            
             
-            try {
-                List<Observation> observations = mapper.readValue(response.toString(), new TypeReference<List<Observation>>() {});
-                if (observations == null || observations.isEmpty()) {
-                    log.error("No observations for resource " + symbioteId);
-                    return null;
-                }            
-
-                if (top == 1) {
-                    Observation o = observations.get(0);
-                    Observation ob = new Observation(symbioteId, o.getLocation(), o.getResultTime(), o.getSamplingTime(), o.getObsValues());
-                    response = ob;
-                } else {
-                    List<Observation> observationsList = new ArrayList();
-                    for (Observation o : observations) {
-                        Observation ob = new Observation(symbioteId, o.getLocation(), o.getResultTime(), o.getSamplingTime(), o.getObsValues());
-                        observationsList.add(ob);
-                    }
-                    response = observationsList;
-                }
-            } catch (Exception e) {
-            }
-            return response;
+            return responseEntity;
         } catch (Exception e) {
             String err = "Unable to read resource " + symbioteId;
             err += "\n Error: " + e.getMessage();
-            log.error(err);
+            log.error(err, e);
             throw new ODataApplicationException(err, HttpStatusCode.NO_CONTENT.getStatusCode(), Locale.ROOT);
         }
     }
 
-    public Object setService(ArrayList<ResourceInfo> resourceInfoList, String requestBody) throws ODataApplicationException {
-        Object obj = null;
+    public ResponseEntity<?> setService(ArrayList<ResourceInfo> resourceInfoList, String requestBody) throws ODataApplicationException {
+        ResponseEntity<?> responseEntity = new ResponseEntity("Unknown error", HttpStatus.INTERNAL_SERVER_ERROR);
         try {
             ResourceAccessMessage msg;
             String pluginId = null;
@@ -210,18 +187,20 @@ public class StorageHelper {
                 pluginId = resourceInfo.getPluginId();
                 if(pluginId != null)
                     break;
-            }
-            if(pluginId == null) {
-                List<PluginInfo> lst = pluginRepo.findAll();
-                if(lst == null || lst.isEmpty())
-                    throw new Exception("No plugin found");
-                
-                pluginId = lst.get(0).getPluginId();
-            }
-            String routingKey = pluginId + "." + ResourceAccessMessage.AccessType.SET.toString().toLowerCase();
-            
-            msg = new ResourceAccessSetMessage(resourceInfoList, requestBody);
+            }            
 
+            if(pluginId == null) {
+                log.error("No plugin associated with resource");
+                throw new Exception("No plugin associated with resource");
+            }
+            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
+            if(lst == null || !lst.isPresent()) {
+                log.error("No plugin registered with id " + pluginId);
+                throw new Exception("No plugin registered with id " + pluginId);
+            }
+            String pluginUrl = lst.get().getPluginURL();
+
+            msg = new ResourceAccessSetMessage(resourceInfoList, requestBody);            
             String json = "";
             try {
                 ObjectMapper mapper = new ObjectMapper();
@@ -232,13 +211,19 @@ public class StorageHelper {
             } catch (JsonProcessingException ex) {
                 log.error("JSon processing exception: " + ex.getMessage());
             }
-            log.info("Message Set: " + json);
-            obj = rabbitTemplate.convertSendAndReceive(exchange.getName(), routingKey, json);
+            String url = pluginUrl + pluginRequestEndpoint;
+            log.info("Sending POST request to " + url);
+            log.debug("Message: ");
+            log.debug(json);
+            
+            HttpEntity<String> httpEntity = new HttpEntity<>(json);
+            responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
             
         } catch (Exception e) {
+            log.error(e.getMessage(),e);
             throw new ODataApplicationException("Internal Error", HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ROOT);
         }
-        return obj;
+        return responseEntity;
     }
     
     public static Query calculateFilter(Expression expression) throws ODataApplicationException {
@@ -436,7 +421,7 @@ public class StorageHelper {
 
             List<Date> dateList = new ArrayList<>();
             dateList.add(new Date());
-            ResourceAccessNotification notificationMessage = new ResourceAccessNotification(securityHandler,notificationUrl);
+            ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
 
             try{
                 notificationMessage.SetSuccessfulAttempts(symbioteId, dateList, accessType);
@@ -444,10 +429,11 @@ public class StorageHelper {
             } catch (JsonProcessingException e) {
                 log.error(e.toString(), e);
             }
-            notificationMessage.SendSuccessfulAttemptsMessage(jsonNotificationMessage);
+            notificationMessage.SendSuccessfulAttempts(jsonNotificationMessage);
         }catch(Exception e){
             log.error("Error to send SetSuccessfulAttempts to CRAM");
             log.error(e.getMessage(),e);
         }
     }
 }
+

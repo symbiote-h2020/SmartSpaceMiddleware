@@ -21,6 +21,9 @@ public class PluginInfo {
     @JsonProperty("pluginId")
     private final String id;
     
+    @JsonProperty("pluginURL")
+    private final String url;
+    
     @JsonProperty("hasFilters")
     private final boolean hasFilters;
        
@@ -29,15 +32,18 @@ public class PluginInfo {
     
     public PluginInfo() {
         id = "";
+        url = "";
         hasFilters = false;
         hasNotifications = false;
     }
     
     @JsonCreator
     public PluginInfo(@JsonProperty("pluginId") String pluginId, 
+            @JsonProperty("pluginURL") String pluginURL, 
             @JsonProperty("hasFilters") boolean hasFilters,
             @JsonProperty("hasNotifications") boolean hasNotifications) {
         this.id = pluginId;
+        this.url = pluginURL;
         this.hasFilters = hasFilters;
         this.hasNotifications = hasNotifications;
     }
@@ -45,6 +51,11 @@ public class PluginInfo {
     @JsonProperty("pluginId")
     public String getPluginId() {
         return id;
+    }
+    
+    @JsonProperty("pluginURL")
+    public String getPluginURL() {
+        return url;
     }
     
     @JsonProperty("hasFilters")

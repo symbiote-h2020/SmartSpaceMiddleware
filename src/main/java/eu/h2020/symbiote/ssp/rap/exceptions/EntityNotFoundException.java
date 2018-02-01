@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  *
  * @author Matteo Pardi <m.pardi@nextworks.it>
  */
-@ResponseStatus(HttpStatus.NO_CONTENT)
+@ResponseStatus(HttpStatus.NOT_FOUND)
 public class EntityNotFoundException extends RuntimeException {
     
     private final String symbioteId;
@@ -27,7 +27,7 @@ public class EntityNotFoundException extends RuntimeException {
     }
     
     public HttpStatus getHttpStatus() {
-        return HttpStatus.NO_CONTENT;
+        return HttpStatus.NOT_FOUND;
     }
     
 }

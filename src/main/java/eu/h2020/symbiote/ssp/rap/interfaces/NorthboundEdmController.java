@@ -88,11 +88,11 @@ public class NorthboundEdmController {
     @Autowired
     private IComponentSecurityHandler securityHandler;
             
-    @Value("${symbiote.notification.url}") 
+    @Value("${symbiote.rap.cram.url}") 
     private String notificationUrl;
     
-    @Value("${securityEnabled}")
-    private Boolean securityEnabled;
+    @Value("${rap.debug.disableSecurity}")
+    private Boolean disableSecurity;
     
     /**
      * Process.
@@ -152,7 +152,7 @@ public class NorthboundEdmController {
             headers.add("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT");
             headers.add("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token");
             
-            if(securityEnabled){
+            if(!disableSecurity){
                 String securityResponseHrd = securityHandler.generateServiceResponse();
                 headers.add(SECURITY_RESPONSE_HEADER, securityResponseHrd);
             }
@@ -194,7 +194,7 @@ public class NorthboundEdmController {
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             List<Date> dateList = new ArrayList<>();
             dateList.add(new Date());
-            ResourceAccessNotification notificationMessage = new ResourceAccessNotification(securityHandler,notificationUrl);
+            ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
             try {
                 notificationMessage.SetFailedAttempts(symbioTeId, dateList, 
                 code, message, appId, issuer, validationStatus, request.getRequestURI()); 
@@ -202,7 +202,7 @@ public class NorthboundEdmController {
             } catch (JsonProcessingException jsonEx) {
                 log.error(jsonEx.toString(), jsonEx);
             }
-            notificationMessage.SendFailAccessMessage(jsonNotificationMessage);
+            notificationMessage.SendFailAttempts(jsonNotificationMessage);
         }catch(Exception e){
             log.error("Error to send FailAccessMessage to CRAM");
             log.error(e.getMessage(),e);

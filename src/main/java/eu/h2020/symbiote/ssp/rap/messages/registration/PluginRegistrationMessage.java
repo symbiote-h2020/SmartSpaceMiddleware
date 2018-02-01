@@ -5,36 +5,41 @@
  */
 package eu.h2020.symbiote.ssp.rap.messages.registration;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 /**
  *
  * @author Matteo Pardi <m.pardi@nextworks.it>
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = RegisterPluginMessage.class,   name = "REGISTER_PLUGIN"),
-        @JsonSubTypes.Type(value = UnregisterPluginMessage.class, name = "UNREGISTER_PLUGIN")
-})
-abstract public class PluginRegistrationMessage extends RegistrationMessage {
-    public enum RegistrationAction {
-        REGISTER_PLUGIN, UNREGISTER_PLUGIN
+public class PluginRegistrationMessage {
+    
+    private final String pluginId;    
+    private final String pluginUrl;        
+    private final boolean hasFilters;       
+    private final boolean hasNotifications;
+    
+    @JsonCreator
+    public PluginRegistrationMessage(String pluginId, String pluginUrl,
+            boolean hasFilters,boolean hasNotifications) {
+        this.pluginId = pluginId;
+        this.pluginUrl = pluginUrl;
+        this.hasFilters = hasFilters;
+        this.hasNotifications = hasNotifications;
     }
     
-    @JsonIgnore
-    RegistrationAction actionType;
-    String platformId;
-    
-    public RegistrationAction getActionType() {
-        return actionType;
+    public String getPluginId() {
+        return pluginId;
     }
     
-    
-    @JsonProperty("platformId")
-    public String getPlatformId() {
-        return platformId;
+    public String getPluginUrl() {
+        return pluginUrl;
+    }    
+        
+    public boolean getHasFilters() {
+        return hasFilters;
+    }
+
+    public boolean getHasNotifications() {
+        return hasNotifications;
     }
 }

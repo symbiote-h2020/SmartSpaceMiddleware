@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package eu.h2020.symbiote.ssp.rap;
+package eu.h2020.symbiote.ssp.resources.db;
 
 import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
