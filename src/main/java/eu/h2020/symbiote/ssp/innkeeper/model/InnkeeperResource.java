@@ -96,23 +96,23 @@ public class InnkeeperResource {
 			 */
 			
 			
-					
-			
-//			if (sessionRepository.findById(payload.get("session")) == null) {
-//				log.info(payload.get("session") + " does not exists, need run LWSP key exchange... maybe..." );
-//			}else {
-//				log.info("I got a session, let's check if session is expired");
-//			}
 			String expiration_time="100";
-			SessionInfo res1 = new SessionInfo("id",payload.get("session"),expiration_time);
-//			ResourceInfo res = new ResourceInfo("id",payload.get("session"));
 			
-			Object o = sessionRepository.save(res1);
-			if (o == null) {
-				log.info("NOTHING DONE");
-			}else {
-				log.info("Collection updated");
-			}
+			
+			/*
+			 suggest for LWSP class, LWSP must save the session in a specific Collection (sessions)
+			 in resource_db mongodb database. In resources.db package I created an example of SessionInfo/SessionRepository
+			 here the snippet:
+			 
+			 SessionInfo res1 = new SessionInfo("id",payload.get("session"),expiration_time);
+			 Object o = sessionRepository.save(res1);
+			 
+			 
+			 LWSP class should give as output a data structure which contains:
+			 id, description, url, informationModel, and will update also the session table
+			 */
+			//i.e.:
+			//Map<String,String>=Lwsp.update(payload);
 			
 			HttpHeaders headers =new HttpHeaders();
 			headers.add("1", "this is a SDEV");
