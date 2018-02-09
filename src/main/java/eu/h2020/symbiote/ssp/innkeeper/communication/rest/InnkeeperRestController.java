@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
+import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
@@ -53,20 +54,33 @@ public class InnkeeperRestController {
 	 */
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
-	//public ResponseEntity<Object> join(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
-	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
+	public ResponseEntity<Object> join(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+		InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
+		return innkeeperResource.requestHandler();
+	}
+
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
+	//public ResponseEntity<Object> registry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
+
+
 		//InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
-		Lwsp lwsp = new Lwsp(payload);
+		//String rx_json = "";
+
+		Lwsp lwsp = new Lwsp(payload,sessionRepository);
 		String rx_json = lwsp.rx();
+
 		//save session in mongoDB
 		// check MTI: if exists -> negotiation else DATA
 		ObjectMapper mapper1 = new ObjectMapper(new JsonFactory());
 		JsonNode lwspNode = mapper1.readTree(rx_json);
-		
-		if (lwspNode.has("GWInnkeeperHello")) {
-			
+
+		if (!rx_json.isEmpty() && lwspNode.has("GWInnkeeperHello")) {
 			// HANDLE HELLO RESPONSE
-		}else{
+			log.info("negotiation");
+		}
+		if (!rx_json.isEmpty() && lwspNode.has("GWINKAuthn")) {
+			payload = lwsp.decode();
 			// HANDLE DATA
 			log.info("PAYLOAD="+payload);
 
@@ -86,8 +100,6 @@ public class InnkeeperRestController {
 
 				Iterator<Map.Entry<String,JsonNode>> fieldsIterator = rootNode.fields();
 
-
-
 				while (fieldsIterator.hasNext()) {
 
 					Map.Entry<String,JsonNode> field = fieldsIterator.next();
@@ -106,33 +118,17 @@ public class InnkeeperRestController {
 						}
 
 					}
+					//TODO: query to mongoDB
 				}
 			} catch (Exception e) {
 				//bypass
 			}
 
 		}
-		
-		
-		
-
-
-
-		//ADD LWSP Call
-		//String jsonDyn = '{"id":"myid","pluginId":"ciao","pluginURL":"http://pippo.log","semanticDescription":"[\"ddd\":\"abc\"]"}';
-
-
+		// TODO: set request handler return to SDEV
 		return null;
+
 		//return innkeeperResource.requestHandler();
-	}
-
-	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> registry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
-
-
-		InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
-
-		return innkeeperResource.requestHandler();
 	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)

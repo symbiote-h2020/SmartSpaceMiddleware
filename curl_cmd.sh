@@ -12,5 +12,4 @@ curl -H 'Content-Type: application/json' -d '
                         {"id":"light",          "interworkingServiceURL":"INNK_TAG_SERVICE_URL",    "locatedAt":"INNK_TAG_LOCATED_AT"},
                         {"id":"temperatur",          "interworkingServiceURL":"INNK_TAG_SERVICE_URL",    "locatedAt":"INNK_TAG_LOCATED_AT"}
                 ]}
-}' -X POST -D - http://localhost:8080/innkeeper/join;
-~                                                          
+}' -X POST -D - http://localhost:8080/innkeeper/join
