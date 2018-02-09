@@ -1,6 +1,10 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
@@ -15,7 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -30,7 +36,7 @@ public class InnkeeperRestController {
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
 	@Autowired
 	ResourcesRepository resourcesRepository;
-	
+
 	@Autowired
 	SessionRepository sessionRepository;
 	private Integer registrationExpiration;
@@ -47,19 +53,69 @@ public class InnkeeperRestController {
 	 */
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> join(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+	//public ResponseEntity<Object> join(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
+		//InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
+		log.info("PAYLOAD="+payload);
 
-		InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
+		String json=payload;
+		json=json.replace("INNK_TAG_CONNECTED_TO", "SSP Love Boat");
+		json=json.replace("INNK_TAG_SERVICE_URL", "http://loveboat.org");
+		json=json.replace("INNK_TAG_LOCATED_AT", "Atlantic Ocean");
+		try {
+
+			ObjectMapper mapper = new ObjectMapper(new JsonFactory());
+			JsonNode rootNode = mapper.readTree(json);  
+
+			//replace tag with innkeeper configuration values:
+			// connectedTo
+			// locatedAt
+			// interworkingServiceUrl
+
+			Iterator<Map.Entry<String,JsonNode>> fieldsIterator = rootNode.fields();
+
+
+
+			while (fieldsIterator.hasNext()) {
+
+				Map.Entry<String,JsonNode> field = fieldsIterator.next();
+				System.out.println("Key: " + field.getKey() + "\tValue:" + field.getValue());
+				if (field.getKey().equals("semanticDescription")) {
+					JsonNode currNode = field.getValue();
+
+					log.info("semantic Description fields: connectedTo: "+currNode.get("connectedTo"));
+					log.info("semantic Description fields: hasResource: "+currNode.get("hasResource"));
+					log.info("semantic Description fields: currNode.get(\"hasResource\").size(): "+currNode.get("hasResource").size());
+
+					int num_of_resources = currNode.get("hasResource").size();
+					for (int i=0;i<num_of_resources;i++) {
+						log.info("semanticDescription.id="+currNode.get("hasResource").get(i).get("id"));
+						log.info("semanticDescription.locatedAt="+currNode.get("hasResource").get(i).get("locatedAt"));
+					}
+
+				}
+			}
+		} catch (Exception e) {
+			//bypass
+		}
+
+
+
+
 		//ADD LWSP Call
-		return innkeeperResource.requestHandler();
+		//String jsonDyn = '{"id":"myid","pluginId":"ciao","pluginURL":"http://pippo.log","semanticDescription":"[\"ddd\":\"abc\"]"}';
+
+
+		return null;
+		//return innkeeperResource.requestHandler();
 	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> registry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 
-		
+
 		InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
-		
+
 		return innkeeperResource.requestHandler();
 	}
 
