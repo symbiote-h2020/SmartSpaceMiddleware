@@ -56,49 +56,65 @@ public class InnkeeperRestController {
 	//public ResponseEntity<Object> join(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 		//InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
-		log.info("PAYLOAD="+payload);
+		Lwsp lwsp = new Lwsp(payload);
+		String rx_json = lwsp.rx();
+		//save session in mongoDB
+		// check MTI: if exists -> negotiation else DATA
+		ObjectMapper mapper1 = new ObjectMapper(new JsonFactory());
+		JsonNode lwspNode = mapper1.readTree(rx_json);
+		
+		if (lwspNode.has("GWInnkeeperHello")) {
+			
+			// HANDLE HELLO RESPONSE
+		}else{
+			// HANDLE DATA
+			log.info("PAYLOAD="+payload);
 
-		String json=payload;
-		json=json.replace("INNK_TAG_CONNECTED_TO", "SSP Love Boat");
-		json=json.replace("INNK_TAG_SERVICE_URL", "http://loveboat.org");
-		json=json.replace("INNK_TAG_LOCATED_AT", "Atlantic Ocean");
-		try {
+			String json=payload;
+			json=json.replace("INNK_TAG_CONNECTED_TO", "SSP Love Boat");
+			json=json.replace("INNK_TAG_SERVICE_URL", "http://loveboat.org");
+			json=json.replace("INNK_TAG_LOCATED_AT", "Atlantic Ocean");
+			try {
 
-			ObjectMapper mapper = new ObjectMapper(new JsonFactory());
-			JsonNode rootNode = mapper.readTree(json);  
+				ObjectMapper mapper = new ObjectMapper(new JsonFactory());
+				JsonNode rootNode = mapper.readTree(json);  
 
-			//replace tag with innkeeper configuration values:
-			// connectedTo
-			// locatedAt
-			// interworkingServiceUrl
+				//replace tag with innkeeper configuration values:
+				// connectedTo
+				// locatedAt
+				// interworkingServiceUrl
 
-			Iterator<Map.Entry<String,JsonNode>> fieldsIterator = rootNode.fields();
+				Iterator<Map.Entry<String,JsonNode>> fieldsIterator = rootNode.fields();
 
 
 
-			while (fieldsIterator.hasNext()) {
+				while (fieldsIterator.hasNext()) {
 
-				Map.Entry<String,JsonNode> field = fieldsIterator.next();
-				System.out.println("Key: " + field.getKey() + "\tValue:" + field.getValue());
-				if (field.getKey().equals("semanticDescription")) {
-					JsonNode currNode = field.getValue();
+					Map.Entry<String,JsonNode> field = fieldsIterator.next();
+					System.out.println("Key: " + field.getKey() + "\tValue:" + field.getValue());
+					if (field.getKey().equals("semanticDescription")) {
+						JsonNode currNode = field.getValue();
 
-					log.info("semantic Description fields: connectedTo: "+currNode.get("connectedTo"));
-					log.info("semantic Description fields: hasResource: "+currNode.get("hasResource"));
-					log.info("semantic Description fields: currNode.get(\"hasResource\").size(): "+currNode.get("hasResource").size());
+						log.info("semantic Description fields: connectedTo: "+currNode.get("connectedTo"));
+						log.info("semantic Description fields: hasResource: "+currNode.get("hasResource"));
+						log.info("semantic Description fields: currNode.get(\"hasResource\").size(): "+currNode.get("hasResource").size());
 
-					int num_of_resources = currNode.get("hasResource").size();
-					for (int i=0;i<num_of_resources;i++) {
-						log.info("semanticDescription.id="+currNode.get("hasResource").get(i).get("id"));
-						log.info("semanticDescription.locatedAt="+currNode.get("hasResource").get(i).get("locatedAt"));
+						int num_of_resources = currNode.get("hasResource").size();
+						for (int i=0;i<num_of_resources;i++) {
+							log.info("semanticDescription.id="+currNode.get("hasResource").get(i).get("id"));
+							log.info("semanticDescription.locatedAt="+currNode.get("hasResource").get(i).get("locatedAt"));
+						}
+
 					}
-
 				}
+			} catch (Exception e) {
+				//bypass
 			}
-		} catch (Exception e) {
-			//bypass
-		}
 
+		}
+		
+		
+		
 
 
 
