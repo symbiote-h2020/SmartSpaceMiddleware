@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,7 +44,18 @@ import java.util.Map;
 @RestController
 @RequestMapping(InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH)
 public class InnkeeperRestController {
+	@Value("${innkeeper.tag.connected_to}")
+    private String innk_connected_to;
 
+	@Value("${innkeeper.tag.service_url}")
+	private String innk_service_url;
+	
+	@Value("${innkeeper.tag.located_at}")
+	private String innk_located_at;
+	
+	
+	
+	
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
 	@Autowired
 	ResourcesRepository resourcesRepository;
@@ -97,9 +109,9 @@ public class InnkeeperRestController {
 			
 			String json = lwsp.decode();
 			//Replace INNK local tags
-			json=json.replace("INNK_TAG_CONNECTED_TO", "SSP Love Boat");
-			json=json.replace("INNK_TAG_SERVICE_URL", "http://loveboat.org");
-			json=json.replace("INNK_TAG_LOCATED_AT", "Atlantic Ocean");
+			json=json.replace("INNK_TAG_CONNECTED_TO", innk_connected_to);
+			json=json.replace("INNK_TAG_SERVICE_URL", innk_service_url);
+			json=json.replace("INNK_TAG_LOCATED_AT", innk_located_at);
 			try {
 
 				ObjectMapper mapper = new ObjectMapper(new JsonFactory());

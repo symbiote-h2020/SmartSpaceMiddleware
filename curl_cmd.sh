@@ -10,7 +10,8 @@ curl -H 'Content-Type: application/json' -d '
                 "agentType":"SDEV",
                 "hasResource":[
                         {"id":"light",          "interworkingServiceURL":"INNK_TAG_SERVICE_URL",    "locatedAt":"INNK_TAG_LOCATED_AT"},
-                        {"id":"temperatur",          "interworkingServiceURL":"INNK_TAG_SERVICE_URL",    "locatedAt":"INNK_TAG_LOCATED_AT"}
+                        {"id":"temperatur",          "interworkingServiceURL":"INNK_TAG_SERVICE_URL",    "locatedAt":"INNK_TAG_LOCATED_AT"},
+                        {"id":"pressure",          "interworkingServiceURL":"INNK_TAG_SERVICE_URL",    "locatedAt":"INNK_TAG_LOCATED_AT"}
                 ]},
 	"observedProperties":["R", "G", "B", "Intensity","Mode"]
 }' -X POST -D - http://localhost:8080/innkeeper/registry
