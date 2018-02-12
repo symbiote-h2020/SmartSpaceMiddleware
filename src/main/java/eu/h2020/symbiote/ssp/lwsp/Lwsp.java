@@ -6,6 +6,8 @@ import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 public class Lwsp {
 	private String data;
 	private SessionRepository sessionRepository;
+	
+
 	public Lwsp(String data, SessionRepository sessionRepository) {
 		// TODO Auto-generated constructor stub
 		this.data=data;

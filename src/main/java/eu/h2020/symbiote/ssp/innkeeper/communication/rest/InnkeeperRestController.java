@@ -1,16 +1,24 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
+import eu.h2020.symbiote.security.accesspolicies.common.SingleTokenAccessPolicyFactory;
+import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier;
+import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier.SingleTokenAccessPolicyType;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
+import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
+import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
+import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
 import org.apache.commons.logging.Log;
@@ -22,7 +30,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,6 +50,10 @@ public class InnkeeperRestController {
 
 	@Autowired
 	SessionRepository sessionRepository;
+	
+	@Autowired
+	AccessPolicyRepository accessPolicyRepository;
+	
 	private Integer registrationExpiration;
 	/*
 	@Autowired
@@ -64,10 +78,10 @@ public class InnkeeperRestController {
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
 
-		//InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
-		//String rx_json = "";
+		//InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);		
 
 		Lwsp lwsp = new Lwsp(payload,sessionRepository);
+		
 		String rx_json = lwsp.rx();
 
 		//save session in mongoDB
@@ -80,11 +94,9 @@ public class InnkeeperRestController {
 			log.info("negotiation");
 		}
 		if (!rx_json.isEmpty() && lwspNode.has("GWINKAuthn")) {
-			payload = lwsp.decode();
-			// HANDLE DATA
-			log.info("PAYLOAD="+payload);
-
-			String json=payload;
+			
+			String json = lwsp.decode();
+			//Replace INNK local tags
 			json=json.replace("INNK_TAG_CONNECTED_TO", "SSP Love Boat");
 			json=json.replace("INNK_TAG_SERVICE_URL", "http://loveboat.org");
 			json=json.replace("INNK_TAG_LOCATED_AT", "Atlantic Ocean");
@@ -92,11 +104,6 @@ public class InnkeeperRestController {
 
 				ObjectMapper mapper = new ObjectMapper(new JsonFactory());
 				JsonNode rootNode = mapper.readTree(json);  
-
-				//replace tag with innkeeper configuration values:
-				// connectedTo
-				// locatedAt
-				// interworkingServiceUrl
 
 				Iterator<Map.Entry<String,JsonNode>> fieldsIterator = rootNode.fields();
 
@@ -107,21 +114,79 @@ public class InnkeeperRestController {
 					if (field.getKey().equals("semanticDescription")) {
 						JsonNode currNode = field.getValue();
 
-						log.info("semantic Description fields: connectedTo: "+currNode.get("connectedTo"));
-						log.info("semantic Description fields: hasResource: "+currNode.get("hasResource"));
-						log.info("semantic Description fields: currNode.get(\"hasResource\").size(): "+currNode.get("hasResource").size());
+						//log.info("semantic Description fields: connectedTo: "+currNode.get("connectedTo"));
+						//log.info("semantic Description fields: hasResource: "+currNode.get("hasResource"));
+						//log.info("semantic Description fields: currNode.get(\"hasResource\").size(): "+currNode.get("hasResource").size());
 
 						int num_of_resources = currNode.get("hasResource").size();
 						for (int i=0;i<num_of_resources;i++) {
-							log.info("semanticDescription.id="+currNode.get("hasResource").get(i).get("id"));
-							log.info("semanticDescription.locatedAt="+currNode.get("hasResource").get(i).get("locatedAt"));
+							//log.info("semanticDescription.id="+currNode.get("hasResource").get(i).get("id"));
+							//log.info("semanticDescription.locatedAt="+currNode.get("hasResource").get(i).get("locatedAt"));
+							
+							
+							
+							
+							//id
+							String resourceId=rootNode.get("semanticDescription").get("hasResource").get(i).get("id").toString();
+							//internalId
+							String internalId=rootNode.get("id").toString();
+							
+							//query to mongoDB
+							//Access Policy
+							IAccessPolicy policy = null;
+							try {
+								SingleTokenAccessPolicySpecifier accPolicy = null;
+								
+								/* it is an object... composed by:
+						        @JsonProperty("policyType") SingleTokenAccessPolicyType policyType,
+					            @JsonProperty("requiredClaims") Map<String, String> requiredClaims
+								 */
+								
+								JsonNode policyType = rootNode.get("accessPolicy").get("policyType");
+						        JsonNode jsonrequiredClaims = rootNode.get("accessPolicy").get("requiredClaims");
+						        
+						        ObjectMapper mapperRequiredClaims = new ObjectMapper();
+						        Map<String, String> requiredClaims = mapperRequiredClaims.convertValue(jsonrequiredClaims, Map.class);
+								
+								accPolicy= new SingleTokenAccessPolicySpecifier(
+						        			SingleTokenAccessPolicyType.values()[policyType.asInt()],
+						        			requiredClaims);
+								
+								policy = SingleTokenAccessPolicyFactory.getSingleTokenAccessPolicy(accPolicy);
+							}catch (Exception e) {
+								policy = null;
+							}
+
+							AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
+					        AccessPolicy apNew = accessPolicyRepository.save(ap);
+
+					        //query to mongoDB
+							//Resource Info
+					        String pluginId = rootNode.get("pluginId").toString();
+					        JsonNode jsonObservedProperties = rootNode.get("observedProperties");
+					        ObjectMapper mapperObsProperties = new ObjectMapper();
+					        List<String> observedProperties = mapperObsProperties.convertValue(jsonObservedProperties, List.class);
+					        
+					        ResourceInfo regInfo = new ResourceInfo(resourceId, internalId);
+					        regInfo.setPluginId(pluginId);
+					        regInfo.setObservedProperties(observedProperties);
+					        ResourceInfo regInfoNew = resourcesRepository.save(regInfo);
+					        
+							//TODO: Registration OData
+					        
+							//TODO: ParameterInfo
+							
+							
 						}
 
 					}
-					//TODO: query to mongoDB
+					
+					SessionInfo sessionInfo = new SessionInfo("id","SESSIONVALUE","EXPIRATION");
+					Object o = sessionRepository.save(sessionInfo);
 				}
 			} catch (Exception e) {
 				//bypass
+				e.printStackTrace();
 			}
 
 		}
