@@ -1,6 +1,5 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,12 +25,12 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -66,25 +65,13 @@ public class InnkeeperRestController {
 	@Autowired
 	AccessPolicyRepository accessPolicyRepository;
 	
-	private Integer registrationExpiration;
-	/*
-	@Autowired
-	public InnkeeperRestController(ResourcesRepository resourcesRepository, RabbitTemplate rabbitTemplate,
-			@Qualifier("registrationExpiration") Integer registrationExpiration,
-			@Qualifier("makeResourceOffline") Integer makeResourceOffine, Timer timer) {
-
-		Assert.notNull(registrationExpiration, "registrationExpiration can not be null!");
-		this.registrationExpiration = registrationExpiration;
-		this.resourcesRepository = resourcesRepository;
-	}
-	 */
-
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 		InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
 		return innkeeperResource.requestHandler();
 	}
 
+	@SuppressWarnings("unchecked")
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	//public ResponseEntity<Object> registry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
@@ -100,10 +87,11 @@ public class InnkeeperRestController {
 		// check MTI: if exists -> negotiation else DATA
 		ObjectMapper mapper1 = new ObjectMapper(new JsonFactory());
 		JsonNode lwspNode = mapper1.readTree(rx_json);
-
+		ResponseEntity<Object> responseEntity = null;
 		if (!rx_json.isEmpty() && lwspNode.has("GWInnkeeperHello")) {
 			// HANDLE HELLO RESPONSE
 			log.info("negotiation");
+			responseEntity = new ResponseEntity<Object>(rx_json, HttpStatus.OK);
 		}
 		if (!rx_json.isEmpty() && lwspNode.has("GWINKAuthn")) {
 			
@@ -122,7 +110,7 @@ public class InnkeeperRestController {
 				while (fieldsIterator.hasNext()) {
 
 					Map.Entry<String,JsonNode> field = fieldsIterator.next();
-					System.out.println("Key: " + field.getKey() + "\tValue:" + field.getValue());
+					//System.out.println("Key: " + field.getKey() + "\tValue:" + field.getValue());
 					if (field.getKey().equals("semanticDescription")) {
 						JsonNode currNode = field.getValue();
 
@@ -134,9 +122,6 @@ public class InnkeeperRestController {
 						for (int i=0;i<num_of_resources;i++) {
 							//log.info("semanticDescription.id="+currNode.get("hasResource").get(i).get("id"));
 							//log.info("semanticDescription.locatedAt="+currNode.get("hasResource").get(i).get("locatedAt"));
-							
-							
-							
 							
 							//id
 							String resourceId=rootNode.get("semanticDescription").get("hasResource").get(i).get("id").toString();
@@ -170,7 +155,7 @@ public class InnkeeperRestController {
 							}
 
 							AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
-					        AccessPolicy apNew = accessPolicyRepository.save(ap);
+					        accessPolicyRepository.save(ap);
 
 					        //query to mongoDB
 							//Resource Info
@@ -182,7 +167,7 @@ public class InnkeeperRestController {
 					        ResourceInfo regInfo = new ResourceInfo(resourceId, internalId);
 					        regInfo.setPluginId(pluginId);
 					        regInfo.setObservedProperties(observedProperties);
-					        ResourceInfo regInfoNew = resourcesRepository.save(regInfo);
+					        resourcesRepository.save(regInfo);
 					        
 							//TODO: Registration OData
 					        
@@ -192,9 +177,10 @@ public class InnkeeperRestController {
 						}
 
 					}
-					
 					SessionInfo sessionInfo = new SessionInfo("id","SESSIONVALUE","EXPIRATION");
-					Object o = sessionRepository.save(sessionInfo);
+					sessionRepository.save(sessionInfo);
+					
+					responseEntity = new ResponseEntity<Object>(rx_json, HttpStatus.OK);
 				}
 			} catch (Exception e) {
 				//bypass
@@ -202,10 +188,7 @@ public class InnkeeperRestController {
 			}
 
 		}
-		// TODO: set request handler return to SDEV
-		return null;
-
-		//return innkeeperResource.requestHandler();
+		return responseEntity;
 	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)

@@ -27,7 +27,6 @@ public class Lwsp {
 	}
 
 	public String decode() {
-		// TODO Auto-generated method stub
 		return this.data;
 	}
 
