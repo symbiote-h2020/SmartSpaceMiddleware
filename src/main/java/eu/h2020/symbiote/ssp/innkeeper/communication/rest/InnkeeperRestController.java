@@ -11,13 +11,11 @@ import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenA
 import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier.SingleTokenAccessPolicyType;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
-import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResource;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
 import org.apache.commons.logging.Log;
@@ -69,8 +67,8 @@ public class InnkeeperRestController {
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
-		InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);
-		return innkeeperResource.requestHandler();
+		log.info("NOT USED");
+		return null;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -83,12 +81,11 @@ public class InnkeeperRestController {
 
 		Lwsp lwsp = new Lwsp(payload,sessionRepository);
 
-		String rx_json = lwsp.rx();
+		String rx_json = lwsp.rx(); // generate lwsp response message for given payload
 
 		//save session in mongoDB
 		// check MTI: if exists -> negotiation else DATA
-		ObjectMapper mapper1 = new ObjectMapper(new JsonFactory());
-		JsonNode lwspNode = mapper1.readTree(rx_json);
+		JsonNode lwspNode = new ObjectMapper(new JsonFactory()).readTree(rx_json);
 		ResponseEntity<Object> responseEntity = null;
 		if (!rx_json.isEmpty() && lwspNode.has("GWInnkeeperHello")) {
 			// HANDLE HELLO RESPONSE
@@ -107,8 +104,7 @@ public class InnkeeperRestController {
 				json=json.replace("INNK_TAG_LOCATED_AT", innk_located_at);
 				try {
 
-					ObjectMapper mapper = new ObjectMapper(new JsonFactory());
-					JsonNode rootNode = mapper.readTree(json);  
+					JsonNode rootNode = new ObjectMapper(new JsonFactory()).readTree(json);  
 
 					Iterator<Map.Entry<String,JsonNode>> fieldsIterator = rootNode.fields();
 
@@ -129,9 +125,9 @@ public class InnkeeperRestController {
 								//log.info("semanticDescription.locatedAt="+currNode.get("hasResource").get(i).get("locatedAt"));
 
 								//id
-								String resourceId=rootNode.get("semanticDescription").get("hasResource").get(i).get("id").toString();
+								String resourceId=rootNode.get("id").asText();								
 								//internalId
-								String internalId=rootNode.get("id").toString();
+								String internalId=rootNode.get("semanticDescription").get("hasResource").get(i).get("id").asText();
 								
 								//query to mongoDB
 								//Access Policy
@@ -147,8 +143,7 @@ public class InnkeeperRestController {
 									JsonNode policyType = rootNode.get("accessPolicy").get("policyType");
 									JsonNode jsonrequiredClaims = rootNode.get("accessPolicy").get("requiredClaims");
 
-									ObjectMapper mapperRequiredClaims = new ObjectMapper();
-									Map<String, String> requiredClaims = mapperRequiredClaims.convertValue(jsonrequiredClaims, Map.class);
+									Map<String, String> requiredClaims = new ObjectMapper().convertValue(jsonrequiredClaims, Map.class);
 
 									accPolicy= new SingleTokenAccessPolicySpecifier(
 											SingleTokenAccessPolicyType.values()[policyType.asInt()],
@@ -164,7 +159,7 @@ public class InnkeeperRestController {
 
 								//query to mongoDB
 								//Resource Info
-								String pluginId = rootNode.get("pluginId").toString();
+								String pluginId = rootNode.get("pluginId").asText();
 								JsonNode jsonObservedProperties = rootNode.get("observedProperties");
 								ObjectMapper mapperObsProperties = new ObjectMapper();
 								List<String> observedProperties = mapperObsProperties.convertValue(jsonObservedProperties, List.class);
@@ -194,7 +189,7 @@ public class InnkeeperRestController {
 					e.printStackTrace();
 					HttpHeaders headers = new HttpHeaders();
 					headers.setContentType(MediaType.APPLICATION_JSON);
-					responseEntity = new ResponseEntity<Object>(rx_json, headers, HttpStatus.BAD_REQUEST);
+					responseEntity = new ResponseEntity<Object>(" { } ",headers, HttpStatus.BAD_REQUEST);
 					return responseEntity;
 					
 				}
@@ -204,17 +199,19 @@ public class InnkeeperRestController {
 	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> unregistry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+	public ResponseEntity<Object> unregistry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
-
-		log.info("UNREGISTRATION: TBD");
+		JsonNode rootNode = new ObjectMapper(new JsonFactory()).readTree(payload);				
+		//TODO: Lwsp here?
+		log.info(rootNode.get("id").asText());
+		resourcesRepository.delete(rootNode.get("id").asText());
 
 		return null;
 	}
 
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> keep_alive(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+	public ResponseEntity<Object> keep_alive(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 
 
 		log.info("KEEP ALIVE: TBD");

@@ -7,8 +7,13 @@ package eu.h2020.symbiote.ssp.resources.db;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Date;
+
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 /**
  *
@@ -16,14 +21,28 @@ import org.springframework.data.mongodb.core.mapping.Document;
  */
 @Document(collection="sessions")
 public class SessionInfo {
+    public static final int EXPIRATION_TIME = 60;
+
     
     @Id
     @JsonProperty("sessionId")
     private String id;
     @JsonProperty("cookie")
     private String cookie;
-    @JsonProperty("session_expiration")
-    private String session_expiration;
+    @Field
+    @Indexed(name="session_expiration", expireAfterSeconds=EXPIRATION_TIME)
+    private Date session_expiration;
+    
+    /* HOWTO read expiration time directly via mongoDB client
+     * db.sessions.aggregate(     
+     * 	{ $project: {         
+     * 		session_expiration: 1,         
+     * 		ttlMillis: {             
+     * 			$subtract: [ new Date(), "$session_expiration"]         
+     * 		}     
+     * 	  }
+     * 	} )
+     * */
 
     public SessionInfo() {
         this.id = "";
@@ -31,9 +50,9 @@ public class SessionInfo {
     }
     
     @JsonCreator
-    public SessionInfo(@JsonProperty("sessionId") String sessionId, 
+    public SessionInfo( @JsonProperty("sessionId") String sessionId, 
                         @JsonProperty("cookie") String cookie,
-                        @JsonProperty("cookie") String session_expiration) {
+                        @JsonProperty("session_expiration") Date session_expiration) {
         this.id = sessionId;
         this.cookie = cookie;
         this.session_expiration = session_expiration;
@@ -50,7 +69,7 @@ public class SessionInfo {
         this.cookie = cookie;
     }
     @JsonProperty("session_expiration")
-    public void setSessionExpiration(String session_expiration) {
+    public void setSessionExpiration(Date session_expiration) {
         this.session_expiration = session_expiration;
     }
     

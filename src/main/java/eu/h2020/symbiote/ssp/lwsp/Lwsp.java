@@ -1,5 +1,7 @@
 package eu.h2020.symbiote.ssp.lwsp;
 
+import java.util.Date;
+
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
@@ -21,8 +23,9 @@ public class Lwsp {
 		String res="{\"GWINKAuthn\":\"pippo\"}";
 
 		//save session in mongoDB, need to add more fields for LWSP
-		SessionInfo sessionInfo = new SessionInfo("id","SESSIONVALUE","EXPIRATION");
-		Object o = sessionRepository.save(sessionInfo);
+		Date currTime=new Date(new Date().getTime());
+		SessionInfo sessionInfo = new SessionInfo("id","cookievalue",currTime);
+		sessionRepository.save(sessionInfo);
 		return res;
 	}
 
