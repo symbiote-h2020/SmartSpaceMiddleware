@@ -23,9 +23,8 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class SessionInfo {
     public static final int EXPIRATION_TIME = 60;
 
-    
+    //@JsonProperty("sessionId")
     @Id
-    @JsonProperty("sessionId")
     private String id;
     @JsonProperty("cookie")
     private String cookie;
@@ -34,14 +33,14 @@ public class SessionInfo {
     private Date session_expiration;
     
     /* HOWTO read expiration time directly via mongoDB client
-     * db.sessions.aggregate(     
-     * 	{ $project: {         
-     * 		session_expiration: 1,         
-     * 		ttlMillis: {             
-     * 			$subtract: [ new Date(), "$session_expiration"]         
-     * 		}     
-     * 	  }
-     * 	} )
+      db.sessions.aggregate(     
+      	{ $project: {         
+      		session_expiration: 1,         
+      		ttlMillis: {             
+      			$subtract: [ new Date(), "$session_expiration"]         
+      		}     
+      	  }
+     	} )
      * */
 
     public SessionInfo() {
@@ -50,10 +49,8 @@ public class SessionInfo {
     }
     
     @JsonCreator
-    public SessionInfo( @JsonProperty("sessionId") String sessionId, 
-                        @JsonProperty("cookie") String cookie,
+    public SessionInfo( @JsonProperty("cookie") String cookie,
                         @JsonProperty("session_expiration") Date session_expiration) {
-        this.id = sessionId;
         this.cookie = cookie;
         this.session_expiration = session_expiration;
         

@@ -73,15 +73,11 @@ public class InnkeeperRestController {
 
 	@SuppressWarnings("unchecked")
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
-	//public ResponseEntity<Object> registry(@RequestBody Map<String, String> payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
-
-
-		//InnkeeperResource innkeeperResource = new InnkeeperResource(payload,sessionRepository,resourcesRepository);		
 
 		Lwsp lwsp = new Lwsp(payload,sessionRepository);
 
-		String rx_json = lwsp.rx(); // generate lwsp response message for given payload
+		String rx_json = lwsp.response(); // generate lwsp response message for given payload
 
 		//save session in mongoDB
 		// check MTI: if exists -> negotiation else DATA
@@ -97,115 +93,121 @@ public class InnkeeperRestController {
 		}
 		if (!rx_json.isEmpty() && lwspNode.has("GWINKAuthn")) {
 
-				String json = lwsp.decode();
-				//Replace INNK local tags
-				json=json.replace("INNK_TAG_CONNECTED_TO", innk_connected_to);
-				json=json.replace("INNK_TAG_SERVICE_URL", innk_service_url);
-				json=json.replace("INNK_TAG_LOCATED_AT", innk_located_at);
-				try {
+			String json = lwsp.decode();
+			//Replace INNK local tags
+			json=json.replace("INNK_TAG_CONNECTED_TO", innk_connected_to);
+			json=json.replace("INNK_TAG_SERVICE_URL", innk_service_url);
+			json=json.replace("INNK_TAG_LOCATED_AT", innk_located_at);
+			try {
 
-					JsonNode rootNode = new ObjectMapper(new JsonFactory()).readTree(json);  
+				JsonNode rootNode = new ObjectMapper(new JsonFactory()).readTree(json);  
 
-					Iterator<Map.Entry<String,JsonNode>> fieldsIterator = rootNode.fields();
+				Iterator<Map.Entry<String,JsonNode>> fieldsIterator = rootNode.fields();
 
-					while (fieldsIterator.hasNext()) {
+				while (fieldsIterator.hasNext()) {
 
-						Map.Entry<String,JsonNode> field = fieldsIterator.next();
-						//System.out.println("Key: " + field.getKey() + "\tValue:" + field.getValue());
-						if (field.getKey().equals("semanticDescription")) {
-							JsonNode currNode = field.getValue();
+					Map.Entry<String,JsonNode> field = fieldsIterator.next();
+					//System.out.println("Key: " + field.getKey() + "\tValue:" + field.getValue());
+					if (field.getKey().equals("semanticDescription")) {
+						JsonNode currNode = field.getValue();
 
-							//log.info("semantic Description fields: connectedTo: "+currNode.get("connectedTo"));
-							//log.info("semantic Description fields: hasResource: "+currNode.get("hasResource"));
-							//log.info("semantic Description fields: currNode.get(\"hasResource\").size(): "+currNode.get("hasResource").size());
+						//log.info("semantic Description fields: connectedTo: "+currNode.get("connectedTo"));
+						//log.info("semantic Description fields: hasResource: "+currNode.get("hasResource"));
+						//log.info("semantic Description fields: currNode.get(\"hasResource\").size(): "+currNode.get("hasResource").size());
 
-							int num_of_resources = currNode.get("hasResource").size();
-							for (int i=0;i<num_of_resources;i++) {
-								//log.info("semanticDescription.id="+currNode.get("hasResource").get(i).get("id"));
-								//log.info("semanticDescription.locatedAt="+currNode.get("hasResource").get(i).get("locatedAt"));
+						int num_of_resources = currNode.get("hasResource").size();
+						for (int i=0;i<num_of_resources;i++) {
+							//log.info("semanticDescription.id="+currNode.get("hasResource").get(i).get("id"));
+							//log.info("semanticDescription.locatedAt="+currNode.get("hasResource").get(i).get("locatedAt"));
 
-								//id
-								String resourceId=rootNode.get("id").asText();								
-								//internalId
-								String internalId=rootNode.get("semanticDescription").get("hasResource").get(i).get("id").asText();
-								
-								//query to mongoDB
-								//Access Policy
-								IAccessPolicy policy = null;
-								try {
-									SingleTokenAccessPolicySpecifier accPolicy = null;
+							//id
+							String resourceId=rootNode.get("id").asText();								
+							//internalId
+							String internalId=rootNode.get("semanticDescription").get("hasResource").get(i).get("id").asText();
 
-									/* it is an object... composed by:
+							//query to mongoDB
+							//Access Policy
+							IAccessPolicy policy = null;
+							try {
+								SingleTokenAccessPolicySpecifier accPolicy = null;
+
+								/* it is an object... composed by:
 						        @JsonProperty("policyType") SingleTokenAccessPolicyType policyType,
 					            @JsonProperty("requiredClaims") Map<String, String> requiredClaims
-									 */
+								 */
 
-									JsonNode policyType = rootNode.get("accessPolicy").get("policyType");
-									JsonNode jsonrequiredClaims = rootNode.get("accessPolicy").get("requiredClaims");
+								JsonNode policyType = rootNode.get("accessPolicy").get("policyType");
+								JsonNode jsonrequiredClaims = rootNode.get("accessPolicy").get("requiredClaims");
 
-									Map<String, String> requiredClaims = new ObjectMapper().convertValue(jsonrequiredClaims, Map.class);
+								Map<String, String> requiredClaims = new ObjectMapper().convertValue(jsonrequiredClaims, Map.class);
 
-									accPolicy= new SingleTokenAccessPolicySpecifier(
-											SingleTokenAccessPolicyType.values()[policyType.asInt()],
-											requiredClaims);
+								accPolicy= new SingleTokenAccessPolicySpecifier(
+										SingleTokenAccessPolicyType.values()[policyType.asInt()],
+										requiredClaims);
 
-									policy = SingleTokenAccessPolicyFactory.getSingleTokenAccessPolicy(accPolicy);
-								}catch (Exception e) {
-									policy = null;
-								}
-
-								AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
-								accessPolicyRepository.save(ap);
-
-								//query to mongoDB
-								//Resource Info
-								String pluginId = rootNode.get("pluginId").asText();
-								JsonNode jsonObservedProperties = rootNode.get("observedProperties");
-								ObjectMapper mapperObsProperties = new ObjectMapper();
-								List<String> observedProperties = mapperObsProperties.convertValue(jsonObservedProperties, List.class);
-
-								ResourceInfo regInfo = new ResourceInfo(resourceId, internalId);
-								regInfo.setPluginId(pluginId);
-								regInfo.setObservedProperties(observedProperties);
-								resourcesRepository.save(regInfo);
-
-								//TODO: Registration OData
-
-								//TODO: ParameterInfo
-
-
+								policy = SingleTokenAccessPolicyFactory.getSingleTokenAccessPolicy(accPolicy);
+							}catch (Exception e) {
+								policy = null;
 							}
+
+							AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
+							accessPolicyRepository.save(ap);
+
+							//query to mongoDB
+							//Resource Info
+							String pluginId = rootNode.get("pluginId").asText();
+							JsonNode jsonObservedProperties = rootNode.get("observedProperties");
+							ObjectMapper mapperObsProperties = new ObjectMapper();
+							List<String> observedProperties = mapperObsProperties.convertValue(jsonObservedProperties, List.class);
+
+							ResourceInfo regInfo = new ResourceInfo(resourceId, internalId);
+							regInfo.setPluginId(pluginId);
+							regInfo.setObservedProperties(observedProperties);
+							resourcesRepository.save(regInfo);
+
+							//TODO: Registration OData
+
+							//TODO: ParameterInfo
+
 
 						}
 
 					}
-					HttpHeaders headers = new HttpHeaders();
-					headers.setContentType(MediaType.APPLICATION_JSON);
-					responseEntity = new ResponseEntity<Object>(rx_json, headers, HttpStatus.OK);
-					return responseEntity;
-					
-				} catch (Exception e) {
-					//bypass
-					e.printStackTrace();
-					HttpHeaders headers = new HttpHeaders();
-					headers.setContentType(MediaType.APPLICATION_JSON);
-					responseEntity = new ResponseEntity<Object>(" { } ",headers, HttpStatus.BAD_REQUEST);
-					return responseEntity;
-					
+
 				}
+				HttpHeaders headers = new HttpHeaders();
+				headers.setContentType(MediaType.APPLICATION_JSON);
+				responseEntity = new ResponseEntity<Object>(rx_json, headers, HttpStatus.OK);
+				return responseEntity;
+
+			} catch (Exception e) {
+				//bypass
+				e.printStackTrace();
+				HttpHeaders headers = new HttpHeaders();
+				headers.setContentType(MediaType.APPLICATION_JSON);
+				responseEntity = new ResponseEntity<Object>(" { } ",headers, HttpStatus.BAD_REQUEST);
+				return responseEntity;
 
 			}
+
+		}
 		return responseEntity;
 	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> unregistry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
-		JsonNode rootNode = new ObjectMapper(new JsonFactory()).readTree(payload);				
-		//TODO: Lwsp here?
-		log.info(rootNode.get("id").asText());
-		resourcesRepository.delete(rootNode.get("id").asText());
+		Lwsp lwsp = new Lwsp(payload,sessionRepository);
+		String json = lwsp.decode();
 
+		JsonNode rootNode = new ObjectMapper(new JsonFactory()).readTree(json);
+		ResponseEntity<Object> responseEntity = null;
+		if (!json.isEmpty() && rootNode.has("id")) {
+
+
+			log.info("Delete id="+rootNode.get("id").asText());			
+			resourcesRepository.delete(rootNode.get("id").asText());
+		}
 		return null;
 	}
 
