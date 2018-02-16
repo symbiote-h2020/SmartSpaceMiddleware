@@ -9,4 +9,8 @@ public class LwspConstants {
     
     public static final String SDEV			= "SDEV";
     public static final String PLATFORM		= "Platform";
+    public static final String REGISTARTION_OK = "OK";
+    public static final String REGISTARTION_REJECTED	= "REJECT";
+    public static final String REGISTARTION_ALREADY_REGISTERED = "ALREADY_REGISTERED";
+    
 }

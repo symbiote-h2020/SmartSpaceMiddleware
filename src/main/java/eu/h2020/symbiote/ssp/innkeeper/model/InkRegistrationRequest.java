@@ -21,12 +21,13 @@ import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
+import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 
-public class InnkSDEVRegistration {
+public class InkRegistrationRequest {
 
-	private static Log log = LogFactory.getLog(InnkSDEVRegistration.class);
+	private static Log log = LogFactory.getLog(InkRegistrationRequest.class);
     @Autowired
     ResourcesRepository resourcesRepository;
 
@@ -40,12 +41,11 @@ public class InnkSDEVRegistration {
 	@JsonProperty("dk1") 					private String dk1;
 	@JsonProperty("hashField") 				private String hashField;
 	@JsonProperty("semanticDescription") 	private List<CloudResource> semanticDescription;
-
 	@JsonProperty("connectedTo") 			private String connectedTo;
 	@JsonProperty("available") 				private boolean available;
 	@JsonProperty("agentType") 				private String agentType;
 
-	public InnkSDEVRegistration() {
+	public InkRegistrationRequest() {
 		this.symId=null;
 		this.dk1=null;
 		this.hashField=null;
@@ -84,15 +84,16 @@ public class InnkSDEVRegistration {
 	public String getAgentType() {
 		return this.agentType;
 	}
-	public void registry() {
+	public InkRegistrationResponse registry() {
+		InkRegistrationResponse res= null;
 		try {
-
 			List<CloudResource> msgs = this.getSemanticDescription();
+			this.getSymId(); //
 			for(CloudResource msg: msgs){
 				String internalId = msg.getInternalId();
 				Resource resource = msg.getResource();
 				String pluginId = msg.getPluginId();
-				String symbioteId = resource.getId();
+				String symbioteId = resource.getId(); //==this.getSymId()???? FIXME DEBUG TODO
 				List<String> props = null;
 				if(resource instanceof StationarySensor) {
 					props = ((StationarySensor)resource).getObservesProperty();
@@ -105,10 +106,14 @@ public class InnkSDEVRegistration {
 				addResource(symbioteId, internalId, props, pluginId);
 			}
 			addCloudResourceInfoForOData(msgs);
+			res = new InkRegistrationResponse(this.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
 		} catch (Exception e) {
 			log.error("Error during registration process\n" + e.getMessage());
+			res = new InkRegistrationResponse(this.getSymId(),LwspConstants.REGISTARTION_REJECTED,0);
 		}
+		return res;
 	}
+	
 	
 	
 	private void addCloudResourceInfoForOData(List<CloudResource> cloudResourceList) {

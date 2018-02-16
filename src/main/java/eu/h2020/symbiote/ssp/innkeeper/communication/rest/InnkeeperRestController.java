@@ -1,28 +1,14 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.h2020.symbiote.cloud.model.internal.CloudResource;
-import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
-import eu.h2020.symbiote.security.accesspolicies.common.SingleTokenAccessPolicyFactory;
-import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier;
-import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier.SingleTokenAccessPolicyType;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
-import eu.h2020.symbiote.ssp.innkeeper.model.InnkSDEVRegistration;
+import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
-import eu.h2020.symbiote.ssp.lwsp.model.GWINKAuthn;
-import eu.h2020.symbiote.ssp.lwsp.model.GWINKHello;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
-import eu.h2020.symbiote.ssp.lwsp.model.LwspMessage;
-import eu.h2020.symbiote.ssp.lwsp.model.SDEVAuthn;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
-import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
@@ -31,17 +17,11 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Created by vasgl on 8/24/2017.
@@ -100,10 +80,17 @@ public class InnkeeperRestController {
 		
 		if (tmpMTI.equals(LwspConstants.GW_INK_AuthN)) {
 			ObjectMapper sdevm = new ObjectMapper();
-			InnkSDEVRegistration innksdevreg = sdevm.readValue(lwsp.decode(), InnkSDEVRegistration.class);
+			InkRegistrationRequest innksdevreg = sdevm.readValue(lwsp.decode(), InkRegistrationRequest.class);
 			innksdevreg.setConnectedTo(innk_connected_to);
 			//registry on RAP mongoDB
-			//innksdevreg.registry();			
+			innksdevreg.registry();	
+			/*
+			{
+			    String result,
+			    String sym-id, 
+			    Integer registrationExpiration
+			 }
+			 */
 		}
 		
 		return responseEntity;
@@ -115,7 +102,7 @@ public class InnkeeperRestController {
 
 		Lwsp lwsp = new Lwsp(payload,sessionRepository);		
 		ObjectMapper sdevm = new ObjectMapper();
-		InnkSDEVRegistration innksdevreg = sdevm.readValue(lwsp.decode(), InnkSDEVRegistration.class);
+		InkRegistrationRequest innksdevreg = sdevm.readValue(lwsp.decode(), InkRegistrationRequest.class);
 		
 		
 		if (innksdevreg !=null ) 

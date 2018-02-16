@@ -21,7 +21,6 @@ import org.springframework.data.mongodb.core.mapping.Field;
  */
 @Document(collection="sessions")
 public class SessionInfo {
-    public static final int EXPIRATION_TIME = 60;
 
     //@JsonProperty("sessionId")
     @Id
@@ -29,7 +28,7 @@ public class SessionInfo {
     @JsonProperty("cookie")
     private String cookie;
     @Field
-    @Indexed(name="session_expiration", expireAfterSeconds=EXPIRATION_TIME)
+    @Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
     private Date session_expiration;
     
     /* HOWTO read expiration time directly via mongoDB client
