@@ -57,6 +57,7 @@ Forces dependencies' cache invalidation for each build for dependencies marked w
     { changing = true }
     e.g.
     compile('com.github.symbiote-h2020:SymbIoTeLibraries:develop-SNAPSHOT'){ changing = true }
+    
  */
 configurations.all {
     // check for updates every build
@@ -76,7 +77,8 @@ dependencies {
             4) never commit build.gradle which has project dependencies active as it will break CI builds
     */
     //compile project(':SymbIoTeLibraries')
-    compile('com.github.symbiote-h2020:SymbIoTeLibraries:4+') { changing = true }
+    //compile('com.github.symbiote-h2020:SymbIoTeLibraries:4+') { changing = true }
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:capability-name-SNAPSHOT') {changing = true }
     // compile('com.github.symbiote-h2020:SymbIoTeLibraries:0.2.1')
 
     // Spring

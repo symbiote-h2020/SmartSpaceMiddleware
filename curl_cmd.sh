@@ -5,11 +5,12 @@ curl -H 'Content-Type: application/json' -d '
         "pluginURL":"http://pippo.log",
 	"policy":"<SOMETHING HERE>",
 
-        "semanticDescription":{
+        "semanticDescription":[{
                 "connectedTo":"INNK_TAG_CONNECTED_TO",
                 "agentType":"SDEV",
                 "hasResource":[
-                        {"id":"light",          "interworkingServiceURL":"INNK_TAG_SERVICE_URL",    "locatedAt":"INNK_TAG_LOCATED_AT"}
-                ]},
+                        {"id":"light",          "interworkingServiceURL":"INNK_TAG_SERVICE_URL",    "locatedAt":"INNK_TAG_LOCATED_AT"},
+                        {"id":"sensor",          "interworkingServiceURL":"INNK_TAG_SERVICE_URL",    "locatedAt":"INNK_TAG_LOCATED_AT"}
+                ]}],
 	"observedProperties":["R", "G", "B", "Intensity","Mode"]
 }' -X POST -D - http://localhost:8080/innkeeper/registry
