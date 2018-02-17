@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
+import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
@@ -83,14 +84,8 @@ public class InnkeeperRestController {
 			InkRegistrationRequest innksdevreg = sdevm.readValue(lwsp.decode(), InkRegistrationRequest.class);
 			innksdevreg.setConnectedTo(innk_connected_to);
 			//registry on RAP mongoDB
-			innksdevreg.registry();	
-			/*
-			{
-			    String result,
-			    String sym-id, 
-			    Integer registrationExpiration
-			 }
-			 */
+			InkRegistrationResponse res = innksdevreg.registry();	
+			log.info(sdevm.writeValueAsString(res));
 		}
 		
 		return responseEntity;
