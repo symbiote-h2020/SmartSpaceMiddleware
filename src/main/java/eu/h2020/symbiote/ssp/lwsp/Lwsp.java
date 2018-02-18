@@ -42,6 +42,7 @@ public class Lwsp {
 	}
 	
 	public String getMti() {
+		//TODO: get correct Mti from message payload, if available, if Mti is not available return null.
 		return LwspConstants.GW_INK_AuthN;
 	}
 	 
