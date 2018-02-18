@@ -5,6 +5,7 @@ import java.util.Date;
 import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
@@ -39,7 +40,10 @@ public class Lwsp {
 	public String decode() {
 		return this.data;
 	}
-
+	
+	public String getMti() {
+		return LwspConstants.GW_INK_AuthN;
+	}
 	 
 
 }
