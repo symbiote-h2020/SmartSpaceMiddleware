@@ -65,29 +65,25 @@ public class InnkeeperRestController {
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
 		Lwsp lwsp = new Lwsp(payload,sessionRepository);
-		
+
 
 		//save session in mongoDB
 		// check MTI: if exists -> negotiation else DATA
-
-
-
-
 		ResponseEntity<Object> responseEntity = null;
-
-		
-		//temporary MTI verification
-		String tmpMTI=LwspConstants.GW_INK_AuthN;
-		
-		if (tmpMTI.equals(LwspConstants.GW_INK_AuthN)) {
+		switch (lwsp.getMti()) {
+		case LwspConstants.GW_INK_AuthN:
 			ObjectMapper sdevm = new ObjectMapper();
 			InkRegistrationRequest innksdevreg = sdevm.readValue(lwsp.decode(), InkRegistrationRequest.class);
 			innksdevreg.setConnectedTo(innk_connected_to);
 			//registry on RAP mongoDB
 			InkRegistrationResponse res = innksdevreg.registry();	
 			log.info(sdevm.writeValueAsString(res));
+			break;
+		default:
+			break;
 		}
-		
+
+
 		return responseEntity;
 
 	}
@@ -98,13 +94,13 @@ public class InnkeeperRestController {
 		Lwsp lwsp = new Lwsp(payload,sessionRepository);		
 		ObjectMapper sdevm = new ObjectMapper();
 		InkRegistrationRequest innksdevreg = sdevm.readValue(lwsp.decode(), InkRegistrationRequest.class);
-		
-		
+
+
 		if (innksdevreg !=null ) 
 			if(innksdevreg.getSymId()!=null){
-			log.info("Delete id="+innksdevreg.getSymId());			
-			resourcesRepository.delete(innksdevreg.getSymId());
-		}
+				log.info("Delete id="+innksdevreg.getSymId());			
+				resourcesRepository.delete(innksdevreg.getSymId());
+			}
 		return null;
 	}
 
