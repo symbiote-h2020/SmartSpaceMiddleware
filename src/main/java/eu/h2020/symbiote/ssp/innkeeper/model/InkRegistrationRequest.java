@@ -6,8 +6,7 @@ import java.util.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.stereotype.Service;
 
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import eu.h2020.symbiote.model.cim.MobileSensor;
@@ -24,71 +23,32 @@ import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
+import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
+@Service
 public class InkRegistrationRequest {
 
 	private static Log log = LogFactory.getLog(InkRegistrationRequest.class);
-    @Autowired
-    ResourcesRepository resourcesRepository;
 
-    @Autowired
-    AccessPolicyRepository accessPolicyRepository;
-    
-    @Autowired
-    OwlApiHelper owlApiHelp;
-	
-	@JsonProperty("symId") 					private String symId;
-	@JsonProperty("dk1") 					private String dk1;
-	@JsonProperty("hashField") 				private String hashField;
-	@JsonProperty("semanticDescription") 	private List<CloudResource> semanticDescription;
-	@JsonProperty("connectedTo") 			private String connectedTo;
-	@JsonProperty("available") 				private boolean available;
-	@JsonProperty("agentType") 				private String agentType;
+	@Autowired
+	SessionRepository sessionRepository;
 
-	public InkRegistrationRequest() {
-		this.symId=null;
-		this.dk1=null;
-		this.hashField=null;
-		this.semanticDescription=null;
+	@Autowired
+	ResourcesRepository resourcesRepository;
 
-		this.connectedTo=null;
-		this.available=false;
-		this.agentType = LwspConstants.SDEV;
-	}
-	public String getSymId() {
-		return this.symId;
-	}
-	public String getdk1() {
-		return this.dk1;
-	}
+	@Autowired
+	AccessPolicyRepository accessPolicyRepository;
 
-	public String getHashField() {
-		return this.hashField;
-	}
-	public List<CloudResource> getSemanticDescription() {
-		return this.semanticDescription;
-	}
+	@Autowired
+	OwlApiHelper owlApiHelp;
 
-	public String getConnectedTo() {
-		return this.connectedTo;
-	}
-
-	public void setConnectedTo(String connectedTo) {
-		this.connectedTo=connectedTo;
-	}
-
-	public boolean getAvailable() {
-		return this.available;
-	}
-
-	public String getAgentType() {
-		return this.agentType;
-	}
-	public InkRegistrationResponse registry() {
+	public InkRegistrationResponse registry(InkRegistrationInfo info) {
 		InkRegistrationResponse res= null;
+		
+		
 		try {
-			List<CloudResource> msgs = this.getSemanticDescription();
-			this.getSymId(); //
+			List<CloudResource> msgs = info.getSemanticDescription();
+			info.getSymId(); //
 			for(CloudResource msg: msgs){
 				String internalId = msg.getInternalId();
 				Resource resource = msg.getResource();
@@ -106,78 +66,79 @@ public class InkRegistrationRequest {
 				addResource(symbioteId, internalId, props, pluginId);
 			}
 			addCloudResourceInfoForOData(msgs);
-			res = new InkRegistrationResponse(this.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
+			res = new InkRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
 		} catch (Exception e) {
 			log.error("Error during registration process\n" + e.getMessage());
-			res = new InkRegistrationResponse(this.getSymId(),LwspConstants.REGISTARTION_REJECTED,0);
+			res = new InkRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_REJECTED,0);
 		}
+		
 		return res;
 	}
-	
-	
-	
+
+
+
 	private void addCloudResourceInfoForOData(List<CloudResource> cloudResourceList) {
-        try{
-            owlApiHelp.addCloudResourceList(cloudResourceList);
-        }
-        catch(Exception e){
-            log.error("Error add info registration for OData\n"+e.getMessage());
-        }
-    }
+		try{
+			owlApiHelp.addCloudResourceList(cloudResourceList);
+		}
+		catch(Exception e){
+			log.error("Error add info registration for OData\n"+e.getMessage());
+		}
+	}
 	private void addResource(String resourceId, String platformResourceId, List<String> obsProperties, String pluginId) {
-        ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId);
-        if(obsProperties != null)
-            resourceInfo.setObservedProperties(obsProperties);
-        if(pluginId != null && pluginId.length()>0)
-            resourceInfo.setPluginId(pluginId);
+		ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId);
+		if(obsProperties != null)
+			resourceInfo.setObservedProperties(obsProperties);
+		if(pluginId != null && pluginId.length()>0)
+			resourceInfo.setPluginId(pluginId);
 
-        resourcesRepository.save(resourceInfo);
+		resourcesRepository.save(resourceInfo);
 
-        log.debug("Resource " + resourceId + " registered");
-    }
+		log.debug("Resource " + resourceId + " registered");
+	}
 
-    private void deleteResource(String internalId) {
-        try {
-            List<ResourceInfo> resourceList = resourcesRepository.findByInternalId(internalId);
-            if(resourceList != null && !resourceList.isEmpty()) {
-                resourcesRepository.delete(resourceList.get(0).getSymbioteId());
-                log.info("Resource " + internalId + " unregistered");
-            } else {
-                log.error("Resource " + internalId + " not found");
-            }
-        } catch (Exception e) {
-            log.error("Resource with id " + internalId + " not found - Exception: " + e.getMessage());
-        }
-    }
+	private void deleteResource(String internalId) {
+		try {
+			List<ResourceInfo> resourceList = resourcesRepository.findByInternalId(internalId);
+			if(resourceList != null && !resourceList.isEmpty()) {
+				resourcesRepository.delete(resourceList.get(0).getSymbioteId());
+				log.info("Resource " + internalId + " unregistered");
+			} else {
+				log.error("Resource " + internalId + " not found");
+			}
+		} catch (Exception e) {
+			log.error("Resource with id " + internalId + " not found - Exception: " + e.getMessage());
+		}
+	}
 
-    private void addPolicy(String resourceId, String internalId, SingleTokenAccessPolicySpecifier accPolicy) throws InvalidArgumentsException {
-        try {
-            IAccessPolicy policy = SingleTokenAccessPolicyFactory.getSingleTokenAccessPolicy(accPolicy);
-            AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
-            accessPolicyRepository.save(ap);
+	private void addPolicy(String resourceId, String internalId, SingleTokenAccessPolicySpecifier accPolicy) throws InvalidArgumentsException {
+		try {
+			IAccessPolicy policy = SingleTokenAccessPolicyFactory.getSingleTokenAccessPolicy(accPolicy);
+			AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
+			accessPolicyRepository.save(ap);
 
-            log.info("Policy successfully added for resource " + resourceId);
-        } catch (InvalidArgumentsException e) {
-            log.error("Invalid Policy definition for resource with id " + resourceId);
-            throw e;
-        }
-    }
+			log.info("Policy successfully added for resource " + resourceId);
+		} catch (InvalidArgumentsException e) {
+			log.error("Invalid Policy definition for resource with id " + resourceId);
+			throw e;
+		}
+	}
 
-    private void deletePolicy(String internalId) {
-        try {
-            Optional<AccessPolicy> accessPolicy = accessPolicyRepository.findByInternalId(internalId);
-            if(accessPolicy == null || accessPolicy.get() == null) {
-                log.error("No policy stored for resource with internalId " + internalId);
-                return;
-            }
+	private void deletePolicy(String internalId) {
+		try {
+			Optional<AccessPolicy> accessPolicy = accessPolicyRepository.findByInternalId(internalId);
+			if(accessPolicy == null || accessPolicy.get() == null) {
+				log.error("No policy stored for resource with internalId " + internalId);
+				return;
+			}
 
-            accessPolicyRepository.delete(accessPolicy.get().getResourceId());
-            log.info("Policy removed for resource " + internalId);
+			accessPolicyRepository.delete(accessPolicy.get().getResourceId());
+			log.info("Policy removed for resource " + internalId);
 
-        } catch (Exception e) {
-            log.error("Resource with internalId " + internalId + " not found - Exception: " + e.getMessage());
-        }
-    }
+		} catch (Exception e) {
+			log.error("Resource with internalId " + internalId + " not found - Exception: " + e.getMessage());
+		}
+	}
 
 
 }

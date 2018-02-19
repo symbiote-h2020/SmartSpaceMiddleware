@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
+import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationInfo;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
+import eu.h2020.symbiote.ssp.lwsp.LwspService;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
@@ -32,27 +34,29 @@ import java.security.NoSuchAlgorithmException;
 @RestController
 @RequestMapping(InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH)
 public class InnkeeperRestController {
+
+	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
+	
+	//FIXME: still necessary?
 	@Value("${innkeeper.tag.connected_to}")
 	private String innk_connected_to;
 
+	//FIXME: still necessary?
 	@Value("${innkeeper.tag.service_url}")
 	private String innk_service_url;
 
+	//FIXME: still necessary?
 	@Value("${innkeeper.tag.located_at}")
 	private String innk_located_at;
 
-
-
-
-	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
 	@Autowired
 	ResourcesRepository resourcesRepository;
-
+	
 	@Autowired
-	SessionRepository sessionRepository;
-
+	InkRegistrationRequest inkRegistrationRequest;
+	
 	@Autowired
-	AccessPolicyRepository accessPolicyRepository;
+	LwspService lwspService;
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
@@ -64,19 +68,23 @@ public class InnkeeperRestController {
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
-		Lwsp lwsp = new Lwsp(payload,sessionRepository);
-
+		Lwsp lwsp = new Lwsp(payload);
+		lwspService.saveSession();
 
 		//save session in mongoDB
 		// check MTI: if exists -> negotiation else DATA
+		InkRegistrationInfo info = new InkRegistrationInfo();
+
+				
 		ResponseEntity<Object> responseEntity = null;
+		
 		switch (lwsp.getMti()) {
 		case LwspConstants.GW_INK_AuthN:
 			ObjectMapper sdevm = new ObjectMapper();
-			InkRegistrationRequest innksdevreg = sdevm.readValue(lwsp.decode(), InkRegistrationRequest.class);
-			innksdevreg.setConnectedTo(innk_connected_to);
+			InkRegistrationInfo innksdevregInfo = sdevm.readValue(lwsp.decode(), InkRegistrationInfo.class);
+			innksdevregInfo.setConnectedTo(innk_connected_to);
 			//registry on RAP mongoDB
-			InkRegistrationResponse res = innksdevreg.registry();	
+			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo);	
 			log.info(sdevm.writeValueAsString(res));
 			break;
 		default:
@@ -91,14 +99,15 @@ public class InnkeeperRestController {
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> unregistry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
-		Lwsp lwsp = new Lwsp(payload,sessionRepository);		
+		Lwsp lwsp = new Lwsp(payload);			
 		ObjectMapper sdevm = new ObjectMapper();
-		InkRegistrationRequest innksdevreg = sdevm.readValue(lwsp.decode(), InkRegistrationRequest.class);
-
+		InkRegistrationInfo innksdevreg = sdevm.readValue(lwsp.decode(), InkRegistrationInfo.class);
 
 		if (innksdevreg !=null ) 
 			if(innksdevreg.getSymId()!=null){
-				log.info("Delete id="+innksdevreg.getSymId());			
+				log.info("Delete id="+innksdevreg.getSymId());	
+				
+				//FIXME: this is just for trial/debug
 				resourcesRepository.delete(innksdevreg.getSymId());
 			}
 		return null;

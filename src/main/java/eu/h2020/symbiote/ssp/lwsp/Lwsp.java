@@ -1,35 +1,19 @@
 package eu.h2020.symbiote.ssp.lwsp;
 
-import java.util.Date;
-
-import org.apache.commons.lang.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
-import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
-import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
 
 public class Lwsp {
-	@Autowired
-	SessionRepository sessionRepository;
 	
-	
+	//TODO: implement here LWSP core algorithm, 
+	// 1. manipulate data.  2. encode 3. decode 4. offer data to be persisted in DB. (session)
 	private String data;
 	//private SessionRepository sessionRepository;
 	
 
-	public Lwsp(String data, SessionRepository sessionRepository) {
+	public Lwsp(String data) {
 		// TODO Auto-generated constructor stub
-		this.data=data;		
-		this.sessionRepository=sessionRepository;
-		//check here the message received and provide a new session registration. 
-		//save session in mongoDB, need to add more fields for LWSP
-		Date currTime=new Date(new Date().getTime());
-		String cookie = RandomStringUtils.randomAlphanumeric(17).toUpperCase();
-		SessionInfo sessionInfo = new SessionInfo(cookie,currTime);
-		this.sessionRepository.save(sessionInfo);
-		
+		this.data=data;				
 	}
 
 	
@@ -42,7 +26,8 @@ public class Lwsp {
 	}
 	
 	public String getMti() {
-		//TODO: get correct Mti from message payload, if available, if Mti is not available return null.
+		//TODO: FIXME: get correct Mti from message payload, if available, if Mti is not available return null.
+		
 		return LwspConstants.GW_INK_AuthN;
 	}
 	 
