@@ -23,15 +23,11 @@ import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
 @Service
 public class InkRegistrationRequest {
 
 	private static Log log = LogFactory.getLog(InkRegistrationRequest.class);
-
-	@Autowired
-	SessionRepository sessionRepository;
 
 	@Autowired
 	ResourcesRepository resourcesRepository;
@@ -115,6 +111,7 @@ public class InkRegistrationRequest {
 		try {
 			IAccessPolicy policy = SingleTokenAccessPolicyFactory.getSingleTokenAccessPolicy(accPolicy);
 			AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
+			log.debug("ADD POLICY ACTION");
 			accessPolicyRepository.save(ap);
 
 			log.info("Policy successfully added for resource " + resourceId);

@@ -67,22 +67,39 @@ public class InnkeeperRestController {
 	@SuppressWarnings("unchecked")
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
+		
+		ResponseEntity<Object> responseEntity = null;
 
 		Lwsp lwsp = new Lwsp(payload);
-		lwspService.saveSession(lwsp);
-
+		
+		log.info("payload:"+payload);
+		String sessionId = lwspService.saveSession(lwsp);
+		
 		//save session in mongoDB
 		// check MTI: if exists -> negotiation else DATA
+		
+		
+		/*
 		InkRegistrationInfo info = new InkRegistrationInfo();
 
 				
-		ResponseEntity<Object> responseEntity = null;
+		
 		
 		switch (lwsp.getMti()) {
 		case LwspConstants.GW_INK_AuthN:
 			ObjectMapper sdevm = new ObjectMapper();
+			
 			InkRegistrationInfo innksdevregInfo = sdevm.readValue(lwsp.decode(), InkRegistrationInfo.class);
+			
+			if (innksdevregInfo.getSymId() == "") {
+				log.info("New SDEV Registartion Request");
+				// TODO: PERFORM OPERATIONS TO GET NEW SYMBIOTE ID FROM CORE
+			}else {
+				// TODO: UPDATE REGISTRATION
+				lwspService.saveSession(lwsp);
+			}
 			innksdevregInfo.setConnectedTo(innk_connected_to);
+			
 			//registry on RAP mongoDB
 			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo);	
 			log.info(sdevm.writeValueAsString(res));
@@ -90,7 +107,7 @@ public class InnkeeperRestController {
 		default:
 			break;
 		}
-
+		 */
 
 		return responseEntity;
 

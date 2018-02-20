@@ -24,9 +24,8 @@ public class SessionInfo {
 
     //@JsonProperty("sessionId")
     @Id
+    @JsonProperty("sessionId")
     private String id;
-    @JsonProperty("cookie")
-    private String cookie;
     @Field
     @Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
     private Date session_expiration;
@@ -42,15 +41,11 @@ public class SessionInfo {
      	} )
      * */
 
-    public SessionInfo() {
-        this.id = "";
-        this.cookie=null;
-    }
     
     @JsonCreator
-    public SessionInfo( @JsonProperty("cookie") String cookie,
+    public SessionInfo( @JsonProperty("sessionId") String id,
                         @JsonProperty("session_expiration") Date session_expiration) {
-        this.cookie = cookie;
+        this.id = id;
         this.session_expiration = session_expiration;
         
     }
@@ -60,13 +55,13 @@ public class SessionInfo {
         return id;
     }
     
-    @JsonProperty("cookie")
-    public void getCookie(String cookie) {
-        this.cookie = cookie;
-    }
     @JsonProperty("session_expiration")
     public void setSessionExpiration(Date session_expiration) {
         this.session_expiration = session_expiration;
+    }
+    
+    public Date getSessionExpiration() {
+    	return this.session_expiration;
     }
     
     

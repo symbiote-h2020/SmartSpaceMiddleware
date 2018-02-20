@@ -5,5 +5,5 @@ curl -H 'Content-Type: application/json' -d '
 	"connectedTo":"test",
 	"available":true,
 	"agentType":"test",
-	"semanticDescription":[]
+	"semanticDescription":[],
 }' -X POST -D - http://localhost:8080/innkeeper/registry
