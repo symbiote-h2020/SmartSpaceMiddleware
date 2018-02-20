@@ -19,8 +19,8 @@ public class LwspService {
 	//private SessionRepository sessionRepository;
 
 
-	public void saveSession() {
-		//TODO: decide what/how to save	 
+	public void saveSession(Lwsp lwsp) {
+		//TODO: decide what/how to save	using lwsp informations 
 		Date currTime=new Date(new Date().getTime());
 		String cookie = RandomStringUtils.randomAlphanumeric(17).toUpperCase();
 		SessionInfo sessionInfo = new SessionInfo(cookie,currTime);

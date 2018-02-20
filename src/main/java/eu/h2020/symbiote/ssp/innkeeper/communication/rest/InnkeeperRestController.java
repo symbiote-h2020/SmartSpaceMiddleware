@@ -69,7 +69,7 @@ public class InnkeeperRestController {
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
 		Lwsp lwsp = new Lwsp(payload);
-		lwspService.saveSession();
+		lwspService.saveSession(lwsp);
 
 		//save session in mongoDB
 		// check MTI: if exists -> negotiation else DATA
