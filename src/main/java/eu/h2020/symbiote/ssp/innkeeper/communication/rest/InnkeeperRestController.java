@@ -1,8 +1,10 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationInfo;
@@ -10,11 +12,7 @@ import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.LwspService;
-import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -64,16 +62,56 @@ public class InnkeeperRestController {
 		return null;
 	}
 
-	@SuppressWarnings("unchecked")
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
+	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException, InvalidArgumentsException {
+		
+		// EXAMPLE: CREATION of JSON CloudResource list, used on innkeeper side it to test mongodb interaction
+		/*
+		InkRegistrationInfo innksdevregInfoTest = new InkRegistrationInfo();
+		CloudResource r1 = new CloudResource();		
+		Sensor s1 = new Sensor();
+		List<Service> services_list = new ArrayList<Service>();
+		Service serv1 = new Service();
+		List <Parameter> parameters = new ArrayList <Parameter>();
+		Parameter param1 = new Parameter();
+		param1.setName("param1");				
+		parameters.add(param1);
+		serv1.setParameters(parameters);	
+		services_list.add(serv1);
+		s1.setServices(services_list);
+		r1.setResource(s1);
+		
+		CloudResource r2 = new CloudResource();
+		Actuator a1 = new Actuator();
+		r2.setResource(a1);
+		
+		List <CloudResource> semdescr = new ArrayList<CloudResource>();
+		
+		semdescr.add(r1);
+		semdescr.add(r2);
+		innksdevregInfoTest.setSemanticDescription(semdescr);
+
+		log.info(new ObjectMapper().writeValueAsString(innksdevregInfoTest));
+		*/
 		
 		ResponseEntity<Object> responseEntity = null;
+
 
 		Lwsp lwsp = new Lwsp(payload);
 		
 		log.info("payload:"+payload);
-		String sessionId = lwspService.saveSession(lwsp);
+
+		JsonNode node = new ObjectMapper().readTree(lwsp.getRawData());
+		InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
+		
+		log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
+		
+		
+		InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo);	
+		log.info(new ObjectMapper().writeValueAsString(res));
+
+		
+		
 		
 		//save session in mongoDB
 		// check MTI: if exists -> negotiation else DATA

@@ -38,36 +38,37 @@ public class InkRegistrationRequest {
 	@Autowired
 	OwlApiHelper owlApiHelp;
 
-	public InkRegistrationResponse registry(InkRegistrationInfo info) {
+	public InkRegistrationResponse registry(InkRegistrationInfo info) throws InvalidArgumentsException {
 		InkRegistrationResponse res= null;
-		
-		
-		try {
-			List<CloudResource> msgs = info.getSemanticDescription();
-			info.getSymId(); //
-			for(CloudResource msg: msgs){
-				String internalId = msg.getInternalId();
-				Resource resource = msg.getResource();
-				String pluginId = msg.getPluginId();
-				String symbioteId = resource.getId(); //==this.getSymId()???? FIXME DEBUG TODO
-				List<String> props = null;
-				if(resource instanceof StationarySensor) {
-					props = ((StationarySensor)resource).getObservesProperty();
-				} else if(resource instanceof MobileSensor) {
-					props = ((MobileSensor)resource).getObservesProperty();
-				}
-				log.debug("Updating resource with symbioteId: " + symbioteId + ", internalId: " + internalId);
 
-				addPolicy(symbioteId, internalId, msg.getSingleTokenAccessPolicy());
-				addResource(symbioteId, internalId, props, pluginId);
-			}
-			addCloudResourceInfoForOData(msgs);
-			res = new InkRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
-		} catch (Exception e) {
-			log.error("Error during registration process\n" + e.getMessage());
-			res = new InkRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_REJECTED,0);
-		}
+
+		List<CloudResource> msgs = info.getSemanticDescription();
 		
+		info.getSymId(); //
+		for(CloudResource msg: msgs){
+			String internalId = msg.getInternalId();
+			Resource resource = msg.getResource();
+			String pluginId = msg.getPluginId();
+			String symbioteId = resource.getId(); //==this.getSymId()???? FIXME DEBUG TODO
+			List<String> props = null;
+			if(resource instanceof StationarySensor) {
+				props = ((StationarySensor)resource).getObservesProperty();
+			} else if(resource instanceof MobileSensor) {
+				props = ((MobileSensor)resource).getObservesProperty();
+			}
+			log.debug("Updating resource with symbioteId: " + symbioteId + ", internalId: " + internalId);
+			//FIXME: if msg.getSingleTokenAccessPolicy()== null do not addPolicy
+			try {
+				addPolicy(symbioteId, internalId, msg.getSingleTokenAccessPolicy());
+			}catch (NullPointerException e) {
+				log.error("error during addPolicy process, AccessPolicy is null\n");
+			}
+			addResource(symbioteId, internalId, props, pluginId);
+		}
+		addCloudResourceInfoForOData(msgs);
+		res = new InkRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
+
+
 		return res;
 	}
 
