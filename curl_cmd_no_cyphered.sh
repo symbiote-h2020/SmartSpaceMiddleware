@@ -2,12 +2,12 @@ curl -H 'Content-Type: application/json' -d '
 {
   "sessionId":"",
   "payload":{
-    "symId":"1000",
+    "symId":"sym001",
     "dk1":null,
     "hashField":null,
     "semanticDescription":[
       {
-        "internalId":"1000",
+        "internalId":"intern001",
         "pluginId":"5001plgIDPippo",
         "cloudMonitoringHost":null,
         "singleTokenAccessPolicy":null,
@@ -15,7 +15,7 @@ curl -H 'Content-Type: application/json' -d '
         "resource":{
           "@c":".Sensor",
           "observesProperty":null,
-          "id":"1001",
+          "id":"intern001@sym001",
           "name":"SensorDevice001",
           "description":null,
           "interworkingServiceURL":null,
@@ -42,14 +42,14 @@ curl -H 'Content-Type: application/json' -d '
         "params":null
       },
       {
-        "internalId":"1000",
+        "internalId":"intern002",
         "pluginId":"5002plgID",
         "cloudMonitoringHost":null,
         "singleTokenAccessPolicy":null,
         "singleTokenFilteringPolicy":null,
         "resource":{
           "@c":".Actuator",
-          "id":"1002",
+          "id":"intern002@sym001",
           "name":"Actuator001",
           "description":null,
           "interworkingServiceURL":null,

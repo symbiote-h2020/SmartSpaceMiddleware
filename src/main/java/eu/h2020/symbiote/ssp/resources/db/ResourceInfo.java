@@ -140,4 +140,14 @@ public class ResourceInfo {
     public void setPluginId(String pluginId) {
         this.pluginId = pluginId;
     }
+    
+    @JsonProperty("session_expiration")
+    public Date getSessionExpiration() {
+        return this.session_expiration;
+    }
+    
+    @JsonProperty("session_expiration")
+    public void setSessionExpiration(Date session_expiration) {
+        this.session_expiration = session_expiration;
+    }
 }

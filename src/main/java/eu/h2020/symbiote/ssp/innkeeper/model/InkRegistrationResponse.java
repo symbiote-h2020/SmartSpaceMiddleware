@@ -27,6 +27,11 @@ public class InkRegistrationResponse {
 	@JsonProperty("registration_expiration") private int registration_expiration;
 	
 	public InkRegistrationResponse() {}
+	
+	public InkRegistrationResponse(String symId, String result) {
+		this.symId=symId;
+		this.result=result;
+	}
 	public InkRegistrationResponse(String symId, String result, int registration_expiration) {
 		this.symId=symId;
 		this.result=result;

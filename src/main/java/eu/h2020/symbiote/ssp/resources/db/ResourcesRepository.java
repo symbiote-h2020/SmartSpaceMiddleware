@@ -37,4 +37,9 @@ public interface ResourcesRepository extends MongoRepository<ResourceInfo, Strin
     
     @Override
     public List<ResourceInfo> findAll();
+    
+    public List<ResourceInfo> findByIdLike(String id);
+    
+    
+    
 }

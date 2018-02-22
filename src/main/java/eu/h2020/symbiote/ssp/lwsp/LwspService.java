@@ -2,23 +2,18 @@ package eu.h2020.symbiote.ssp.lwsp;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationInfo;
-import eu.h2020.symbiote.ssp.lwsp.model.LwspMessage;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
@@ -26,67 +21,105 @@ import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 public class LwspService {
 	private static Log log = LogFactory.getLog(LwspService.class);
 
-	//TODO: implement here Lwsp Services, i.e. save Session on DB.
 	@Autowired
 	SessionRepository sessionRepository;
-
-	private String data;
-
 
 	public String saveSession(Lwsp lwsp) throws JsonParseException, JsonMappingException, IOException {
 		ObjectMapper m = new ObjectMapper();
 
 		JsonNode node = m.readTree(lwsp.getRawData());
-		log.info(node.toString());
 		String sessionId = node.get("sessionId").asText();
 		InkRegistrationInfo innkInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
 		String symbioteIdFromInnk = innkInfo.getSymId();
 
 
 		SessionInfo s = null;
-		if ( (sessionId.equals("")) || (sessionId == "null")) { 
-			sessionId=lwsp.getSaltS();
-			Date currTime=new Date(new Date().getTime());
-			s = new SessionInfo(sessionId,symbioteIdFromInnk,currTime);
-			log.info("NEW SESSION");
-			log.info("SessionId():" +node.get("sessionId"));
-			log.info("SessionExpiration:" +s.getSessionExpiration());
-			sessionRepository.save(s);
-			return sessionId;
+		if ( (sessionId.equals("")) || (sessionId == "null")) {
+			//search symbiotId 
+			s = sessionRepository.findBySymbioteId(symbioteIdFromInnk);
+			if (s == null) {
+				sessionId=lwsp.getSaltS();
+				Date currTime=new Date(new Date().getTime());
+				// no previous symId found, new session registration
+				log.info("NEW SESSION");
+				log.info("SessionId():" +node.get("sessionId"));
+				log.info("SessionExpiration:" +currTime);
+				sessionRepository.save(new SessionInfo(sessionId,symbioteIdFromInnk,currTime));
+				return sessionId;
+			}else {
+				// I received a new registration form a not expired registered symid
+				log.warn("SESSION JUST EXISTS");
+				return null;
+			}
 		} else {
-			// Check if session is activer or not
+			// Check if session is active or not
 			log.info("CHECK SESSION");
 			s = sessionRepository.findById(sessionId);
 			if (s !=null) {
-				log.info("GOT A SESSION, refresh it");
-				if (s.getSymbioteId().equals(symbioteIdFromInnk)) {
-					log.info("SessionId():" +node.get("sessionId"));
-					log.info("SessionExpiration:" +s.getSessionExpiration());
-					Date currTime=new Date(new Date().getTime());
-					s.setSessionExpiration(currTime);
-					sessionRepository.save(s);
-					return s.getSessionId();
-				}else {
+				if (!s.getSymbioteId().equals(symbioteIdFromInnk)) {
 					// I got a session id but the symbioteId is different: ERROR
-					log.warn("Session: "+ s.getSessionId() +"innk got symbioteId=" + symbioteIdFromInnk+ " != "+s.getSymbioteId() +" IGNORE THIS MESSAGE	");
+					log.warn("Session: "+ s.getSessionId() +"innk got symbioteId=" + symbioteIdFromInnk+ " != "+s.getSymbioteId());
+					return null;
+
+				}else {
+					log.warn("DUPLICATE REGISTRATION REQUEST from symbioteId:"+symbioteIdFromInnk);
 					return null;
 				}
 			}else {
-				log.info("SESSION ID "+sessionId+" NOT FOUND, ignore this message");
+				log.info("SESSION ID "+sessionId+" NOT FOUND");
 				return null;
 			}
+		}
+	}
 
+
+	public Date keepAliveSession(Lwsp lwsp) throws JsonProcessingException, IOException {
+
+		ObjectMapper m = new ObjectMapper();
+		JsonNode node = m.readTree(lwsp.getRawData());
+		String sessionId = node.get("sessionId").asText();
+		InkRegistrationInfo innkInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
+		String symbioteIdFromInnk = innkInfo.getSymId();
+		SessionInfo s = sessionRepository.findById(sessionId);
+		if (s==null) {
+			return null;
+		}else {
+			s = sessionRepository.findById(sessionId);
+			if (s !=null && s.getSymbioteId().equals(symbioteIdFromInnk)) {
+				// I got a sessionId and its symbiote id is to received symbioteId, perform KEEP ALIVE
+				Date currTime=new Date(new Date().getTime());
+				s = new SessionInfo(sessionId,symbioteIdFromInnk,currTime);
+				log.info("SessionId():" +node.get("sessionId"));
+				log.info("SessionExpiration:" +s.getSessionExpiration());
+				sessionRepository.save(s);
+				return currTime;
+			}else
+				return null;
 
 
 		}
+	}
 
 
+	public String unregistry(Lwsp lwsp) throws JsonProcessingException, IOException {
+		ObjectMapper m = new ObjectMapper();
+		JsonNode node = m.readTree(lwsp.getRawData());
+		String sessionId = node.get("sessionId").asText();
+		InkRegistrationInfo innkInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
+		String symbioteIdFromInnk = innkInfo.getSymId();
+		SessionInfo s = sessionRepository.findById(sessionId);
+		if (s==null) {
+			return null;
+		}else {
+			s = sessionRepository.findById(sessionId);
+			if (s !=null && s.getSymbioteId().equals(symbioteIdFromInnk)) {
+				sessionRepository.delete(sessionId);
+				return sessionId;
+			}else
+				return null;
 
 
-
-
-		//TODO: decide what/how to save	using lwsp informations 
-
+		}		
 	}
 
 

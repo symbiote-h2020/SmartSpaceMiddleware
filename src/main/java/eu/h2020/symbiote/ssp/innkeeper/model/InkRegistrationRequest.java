@@ -2,7 +2,6 @@ package eu.h2020.symbiote.ssp.innkeeper.model;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -99,24 +98,10 @@ public class InkRegistrationRequest {
 		try {
 			log.info("Resource " + new ObjectMapper().writeValueAsString(resourceInfo).toString() + " registered");
 		} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	private void deleteResource(String internalId) {
-		try {
-			List<ResourceInfo> resourceList = resourcesRepository.findByInternalId(internalId);
-			if(resourceList != null && !resourceList.isEmpty()) {
-				resourcesRepository.delete(resourceList.get(0).getSymbioteId());
-				log.info("Resource " + internalId + " unregistered");
-			} else {
-				log.error("Resource " + internalId + " not found");
-			}
-		} catch (Exception e) {
-			log.error("Resource with id " + internalId + " not found - Exception: " + e.getMessage());
-		}
-	}
 
 	private void addPolicy(String resourceId, String internalId, SingleTokenAccessPolicySpecifier accPolicy) throws InvalidArgumentsException {
 		try {
@@ -128,10 +113,9 @@ public class InkRegistrationRequest {
 			log.info("Policy successfully added for resource " + resourceId);
 		} catch (InvalidArgumentsException e) {
 			log.error("Invalid Policy definition for resource with id " + resourceId);
-			throw e;
 		}
 	}
-
+/*
 	private void deletePolicy(String internalId) {
 		try {
 			Optional<AccessPolicy> accessPolicy = accessPolicyRepository.findByInternalId(internalId);
@@ -147,6 +131,7 @@ public class InkRegistrationRequest {
 			log.error("Resource with internalId " + internalId + " not found - Exception: " + e.getMessage());
 		}
 	}
+*/
 
 
 }

@@ -12,17 +12,22 @@ import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.LwspService;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by vasgl on 8/24/2017.
@@ -151,29 +156,62 @@ public class InnkeeperRestController {
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> unregistry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
+		ResponseEntity<Object> responseEntity = null;
 
-		Lwsp lwsp = new Lwsp(payload);			
-		ObjectMapper sdevm = new ObjectMapper();
-		InkRegistrationInfo innksdevreg = sdevm.readValue(lwsp.decode(), InkRegistrationInfo.class);
+		Lwsp lwsp = new Lwsp(payload);
+		String sessionId = lwspService.unregistry(lwsp);
+		if (sessionId!=null) {
 
-		if (innksdevreg !=null ) 
-			if(innksdevreg.getSymId()!=null){
-				log.info("Delete id="+innksdevreg.getSymId());	
+			ObjectMapper m = new ObjectMapper();
 
-				//FIXME: this is just for trial/debug
-				resourcesRepository.delete(innksdevreg.getSymId());
+			JsonNode node = m.readTree(lwsp.getRawData());
+			InkRegistrationInfo innkInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
+			log.info("UNREGISTRY DELETE SymId:"+innkInfo.getSymId());
+
+			List<ResourceInfo> resInfos = resourcesRepository.findByIdLike(innkInfo.getSymId());
+			if (resInfos !=null) {
+				if (resInfos.size() > 0){
+					for (ResourceInfo r: resInfos) {
+						resourcesRepository.delete(r);
+					}
+				}
+
 			}
-		return null;
+		}
+		return responseEntity;
+
 	}
 
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> keep_alive(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+	public ResponseEntity<Object> keep_alive(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
+		ResponseEntity<Object> responseEntity = null;
 
-		log.info("KEEP ALIVE: TBD");
+		Lwsp lwsp = new Lwsp(payload);
+		Date currTime = lwspService.keepAliveSession(lwsp);
+		if (currTime!=null) {
 
-		return null;
+			ObjectMapper m = new ObjectMapper();
+
+			JsonNode node = m.readTree(lwsp.getRawData());
+			InkRegistrationInfo innkInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
+			log.info("KEEP ALIVE SymId:"+innkInfo.getSymId());
+
+			List<ResourceInfo> resInfos = resourcesRepository.findByIdLike(innkInfo.getSymId());
+			if (resInfos !=null) {
+				if (resInfos.size() > 0){
+					for (ResourceInfo r: resInfos) {
+						r.setSessionExpiration(currTime);
+						resourcesRepository.save(r);
+					}
+				}
+
+			}
+
+		}
+
+		return responseEntity;
 	}
 
 
