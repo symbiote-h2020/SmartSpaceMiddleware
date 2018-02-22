@@ -39,11 +39,15 @@ public class LwspService {
 		JsonNode node = m.readTree(lwsp.getRawData());
 		log.info(node.toString());
 		String sessionId = node.get("sessionId").asText();
+		InkRegistrationInfo innkInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
+		String symbioteIdFromInnk = innkInfo.getSymId();
+
+
 		SessionInfo s = null;
 		if ( (sessionId.equals("")) || (sessionId == "null")) { 
 			sessionId=lwsp.getSaltS();
 			Date currTime=new Date(new Date().getTime());
-			s = new SessionInfo(sessionId,currTime);
+			s = new SessionInfo(sessionId,symbioteIdFromInnk,currTime);
 			log.info("NEW SESSION");
 			log.info("SessionId():" +node.get("sessionId"));
 			log.info("SessionExpiration:" +s.getSessionExpiration());
@@ -55,23 +59,29 @@ public class LwspService {
 			s = sessionRepository.findById(sessionId);
 			if (s !=null) {
 				log.info("GOT A SESSION, refresh it");
-				log.info("SessionId():" +node.get("sessionId"));
-				log.info("SessionExpiration:" +s.getSessionExpiration());
-				Date currTime=new Date(new Date().getTime());
-				s.setSessionExpiration(currTime);
-				sessionRepository.save(s);
-				return s.getSessionId();
+				if (s.getSymbioteId().equals(symbioteIdFromInnk)) {
+					log.info("SessionId():" +node.get("sessionId"));
+					log.info("SessionExpiration:" +s.getSessionExpiration());
+					Date currTime=new Date(new Date().getTime());
+					s.setSessionExpiration(currTime);
+					sessionRepository.save(s);
+					return s.getSessionId();
+				}else {
+					// I got a session id but the symbioteId is different: ERROR
+					log.warn("Session: "+ s.getSessionId() +"innk got symbioteId=" + symbioteIdFromInnk+ " != "+s.getSymbioteId() +" IGNORE THIS MESSAGE	");
+					return null;
+				}
 			}else {
 				log.info("SESSION ID "+sessionId+" NOT FOUND, ignore this message");
 				return null;
 			}
-			
-			
-			
+
+
+
 		}
-		
-		
-		
+
+
+
 
 
 

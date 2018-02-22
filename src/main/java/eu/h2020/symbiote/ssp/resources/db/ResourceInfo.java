@@ -9,9 +9,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 /**
  *
@@ -34,6 +37,10 @@ public class ResourceInfo {
     @JsonIgnore
     private String pluginId;
     
+    @Field
+    @Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
+    private Date session_expiration;
+    
     
     public ResourceInfo() {
         this.id = "";
@@ -43,7 +50,6 @@ public class ResourceInfo {
         this.sessionIdList = null;
         this.type = null;
     }
-    
     @JsonCreator
     public ResourceInfo(@JsonProperty("symbioteId") String resourceId, 
                         @JsonProperty("internalId") String platformResourceId) {
@@ -53,6 +59,19 @@ public class ResourceInfo {
         this.observedProperties = null;
         this.sessionIdList = null;       
         this.type = null;
+    }
+    
+    @JsonCreator
+    public ResourceInfo(@JsonProperty("symbioteId") String resourceId, 
+                        @JsonProperty("internalId") String platformResourceId,
+                        @JsonProperty("session_expiration") Date session_expiration) {
+        this.id = resourceId;
+        this.internalId = platformResourceId;
+        this.pluginId = null;
+        this.observedProperties = null;
+        this.sessionIdList = null;       
+        this.type = null;
+        this.session_expiration=session_expiration;
     }
     
     @JsonProperty("symbioteId")

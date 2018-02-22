@@ -1,5 +1,6 @@
 package eu.h2020.symbiote.ssp.innkeeper.model;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -7,6 +8,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import eu.h2020.symbiote.model.cim.MobileSensor;
@@ -44,12 +48,12 @@ public class InkRegistrationRequest {
 
 		List<CloudResource> msgs = info.getSemanticDescription();
 		
-		info.getSymId(); //
+		info.getSymId();
 		for(CloudResource msg: msgs){
-			String internalId = msg.getInternalId();
+			String internalId = msg.getInternalId(); 
 			Resource resource = msg.getResource();
 			String pluginId = msg.getPluginId();
-			String symbioteId = resource.getId(); //==this.getSymId()???? FIXME DEBUG TODO
+			String symbioteId = resource.getId(); //each resource has an unique symbioteId
 			List<String> props = null;
 			if(resource instanceof StationarySensor) {
 				props = ((StationarySensor)resource).getObservesProperty();
@@ -83,15 +87,21 @@ public class InkRegistrationRequest {
 		}
 	}
 	private void addResource(String resourceId, String platformResourceId, List<String> obsProperties, String pluginId) {
-		ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId);
+		Date currTime=new Date(new Date().getTime());
+		ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId, currTime);
 		if(obsProperties != null)
 			resourceInfo.setObservedProperties(obsProperties);
 		if(pluginId != null && pluginId.length()>0)
 			resourceInfo.setPluginId(pluginId);
-
+		log.info("::::::::::::::::: ADD RESOURCE :::::::::::::::::::");
 		resourcesRepository.save(resourceInfo);
 
-		log.debug("Resource " + resourceId + " registered");
+		try {
+			log.info("Resource " + new ObjectMapper().writeValueAsString(resourceInfo).toString() + " registered");
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private void deleteResource(String internalId) {

@@ -30,6 +30,9 @@ public class SessionInfo {
     @Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
     private Date session_expiration;
     
+    @JsonProperty("symbioteId")
+    private String symbioteId;
+    
     /* HOWTO read expiration time directly via mongoDB client
       db.sessions.aggregate(     
       	{ $project: {         
@@ -44,8 +47,10 @@ public class SessionInfo {
     
     @JsonCreator
     public SessionInfo( @JsonProperty("sessionId") String id,
+    					@JsonProperty("symbioteId") String symbioteId,
                         @JsonProperty("session_expiration") Date session_expiration) {
         this.id = id;
+        this.symbioteId = symbioteId;
         this.session_expiration = session_expiration;
         
     }
@@ -53,6 +58,11 @@ public class SessionInfo {
     @JsonProperty("sessionId")
     public String getSessionId() {
         return id;
+    }
+    
+    @JsonProperty("symbioteId")
+    public String getSymbioteId() {
+        return symbioteId;
     }
     
     @JsonProperty("session_expiration")

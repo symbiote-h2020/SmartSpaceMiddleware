@@ -34,7 +34,7 @@ import java.security.NoSuchAlgorithmException;
 public class InnkeeperRestController {
 
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
-	
+
 	//FIXME: still necessary?
 	@Value("${innkeeper.tag.connected_to}")
 	private String innk_connected_to;
@@ -49,10 +49,10 @@ public class InnkeeperRestController {
 
 	@Autowired
 	ResourcesRepository resourcesRepository;
-	
+
 	@Autowired
 	InkRegistrationRequest inkRegistrationRequest;
-	
+
 	@Autowired
 	LwspService lwspService;
 
@@ -64,7 +64,7 @@ public class InnkeeperRestController {
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException, InvalidArgumentsException {
-		
+
 		// EXAMPLE: CREATION of JSON CloudResource list, used on innkeeper side it to test mongodb interaction
 		/*
 		InkRegistrationInfo innksdevregInfoTest = new InkRegistrationInfo();
@@ -80,55 +80,53 @@ public class InnkeeperRestController {
 		services_list.add(serv1);
 		s1.setServices(services_list);
 		r1.setResource(s1);
-		
+
 		CloudResource r2 = new CloudResource();
 		Actuator a1 = new Actuator();
 		r2.setResource(a1);
-		
+
 		List <CloudResource> semdescr = new ArrayList<CloudResource>();
-		
+
 		semdescr.add(r1);
 		semdescr.add(r2);
 		innksdevregInfoTest.setSemanticDescription(semdescr);
 
 		log.info(new ObjectMapper().writeValueAsString(innksdevregInfoTest));
-		*/
-		
+		 */
+
 		ResponseEntity<Object> responseEntity = null;
 
 
 		Lwsp lwsp = new Lwsp(payload);
-		
-		log.info("payload:"+payload);
+		String session_result = lwspService.saveSession(lwsp);
 
-		JsonNode node = new ObjectMapper().readTree(lwsp.getRawData());
-		InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
-		
-		log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
-		
-		
-		InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo);	
-		log.info(new ObjectMapper().writeValueAsString(res));
+		if (session_result != null) {
+			JsonNode node = new ObjectMapper().readTree(lwsp.getRawData());
+			InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
 
-		
-		
-		
+			log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
+			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo);	
+			log.info(new ObjectMapper().writeValueAsString(res));
+		}
+
+
+
 		//save session in mongoDB
 		// check MTI: if exists -> negotiation else DATA
-		
-		
+
+
 		/*
 		InkRegistrationInfo info = new InkRegistrationInfo();
 
-				
-		
-		
+
+
+
 		switch (lwsp.getMti()) {
 		case LwspConstants.GW_INK_AuthN:
 			ObjectMapper sdevm = new ObjectMapper();
-			
+
 			InkRegistrationInfo innksdevregInfo = sdevm.readValue(lwsp.decode(), InkRegistrationInfo.class);
-			
+
 			if (innksdevregInfo.getSymId() == "") {
 				log.info("New SDEV Registartion Request");
 				// TODO: PERFORM OPERATIONS TO GET NEW SYMBIOTE ID FROM CORE
@@ -137,7 +135,7 @@ public class InnkeeperRestController {
 				lwspService.saveSession(lwsp);
 			}
 			innksdevregInfo.setConnectedTo(innk_connected_to);
-			
+
 			//registry on RAP mongoDB
 			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo);	
 			log.info(sdevm.writeValueAsString(res));
@@ -161,7 +159,7 @@ public class InnkeeperRestController {
 		if (innksdevreg !=null ) 
 			if(innksdevreg.getSymId()!=null){
 				log.info("Delete id="+innksdevreg.getSymId());	
-				
+
 				//FIXME: this is just for trial/debug
 				resourcesRepository.delete(innksdevreg.getSymId());
 			}
