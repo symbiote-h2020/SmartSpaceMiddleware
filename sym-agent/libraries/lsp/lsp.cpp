@@ -27,6 +27,7 @@ lsp::lsp(char* cp, char* kdf, uint8_t* psk, uint8_t psk_len) {
 	_sn = 0;
 	_needInitVector = false;
 	_iv = "";
+	_sessionId = "";
 	memset(_dk1, 0, sizeof(_dk1));
 	memset(_dk2, 0, sizeof(_dk2));
 	memset(_SDEVmac, 0, sizeof(_SDEVmac));
@@ -53,8 +54,6 @@ void lsp::PBKDF2function( uint8_t *pass, uint32_t pass_len, uint8_t *salt, uint3
 
   counter[3] = 1;
 
-
-
   while (key_len)
 
   {
@@ -68,8 +67,6 @@ void lsp::PBKDF2function( uint8_t *pass, uint32_t pass_len, uint8_t *salt, uint3
 
       work[i] = md1[i] = hmac[i];
 
-
-
     for ( i = 1 ; i < rounds ; i++ )
 
     {
@@ -79,28 +76,19 @@ void lsp::PBKDF2function( uint8_t *pass, uint32_t pass_len, uint8_t *salt, uint3
       hmac = sha1.resultHmac();
 
       for ( j = 0 ; j < HMAC_DIGEST_SIZE ; j++ )
-
       {
-
         md1[j] = hmac[j];
         work[j] ^= md1[j];
-
       }
-
     }
-
-
 
     use_len = (key_len < HMAC_DIGEST_SIZE ) ? key_len : HMAC_DIGEST_SIZE;
 
     for ( i = 0 ; i < use_len ; i++ )
       out_p[i] = work[i];
 
-
-
     key_len -= use_len;
     out_p += use_len;
-
 
     for ( i = 4 ; i > 0 ; i-- )
 
@@ -112,37 +100,26 @@ void lsp::PBKDF2function( uint8_t *pass, uint32_t pass_len, uint8_t *salt, uint3
 }
 
 void lsp::printBuffer(uint8_t* buff, uint8_t len, String label) {
-  Serial.print("\n"+label);
-  Serial.print(" = {");
+  Serial.print(label);
+  Serial.print("\t= {");
   for (uint8_t j = 0; j < len - 1; j++) {
       Serial.print(buff[j],HEX);
       Serial.print(", ");
    }
    Serial.print(buff[len - 1],HEX);
-   Serial.println("}\n");
+   Serial.println("}");
 }
 
 
 void lsp::calculateDK1(uint8_t num_iterations) {
-	P("Start calculating DK1 key....");
+	P("\n\nStart calculating DK1 key....");
 	if (_kdf == "PBKDF2") {
 		if (_cp == TLS_PSK_WITH_AES_128_CBC_SHA) {
-			Serial.print("Size of PSK: ");
-			P(_psk_len);
 			printBuffer(_psk, _psk_len, "PSK");
-			/*
-			Serial.print("\nPSK");
-		  	Serial.print(" = {");
-		  	for (uint8_t j = 0; j < _psk_len-1; j++) {
-		      Serial.print(_psk[j],HEX);
-		      Serial.print(", ");
-		   	}
-		   	Serial.print(_psk[_psk_len-1],HEX);
-		   	Serial.println("}\n");
-			*/
 			uint8_t salt[8];
 			memset(salt, 0, sizeof(salt));
 			uint32_t tmpnonce = ENDIAN_SWAP_32(0x98ec4);
+			//uint32_t tmpnonce = ENDIAN_SWAP_32(_SDEVNonce);
 			memcpy(salt, (uint8_t*)&tmpnonce, 4);
 			tmpnonce = ENDIAN_SWAP_32(_GWNonce);
 			memcpy(salt+4, (uint8_t*)&_GWNonce, 4);
@@ -165,7 +142,7 @@ void lsp::calculateDK1(uint8_t num_iterations) {
 }
 
 void lsp::calculateDK2(uint8_t num_iterations) {
-	P("Start calculating DK2 key....");
+	P("\nStart calculating DK2 key....");
 	if (_kdf == "PBKDF2") {
 		if (_cp == TLS_PSK_WITH_AES_128_CBC_SHA) {
 			// size of salt should be 4 + 4 + 10 bytes
@@ -210,6 +187,16 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 	if (mti == STRING_MTI_GW_INK_HELLO) {
 		// GWInnkeeperHello code, everything ok
 		// get the crypto choice
+		/*
+		This is a GW_INKK_HELLO RESPONSE:
+			{	
+				"mti": "0x20",
+				"cc": "0x00a8",
+				"iv": "<16_characters>",
+				"nonce": "<GWnonce>",
+				"sessionId": <abCD123a>
+			}
+		*/
 		P("GOT MTI GW INK HELLO");
 		String _cc = _root["cc"].as<String>();
 		if (_cc != _cp) {
@@ -225,12 +212,50 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 			P("Init vector not found");
 			_needInitVector == false;
 		}
+		_sessionId = _root["sessionId"].as<String>();
 		return COMMUNICATION_OK;
 	} else if (mti == STRING_MTI_GW_INK_AUTHN) {
 		P("GOT MTI GW INK AUTHN");
-		return COMMUNICATION_ERROR;
+/*
+		This is a GW INK AUTHN RESPONSE:
+			{	
+				"mti": "0x40",
+				"sn": <HEX(SDEVsn+1)>,
+				"nonce": "<GWnonce2>",
+				"sessionId": <abCD123a>,
+				"authn": "<b64(ENC_dk1( ( SHA-1(HEX_STRING(SDEVnonce2)||HEX_STRING(GWnonce2))  || HEX_STRING(sn) )>",
+				"sign": "<b64(SHA-1-HMAC_dk2([ENC_dk1(SHA-1(SDEVnonce2||GWnonce2))]))>"
+			}
+*/
+			String sn = _root["sn"].as<String>();
+			if (sn.toInt() == (_sn+1)) {
+				// everything ok
+				// Increment the _sn index of 1 unit to match with the 
+				// _sn value used by the innkeeeper
+				_sn = _sn+1;
+				String sessionId = _root["sessionId"].as<String>();
+				if (sessionId != _sessionId) {
+					// Wrong session id
+					P("ERR: wrong session ID");
+					return COMMUNICATION_ERROR;
+				}
+				String gwnonce = _root["nonce"].as<String>();
+				// save the new GWnonce
+				_GWNonce = gwnonce.toInt();
+				String authn = _root["authn"].as<String>();
+				String sign = _root["sign"].as<String>();
+				String decrypted;
+				if (decryptAndVerify(authn, decrypted, sign)) {
+
+				}
+				_sn = _sn+1;
+				return COMMUNICATION_OK;
+			} else {
+				P("ERR: sequence wrong sequence number");
+				return COMMUNICATION_ERROR;
+			}
 	} else {
-		P("ERR: enter default from elaborate InnkResp");
+		P("ERR: wrong mti code from INNK");
 		return COMMUNICATION_ERROR;
 	}
 }
@@ -244,7 +269,7 @@ void lsp::begin() {
 }
 
 uint8_t lsp::sendSDEVHelloToGW() {
-	P("Enter sendSDEVHelloToGW");
+	P("Enter sendSDEVHelloToGW\n");
 	String resp = "";
 	if (WiFi.status() == WL_CONNECTED) {
 		_jsonBuff.clear();
@@ -272,8 +297,6 @@ uint8_t lsp::sendSDEVHelloToGW() {
 		// add this to respect the HTTP RFC
 		temp = "\r\n" + temp;
 		int statusCode = _rest_client->post(LSP_PATH, temp.c_str(), &resp);
-		PI("Got this status code:");
-		P(statusCode);
 		if (statusCode < 300 and statusCode >= 200){
 			statusCode = elaborateInnkResp(resp);
 			if (statusCode < 300 and statusCode >= 200) return NO_ERROR_LSP;
@@ -282,27 +305,56 @@ uint8_t lsp::sendSDEVHelloToGW() {
 	} else return ERROR_NOT_CONNECTED;
 }
 
-uint8_t lsp::sendAuthN(String clearData) {
-	P("Enter sendAuthN");
+void lsp::createAuthNPacket(uint8_t* dataout) {
+	uint8_t tmpHash[20];
+	String dataToHash = String(_SDEVNonce, HEX) + String(_GWNonce, HEX);
+	PI("SHA1(SDEVnonce||GWnonce) = SHA1(");
+	PI(dataToHash);
+	PI(")");
+	sha1.init();
+	sha1.print(dataToHash);
+	memcpy(dataout, sha1.result(), 20);
+}
+
+uint8_t lsp::sendAuthN() {
+	/* in this message SDEv should send (if TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA):
+	{
+		"mti": "0x30",
+		"sn": "<HEX(sequence_number)>",
+		"nonce": "<SDEVnonce2>",
+		"sessionId": "abcdefgh",
+		"authn": "<			      b64 ( ENC_dk1 ( SHA-1(HEX_STRING(SDEVnonce)||HEX_STRING(GWnonce))  || HEX_STRING(sn) ) )  >"
+		"sign":  "<b64( SHA-1-HMAC_dk2( ENC_dk1 ( SHA-1(HEX_STRING(SDEVnonce)||HEX_STRING(GWnonce))  || HEX_STRING(sn) ) ) )>"
+	}
+	 */
+	//"authn": <			     b64 ( ENC_dk1 ( SHA-1(HEX_STRING(SDEVnonce)||HEX_STRING(GWnonce))  || HEX_STRING(sn) ) )  >
+	//"sign":  <b64( SHA-1-HMAC_dk2( ENC_dk1 ( SHA-1(HEX_STRING(SDEVnonce)||HEX_STRING(GWnonce))  || HEX_STRING(sn) ) ) )>
+
+	P("\nEnter sendAuthN");
 	String resp = "";
 	if (WiFi.status() == WL_CONNECTED) {
 		_jsonBuff.clear();
 		JsonObject& _root = _jsonBuff.createObject();
 		//initialize the sequence number
   		_sn = random(1000000);
-  		PI("SN: ");
-		P(_sn);
   		// use DK1 to encrypt
-  		//uint8_t testdata[32] = {100,100,100,188,188,188,188,144,144,144,144,111,111,111,111,111,100,100,100,188,188,188,188,144,144,144,144,111,111,111,111,111};
-  		char testdata[] = "this can be text of any length or information you want it to be";
   		String outdata;
   		String signedData;
-  		//encryptData(testdata, outdata);
-  		encryptDataAndSign(testdata, outdata, signedData);
-  		PI("B64 encoded data(outside): ");
-		P(outdata);
+  		uint8_t authNPacket[SHA1_KEY_SIZE];
+  		memset(authNPacket, 0, SHA1_KEY_SIZE);
+  		// crypt and sign data with the old SDEVnonce
+  		// authNPacket should be SHA1(SDEVnonce||GWnonce)
+  		createAuthNPacket(authNPacket);
+  		printBuffer(authNPacket, 20, "");
+  		encryptDataAndSign((char*)authNPacket, outdata, signedData);
+  		//PI("B64 encoded data(outside): ");
+		//P(outdata);
+		// create the new SDEVnonce
+		_SDEVNonce = random(0xFFFFFFFF);
 			_root["mti"] = STRING_MTI_SDEV_AUTHN;
-			_root["sn"] = String(_sn);
+			_root["sn"] = String(_sn, HEX);
+			_root["nonce"] = String(_SDEVNonce, HEX);
+			_root["sessionId"] = _sessionId;
 			_root["authn"] = outdata;
 				// use DK2 to sign
 			_root["sign"] = signedData;
@@ -312,7 +364,7 @@ uint8_t lsp::sendAuthN(String clearData) {
 		_root.printTo(temp);
 		int statusCode = _rest_client->post(LSP_PATH, temp.c_str(), &resp);
 		if (statusCode < 300 and statusCode >= 200){
-			_sn++;
+			//_sn++; must be incremented by the INNK
 			statusCode = elaborateInnkResp(resp);
 			if (statusCode < 300 and statusCode >= 200) return NO_ERROR_LSP;
 				else return statusCode;
@@ -326,79 +378,12 @@ void lsp::bufferSize(char* text, int &length) {
 	length = (buf < i) ? buf + BLOCK_SIZE : length = buf;
 }
 
-
-void lsp::encrypt(char* plain_text, String& output, int length) {
-	
-	byte enciphered[length];
-	uint8_t iv[16] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
-	aesEncryptor.process((uint8_t*)plain_text, enciphered, length);
-	int encrypted_size = sizeof(enciphered);
-	printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
-	base64 b64enc;
-	String encoded = b64enc.encode(enciphered, encrypted_size, false);
-	output = encoded;
+void lsp::bufferSize(unsigned char* text, int &length) {
+	int i = strlen((const char*)text);
+	int buf = round(i / BLOCK_SIZE) * BLOCK_SIZE;
+	length = (buf < i) ? buf + BLOCK_SIZE : length = buf;
 }
 
-void lsp::encryptAndSign(char* plain_text, String& output, int length, String& signature) {
-	
-	byte enciphered[length];
-	uint8_t iv[16] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
-	aesEncryptor.process((uint8_t*)plain_text, enciphered, length);
-	int encrypted_size = sizeof(enciphered);
-	printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
-
-	String signedData;
-	signData(enciphered, encrypted_size, signedData);
-	signature = signedData;
-
-	base64 b64enc;
-	String encoded = b64enc.encode(enciphered, encrypted_size, false);
-	output = encoded;
-}
-
-/*
-	Encrypts with DK1 (data || <sequence_number>) and returns
-	the base64 rapresentation of the encrypted data
-*/
-void lsp::encryptData(char* plain_text, String& output) {
-	int length = 0;
-	String dataToEncrypt = String(plain_text) + String(_sn, HEX);
-	PI("This is what I'm going to ENCRYPT: ");
-	P(dataToEncrypt);
-	//bufferSize(plain_text, length);
-	bufferSize((char*)dataToEncrypt.c_str(), length);
-	//char encrypted[length];
-	String encrypted;
-	///encrypt(plain_text, encrypted, length);
-	encrypt((char*)dataToEncrypt.c_str(), encrypted, length);
-	output = encrypted;	
-	//PI("B64 encoded data(intermediate): ");
-	//P(encrypted);
-}
-
-/*
-	Encrypts with DK1 (data || <sequence_number>) and returns
-	the base64 rapresentation of the encrypted data and the b64 rapresentation of the signed 
-	SHA1-HMAC_dk2(ENC_DATA|| <sequence_number>) 
-*/
-void lsp::encryptDataAndSign(char* plain_text, String& output, String& signature) {
-	int length = 0;
-	String dataToEncrypt = String(plain_text) + String(_sn, HEX);
-	PI("This is what I'm going to ENCRYPT: ");
-	P(dataToEncrypt);
-	bufferSize((char*)dataToEncrypt.c_str(), length);
-	//char encrypted[length];
-	String encrypted;
-	String tmpSign;
-	///encrypt(plain_text, encrypted, length);
-	encryptAndSign((char*)dataToEncrypt.c_str(), encrypted, length, tmpSign);
-	output = encrypted;	
-	signature = tmpSign;
-	//PI("B64 encoded data(intermediate): ");
-	//P(encrypted);
-}
 
 void lsp::signData(uint8_t* data, uint8_t data_len, String& output) {
 
@@ -417,7 +402,184 @@ void lsp::signData(uint8_t* data, uint8_t data_len, String& output) {
     printBuffer(ret_data, SHA1_KEY_SIZE, "BinarySign");
 	base64 b64enc;
 	String encoded = b64enc.encode(ret_data, SHA1_KEY_SIZE, false);
-	//PI("B64 signed data: ");
-	//P(encoded);
 	output = encoded;
+}
+
+void lsp::encryptAndSign(char* plain_text, String& output, int length, String& signature) {
+	
+	byte enciphered[length];
+	uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
+	aesEncryptor.process((uint8_t*)plain_text, enciphered, length);
+	int encrypted_size = sizeof(enciphered);
+	printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
+
+	String signedData;
+	signData(enciphered, encrypted_size, signedData);
+	signature = signedData;
+
+	base64 b64enc;
+	String encoded = b64enc.encode(enciphered, encrypted_size, false);
+	output = encoded;
+}
+
+
+/*
+	Encrypts with DK1 (data || <sequence_number>) and returns
+	the base64 rapresentation of the encrypted data and the b64 rapresentation of the signed 
+	SHA1-HMAC_dk2(ENC_DATA|| <sequence_number>) 
+*/
+void lsp::encryptDataAndSign(char* plain_text, String& output, String& signature) {
+	int length = 0;
+	String dataToEncrypt = String(plain_text) + String(_sn, HEX);
+	//PI("This is what I'm going to ENCRYPT: ");
+	//P(dataToEncrypt);
+	bufferSize((char*)dataToEncrypt.c_str(), length);
+	String encrypted;
+	String tmpSign;
+	encryptAndSign((char*)dataToEncrypt.c_str(), encrypted, length, tmpSign);
+	output = encrypted;	
+	signature = tmpSign;
+}
+
+/* TMP
+		This is a GW INK AUTHN RESPONSE:
+			{	
+				"mti": "0x40",
+				"sn": <HEX(SDEVsn+1)>,
+				"nonce": "<GWnonce2>",
+				"sessionId": <abCD123a>,
+				"authn": "<b64(ENC_dk1(SHA-1(SDEVnonce2||GWnonce2)))>",
+				"sign": "<b64(SHA-1-HMAC_dk2([ENC_dk1(SHA-1(SDEVnonce2||GWnonce2))]))>"
+			}
+*/
+bool lsp::decryptAndVerify(String authn, String& decrypted, String GWsigned) {
+	// Please note that you should invoke this method after SDEV and GW nonce are updated with 
+	// SDEVnonce2 and GWnonce2
+
+	// calculate the new ENC_dk1(SHA-1(SDEVnonce2||GWnonce2))
+	String GWoutdata;
+  	String signedData;
+  	uint8_t GWauthNPacket[SHA1_KEY_SIZE];
+  	memset(GWauthNPacket, 0, SHA1_KEY_SIZE);
+  	// it creates the packet using the new SDEV and GW nonce savend in library
+  	P(" ");
+  	createAuthNPacket(GWauthNPacket);
+  	printBuffer(GWauthNPacket, 20, " = CalculatedGWauthNPacket");
+  	encryptDataAndSign((char*)GWauthNPacket, GWoutdata, signedData);
+  	PI("Got this sign from INNK:\t");
+  	P(GWsigned);
+  	PI("Calculated sign:\t\t");
+  	P(signedData);
+  	//if (signedData == GWsigned) {
+  		unsigned int binaryLength = decode_base64_length((unsigned char*)authn.c_str());
+  		unsigned char decodedb64[binaryLength];
+  		memset(decodedb64, 0, binaryLength);
+  		P("Sign match found!");
+  		decode_base64((unsigned char*)authn.c_str(), decodedb64);
+  		printBuffer(decodedb64, binaryLength, "AUTHN(binary)");
+  		String plainHex;
+  		decrypt(decodedb64, plainHex);
+  		PI("PlainHex decrypted: ");
+  		P(plainHex);
+  		return true;
+  	//}
+}
+
+void lsp::decrypt(unsigned char* crypted, String& output) {
+	
+	// TODO FIXME iv must be the same accorded with INNKEEPER
+	int length = 0;
+ 	bufferSize(crypted, length);
+  	byte deciphered[length];
+  	uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+  	AES aesDencryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_DECRYPT);
+  	aesDencryptor.process((uint8_t*)crypted, deciphered, length);
+  	for (uint8_t i = 0; i< length; i++) output += String(deciphered[i], HEX);
+  	//output = String(deciphered, HEX);
+  	//strcpy(output, (char*)deciphered);
+}
+
+
+
+/* base64_to_binary:
+ *   Description:
+ *     Converts a single byte from a base64 character to the corresponding binary value
+ *   Parameters:
+ *     c - Base64 character (as ascii code)
+ *   Returns:
+ *     6-bit binary value
+ */
+unsigned char lsp::base64_to_binary(unsigned char c) {
+  // Capital letters - 'A' is ascii 65 and base64 0
+  if('A' <= c && c <= 'Z') return c - 'A';
+
+  // Lowercase letters - 'a' is ascii 97 and base64 26
+  if('a' <= c && c <= 'z') return c - 71;
+
+  // Digits - '0' is ascii 48 and base64 52
+  if('0' <= c && c <= '9') return c + 4;
+
+  // '+' is ascii 43 and base64 62
+  if(c == '+') return 62;
+
+  // '/' is ascii 47 and base64 63
+  if(c == '/') return 63;
+
+  return 255;
+}
+
+unsigned int lsp::decode_base64_length(unsigned char input[]) {
+
+  unsigned char *start = input;
+  while(base64_to_binary(input[0]) < 64) {
+    ++input;
+  }
+  unsigned int input_length = input - start;
+  unsigned int output_length = input_length/4*3;
+  switch(input_length % 4) {
+
+    default: return output_length;
+
+    case 2: return output_length + 1;
+
+    case 3: return output_length + 2;
+  }
+}
+
+
+/* decode_base64:
+ *   Description:
+ *     Converts a base64 null-terminated string to an array of bytes
+ *   Parameters:
+ *     input - Pointer to input string
+ *     output - Pointer to output array
+ *   Returns:
+ *     Number of bytes in the decoded binary
+ */
+unsigned int lsp::decode_base64(unsigned char input[], unsigned char output[]) {
+
+  unsigned int output_length = decode_base64_length(input);
+  // While there are still full sets of 24 bits...
+  for(unsigned int i = 2; i < output_length; i += 3) {
+
+    output[0] = base64_to_binary(input[0]) << 2 | base64_to_binary(input[1]) >> 4;
+    output[1] = base64_to_binary(input[1]) << 4 | base64_to_binary(input[2]) >> 2;
+    output[2] = base64_to_binary(input[2]) << 6 | base64_to_binary(input[3]);
+
+    input += 4;
+    output += 3;
+
+  }
+  switch(output_length % 3) {
+    case 1:
+      output[0] = base64_to_binary(input[0]) << 2 | base64_to_binary(input[1]) >> 4;
+      break;
+
+    case 2:
+      output[0] = base64_to_binary(input[0]) << 2 | base64_to_binary(input[1]) >> 4;
+      output[1] = base64_to_binary(input[1]) << 4 | base64_to_binary(input[2]) >> 2;
+      break;
+  }
+  return output_length;
 }

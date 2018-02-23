@@ -22,6 +22,7 @@
 #include <RestClient.h>
 #include <Crypto.h>
 #include <Hash.h>
+//#include <sha1sum.h>
 #include <sha1.h> // please be sure to use the forked version at https://github.com/bbx10/Cryptosuite
 #include "base64.h"
 
@@ -146,15 +147,40 @@ public:
 	uint8_t sendSDEVHelloToGW();
 	void sendHelloToGW();
 	void printBuffer(uint8_t* buff, uint8_t len, String label);
-	uint8_t sendAuthN(String clearData);
-	void encryptData(char* plain_text, String& output);
+	void createAuthNPacket(uint8_t* dataout);
+	uint8_t sendAuthN();
+	//void encryptData(char* plain_text, String& output);
 	void encryptDataAndSign(char* plain_text, String& output, String& signature);
 	void signData(uint8_t* data, uint8_t data_len, String& output);
+	bool decryptAndVerify(String authn, String& decrypted, String GWsigned);
+	void decrypt(unsigned char* crypted, String& output);
+/* decode_base64:
+
+ *   Description:
+
+ *     Converts a base64 null-terminated string to an array of bytes
+
+ *   Parameters:
+
+ *     input - Pointer to input string
+ *     output - Pointer to output array
+
+ *   Returns:
+
+ *     Number of bytes in the decoded binary
+
+ */
+	unsigned int decode_base64(unsigned char input[], unsigned char output[]);
+	//void sha1sum(uint8_t * data, uint32_t size, uint8_t hash[20]);
+
 
 private:
 	void bufferSize(char* text, int &length);
+	void bufferSize(unsigned char* text, int &length);
 	void encryptAndSign(char* plain_text, String& output, int length, String& signature);
-	void encrypt(char* plain_text, String& output, int length);
+	//void encrypt(char* plain_text, String& output, int length);
+	unsigned char base64_to_binary(unsigned char c);
+	unsigned int decode_base64_length(unsigned char input[]);
 
 
 	StaticJsonBuffer<SECURITY_JSON_SIZE> _jsonBuff;
@@ -168,6 +194,7 @@ private:
 	uint8_t _SDEVmac[6];
 	String _kdf;
 	String _cp;
+	String _sessionId;
 	uint8_t *hmac;
 	Sha1Class sha1;
 
