@@ -24,7 +24,7 @@ public class LwspService {
 	@Autowired
 	SessionRepository sessionRepository;
 
-	public String saveSession(Lwsp lwsp) throws JsonParseException, JsonMappingException, IOException {
+	public SessionInfo saveSession(Lwsp lwsp) throws JsonParseException, JsonMappingException, IOException {
 		ObjectMapper m = new ObjectMapper();
 
 		JsonNode node = m.readTree(lwsp.getRawData());
@@ -44,8 +44,9 @@ public class LwspService {
 				log.info("NEW SESSION");
 				log.info("SessionId():" +node.get("sessionId"));
 				log.info("SessionExpiration:" +currTime);
-				sessionRepository.save(new SessionInfo(sessionId,symbioteIdFromInnk,currTime));
-				return sessionId;
+				SessionInfo new_session = new SessionInfo(sessionId,symbioteIdFromInnk,currTime);
+				sessionRepository.save(new_session);
+				return new_session;
 			}else {
 				// I received a new registration form a not expired registered symid
 				log.warn("SESSION JUST EXISTS");

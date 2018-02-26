@@ -41,7 +41,7 @@ public class InkRegistrationRequest {
 	@Autowired
 	OwlApiHelper owlApiHelp;
 
-	public InkRegistrationResponse registry(InkRegistrationInfo info) throws InvalidArgumentsException {
+	public InkRegistrationResponse registry(InkRegistrationInfo info, Date currTime) throws InvalidArgumentsException {
 		InkRegistrationResponse res= null;
 
 
@@ -66,7 +66,7 @@ public class InkRegistrationRequest {
 			}catch (NullPointerException e) {
 				log.error("error during addPolicy process, AccessPolicy is null\n");
 			}
-			addResource(symbioteId, internalId, props, pluginId);
+			addResource(symbioteId, internalId, props, pluginId,currTime);
 		}
 		addCloudResourceInfoForOData(msgs);
 		res = new InkRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
@@ -85,8 +85,7 @@ public class InkRegistrationRequest {
 			log.error("Error add info registration for OData\n"+e.getMessage());
 		}
 	}
-	private void addResource(String resourceId, String platformResourceId, List<String> obsProperties, String pluginId) {
-		Date currTime=new Date(new Date().getTime());
+	private void addResource(String resourceId, String platformResourceId, List<String> obsProperties, String pluginId, Date currTime) {
 		ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId, currTime);
 		if(obsProperties != null)
 			resourceInfo.setObservedProperties(obsProperties);
