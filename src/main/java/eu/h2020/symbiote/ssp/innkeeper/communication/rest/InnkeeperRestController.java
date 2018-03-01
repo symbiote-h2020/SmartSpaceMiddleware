@@ -11,7 +11,6 @@ import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationInfo;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
-import eu.h2020.symbiote.ssp.lwsp.LwspService;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
@@ -60,9 +59,6 @@ public class InnkeeperRestController {
 	@Autowired
 	InkRegistrationRequest inkRegistrationRequest;
 
-	@Autowired
-	LwspService lwspService;
-
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
 		log.info("NOT USED");
@@ -104,8 +100,7 @@ public class InnkeeperRestController {
 		ResponseEntity<Object> responseEntity = null;
 
 
-		Lwsp lwsp = new Lwsp(payload);
-		SessionInfo session_result = lwspService.saveSession(lwsp);
+		Lwsp lwsp = new Lwsp(payload,"0x008C");
 
 		if (session_result != null) {
 			JsonNode node = new ObjectMapper().readTree(lwsp.getRawData());
