@@ -22,9 +22,10 @@
 #include <RestClient.h>
 #include <Crypto.h>
 #include <Hash.h>
-//#include <sha1sum.h>
 #include <sha1.h> // please be sure to use the forked version at https://github.com/bbx10/Cryptosuite
 #include "base64.h"
+#include <EEPROM.h>
+
 
 #ifndef DEBUG_SYM_CLASS
 #define DEBUG_SYM_CLASS 1
@@ -39,13 +40,25 @@
 #endif 
 #endif
 
+#define FLASH_MEMORY_RESERVATION	512
+#define FLASH_LSP_START_ADDR		0
+// thought to be a 4 bytes identifier and 12 HEX byte
+// like this: sym-00112233445566778899aabb
+#define FLASH_LSP_START_SSPID		0
+#define FLASH_LSP_END_SSPID			31
+// should be 16 byte
+#define FLASH_LSP_START_PREV_DK1	32
+#define FLASH_LSP_END_PREV_DK1		47
+
+
 #define ENDIAN_SWAP_32(l) ((l>>24) |((l>>16)<<8)&0xff00 | ((l>>8)<<16)&0xff0000 | (l << 24)) 
 
 #define BLOCK_SIZE 16
 #define AES_KEY_LENGTH 16
 #define DK2_KEY_LENGTH 16
 #define HMAC_DIGEST_SIZE    20
-#define SECURITY_JSON_SIZE 500
+//#define SECURITY_JSON_SIZE 500
+#define SECURITY_JSON_SIZE 400
 
 #define NUM_ITERATIONS	1
 #define NUM_Ti 1
@@ -118,6 +131,8 @@
 #define STRING_MTI_GW_INK_HELLO 	"0x20"
 #define STRING_MTI_SDEV_AUTHN 		"0x30"
 #define STRING_MTI_GW_INK_AUTHN 	"0x40"
+#define STRING_MTI_SDEV_DATA_UPLINK	"0x50"
+#define STRING_MTI_GW_DATA_DOWNLINK	"0x60"
 
 // Exit status code
 #define ERROR_NOT_CONNECTED 0x55
@@ -139,7 +154,9 @@ public:
 
 	lsp(char* cp, char* kdf, uint8_t* psk, uint8_t psk_len);
 	~lsp();
-	void begin();
+	void begin(String SSPId);
+	void getContextFromFlash();
+	void saveContextInFlash();
 	void calculateDK1(uint8_t num_iterations);
 	void calculateDK2(uint8_t num_iterations);
 	void PBKDF2function(uint8_t *pass, uint32_t pass_len, uint8_t *salt, uint32_t salt_len,uint8_t *output, uint32_t key_len, uint32_t rounds );
@@ -149,11 +166,19 @@ public:
 	void printBuffer(uint8_t* buff, uint8_t len, String label);
 	void createAuthNPacket(uint8_t* dataout);
 	uint8_t sendAuthN();
-	//void encryptData(char* plain_text, String& output);
+	String getSessionId();
+	String getDK1();
+	String getHashOfIdentity(String id);
+	void cryptData(String in, String& out);
+	/*
+		Convert data b64 crypted data to plain text
+	*/
+	void decryptData(String in, String& out);
 	void encryptDataAndSign(char* plain_text, String& output, String& signature);
 	void signData(uint8_t* data, uint8_t data_len, String& output);
 	bool decryptAndVerify(String authn, String& decrypted, String GWsigned);
 	void decrypt(unsigned char* crypted, String& output);
+
 /* decode_base64:
 
  *   Description:
@@ -171,7 +196,6 @@ public:
 
  */
 	unsigned int decode_base64(unsigned char input[], unsigned char output[]);
-	//void sha1sum(uint8_t * data, uint32_t size, uint8_t hash[20]);
 
 
 private:
@@ -192,6 +216,8 @@ private:
 	uint32_t _GWNonce;
 	uint32_t _sn;
 	uint8_t _SDEVmac[6];
+	String _lastSSPId;
+	String _currentSSPId;
 	String _kdf;
 	String _cp;
 	String _sessionId;
@@ -199,6 +225,7 @@ private:
 	Sha1Class sha1;
 
 	uint8_t _dk1[AES_KEY_LENGTH];
+	uint8_t _prevDk1[AES_KEY_LENGTH];
 	uint8_t _dk2[DK2_KEY_LENGTH];
 	uint8_t* _psk;
 	uint8_t _psk_len;

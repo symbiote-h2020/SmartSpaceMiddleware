@@ -10,6 +10,8 @@
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
 #include <RestClient.h>
+#include <EEPROM.h>
+#include <lsp.h>
 
 
 #if defined ESP8266
@@ -20,6 +22,7 @@
 #endif
 
 #define DEBUG_SYM_CLASS 1
+//#ifndef DEBUG_SYM_CLASS
 #if DEBUG_SYM_CLASS == 1
   // Print debug with carriege return
   #define P(__VA_ARGS__) Serial.println(__VA_ARGS__);
@@ -28,10 +31,25 @@
 #else
   #define P(__VA_ARGS__)
   #define PI(__VA_ARGS__)
-#endif 
+#endif
+//#endif
 
-#define MAX_JSON_SIZE 500
-#define MAX_JSON_RES_SIZE 300
+#define FLASH_MEMORY_RESERVATION_AGENT  512
+#define FLASH_LSP_START_ADDR    0
+// thought to be a 4 bytes identifier and 12 HEX byte
+// like this: sym-00112233445566778899aabb
+#define FLASH_LSP_START_SSPID   0
+#define FLASH_LSP_END_SSPID     31
+// should be 16 byte
+#define FLASH_LSP_START_PREV_DK1  32
+#define FLASH_LSP_END_PREV_DK1    47 
+
+#define FLASH_AGENT_START_SYMID 48
+  // 16 HEX bytes for sym-Id
+#define FLASH_AGENT_END_SYMID   63
+
+#define MAX_JSON_SIZE 800
+//#define MAX_JSON_RES_SIZE 300
 #define JOIN_URL "innkeeper.symbiote.org"
 #define JOIN_PATH "/innkeeper/join"
 #define KEEPALIVE_PATH "/innkeeper/keep_alive"
@@ -54,28 +72,27 @@
 #define KEEPALIVE_LED_OFF      digitalWrite(KEEPALIVE_LED, HIGH);
 #define KEEPALIVE_LED_TOGGLE   digitalWrite(KEEPALIVE_LED, !digitalRead(KEEPALIVE_LED));
 
+
+#define ERR_KICKED_OUT_FROM_JOIN 0x55
+#define ERR_UNKNOWN_RESPONSE_FROM_JOIN 0x65
+#define ERR_SYMID_MISMATCH_FROM_JOIN 0x75
+#define ERR_PARSE_JSON 0x56
+
 #define RES_NUMBER 3
 
 enum Conn_type { conn_WIFI, conn_BLE, conn_HTTP };
 
 enum Agent_type { agent_SDEV, agent_PLAT };
 
-struct join_resp
-{
-  String result;
-  String id;
-  String hash;
-  int registrationExpiration;
-};
 
   // This function handle the creation of the JSON String that represent the resources exposed by the agent
-String createObservedPropertiesString();
+//String createObservedPropertiesString();
   // This function create the JSON with the key: value of the reading
-String readSensorsJSON();
+//String readSensorsJSON();
 
-String getProperty(int i);
+//String getProperty(int i);
 
-void printJoinResp(struct join_resp data);
+//void printJoinResp(struct join_resp data);
 void keepAliveISR(void);
 
 String dummyFunctionSensor();
@@ -87,28 +104,22 @@ class symAgent
   public:
     symAgent();
       //TODO please remember to add parameter for class BLE in the constructor
-    symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description);
+    symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, bool isRoaming);
     /* This second constructor instantiate also the value for field comment inside obsProperty
-      {
-        "value": "value",
-        "obsProperty": {
-            "label" : "label",
-            "comment": "comment"
-        },
-        "uom": {
-            "symbol": "symbol",
-            "label": "label",
-            "comment": "comment"
-        }
-  */
-    symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, char** obsPropertyComment);
+    */
+    //symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, char** obsPropertyComment, bool isRoaming);
     ~symAgent();
 
+    boolean elaborateQuery();
+    String getSymIdFromFlash();
+    void saveIdInFlash();
+    void setResource(String rapRequest);
+    void getResource();
       // search for well-known symbiotic ssid and try to connect to it.
       // return true if found a symbiotic ssid and so ssp and connect to it, false otherwise
     boolean begin();
       //join the ssp, return  status code of the request and do side effect of the response from the innkeeper into the join_resp struct
-    int join(struct join_resp * result);
+    int join();
       //set the agent connection type
     void setConnectionType(Conn_type conn_type);
       //get back the agent connection type
@@ -127,13 +138,12 @@ class symAgent
 
     int sendKeepAlive(String& response);
 
-    void sendValue(float* value);
-    void sendValue(int* value);
-
     boolean elaborateRequest();
     boolean actuateRequest();
 
     void handleSSPRequest();
+
+    uint32_t getRegExpiration();
 
     //void bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)());
     //void bind(String (* getProperty)(int), String (* readSensorsJSON)());
@@ -150,7 +160,6 @@ class symAgent
       //Try to connect to wifi for 15 seconds and send back response
     boolean connect(String ssid, String psw);
 
-    //volatile boolean _keepAlive_triggered;
     String _wifi_ssid;
     String _wifi_psw;
     String _mac;
@@ -158,26 +167,29 @@ class symAgent
     String _ssp_id;
       //this is the agent identifier
     String _id;
-    String _hash;
     String _name;
     String _description;
 
-    char** _obsPropertyComment;
+    String _obsPropertyComment[RES_NUMBER];
 
     Agent_type _agent_type;
     Conn_type _conn_type;
 
     unsigned long _keep_alive;
+    bool _roaming;
+    uint32_t _regExpiration;
 
     /**
       StaticJsonBuffer and DynamicJsonBuffer are designed to be throwaway memory pools,
       they are not intended to be reused. As a consequence, using a global JsonBuffer is not recommended.
     */
     StaticJsonBuffer<MAX_JSON_SIZE> _jsonBuff;
-    StaticJsonBuffer<MAX_JSON_RES_SIZE> _resourceJsonBuff;
+    //StaticJsonBuffer<MAX_JSON_RES_SIZE> _resourceJsonBuff;
 
     RestClient* _rest_client;
     ESP8266WebServer* _server;
+
+    lsp* _security;
 
 };
 

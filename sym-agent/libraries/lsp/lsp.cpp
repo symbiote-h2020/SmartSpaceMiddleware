@@ -28,7 +28,9 @@ lsp::lsp(char* cp, char* kdf, uint8_t* psk, uint8_t psk_len) {
 	_needInitVector = false;
 	_iv = "";
 	_sessionId = "";
+	_lastSSPId = "";
 	memset(_dk1, 0, sizeof(_dk1));
+	memset(_prevDk1, 0, sizeof(_prevDk1));
 	memset(_dk2, 0, sizeof(_dk2));
 	memset(_SDEVmac, 0, sizeof(_SDEVmac));
 }
@@ -113,13 +115,15 @@ void lsp::printBuffer(uint8_t* buff, uint8_t len, String label) {
 
 void lsp::calculateDK1(uint8_t num_iterations) {
 	P("\n\nStart calculating DK1 key....");
+	// search for a valid key in flash, if not found _dk1 and _prevDk1 are not populated,
+	// otherwise get _dk1 and  
 	if (_kdf == "PBKDF2") {
 		if (_cp == TLS_PSK_WITH_AES_128_CBC_SHA) {
 			printBuffer(_psk, _psk_len, "PSK");
 			uint8_t salt[8];
 			memset(salt, 0, sizeof(salt));
-			uint32_t tmpnonce = ENDIAN_SWAP_32(0x98ec4);
-			//uint32_t tmpnonce = ENDIAN_SWAP_32(_SDEVNonce);
+			//uint32_t tmpnonce = ENDIAN_SWAP_32(0x98ec4);
+			uint32_t tmpnonce = ENDIAN_SWAP_32(_SDEVNonce);
 			memcpy(salt, (uint8_t*)&tmpnonce, 4);
 			tmpnonce = ENDIAN_SWAP_32(_GWNonce);
 			memcpy(salt+4, (uint8_t*)&_GWNonce, 4);
@@ -261,11 +265,114 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 }
 
 
-void lsp::begin() {
+void lsp::begin(String SSPId) {
 	randomSeed(analogRead(0));
 	// setup the rest client and web server listen port/path
 	_rest_client = new RestClient(INNKEEPER_LSP_URL, LSP_PORT);
   	_rest_client->setContentType("application/json");
+	_currentSSPId = SSPId;
+  	// if first time ever connected to SSP do nothing
+  	// otherwise retrive:
+  	// - _prevDk1
+  	// - _lastSSPId
+  	getContextFromFlash();
+}
+
+/*
+ if first time ever connected to SSP do nothing 
+  	 otherwise retrive:
+  	 - _prevDk1
+  	 - _lastSSPId
+*/
+void lsp::getContextFromFlash() {
+	P("GETCONTEXTFROMFLASH");
+	String tmpSSPId = "";
+	EEPROM.begin(FLASH_MEMORY_RESERVATION);
+	for (uint8_t i = FLASH_LSP_START_SSPID; i < FLASH_LSP_END_SSPID; i++) {
+		tmpSSPId += String(EEPROM.read(i), HEX);
+	}
+	PI("Read this SSPId from flash: ");
+	P(tmpSSPId);
+	if (tmpSSPId.substring(0, 4).equals("sym-")) {
+		//got a valid SSP-id
+		P("Found a SSPID valid in Flash!");
+		for (uint8_t i = FLASH_LSP_START_PREV_DK1; i < FLASH_LSP_END_PREV_DK1; i++) {
+			_prevDk1[i-FLASH_LSP_START_PREV_DK1] = EEPROM.read(i);
+		}
+		P("GOT this key from flash:");
+		printBuffer(_prevDk1, sizeof(_prevDk1), "prev_DK1");
+	} else {
+		EEPROM.end();
+		return;
+	}
+	
+	_lastSSPId = tmpSSPId;
+	EEPROM.end();
+	return;
+}
+
+/*
+ 	Save in flash the currentSSPId and DK1
+*/
+void lsp::saveContextInFlash() {
+	P("SAVECONTEXTINFLASH");
+	EEPROM.begin(FLASH_MEMORY_RESERVATION);
+	uint8_t j = 0;
+	for (uint8_t i = FLASH_LSP_START_SSPID; i < FLASH_LSP_END_SSPID; i++) {
+		EEPROM.write(i, _currentSSPId.charAt(j));
+		j++;
+		if(j >= _currentSSPId.length()) {
+			P("WARN: wrote less character than expect in SSPid");
+			break;
+		}
+	}
+	for (uint8_t i = FLASH_LSP_START_PREV_DK1; i < FLASH_LSP_END_PREV_DK1; i++) {
+			EEPROM.write(i,_dk1[i-FLASH_LSP_START_PREV_DK1]);
+		}
+	EEPROM.commit();
+	EEPROM.end();
+#ifdef DEBUG_SYM_CLASS
+	// read back the content
+	String tmpSSPId = "";
+	EEPROM.begin(FLASH_MEMORY_RESERVATION);
+	for (uint8_t i = FLASH_LSP_START_SSPID; i < FLASH_LSP_END_SSPID; i++) {
+		tmpSSPId += String(EEPROM.read(i), HEX);
+	}
+	PI("Test flash data...\nSSPid from flash: ");
+	P(tmpSSPId);
+	PI("I expect: ");
+	P(_currentSSPId);
+	uint8_t tmpDK1[AES_KEY_LENGTH];
+	for (uint8_t i = FLASH_LSP_START_PREV_DK1; i < FLASH_LSP_END_PREV_DK1; i++) {
+			tmpDK1[i-FLASH_LSP_START_PREV_DK1] = EEPROM.read(i);
+		}
+	P("GOT this key from flash:");
+	printBuffer(tmpDK1, sizeof(tmpDK1), "prev_DK1(from flash)");
+	P("I expect:");
+	printBuffer(_dk1, sizeof(_dk1), "DK1(as _dk1)");
+#endif
+}
+
+
+/*
+	Return a SHA1(symbiote-id||prevDK1). IN/OUT data should be intended as ascii hex rapresentation
+*/
+String lsp::getHashOfIdentity(String id) {
+	// return all zeros if first time connect to a SSP
+	if (_lastSSPId == "") return "00000000000000000000";
+	else {
+		String tmpString = id;
+		for (uint8_t i = 0; i < AES_KEY_LENGTH; i++) tmpString = String(_prevDk1[i], HEX); 
+		sha1.init();
+		sha1.print(tmpString);
+		uint8_t dataout[SHA1_KEY_SIZE];
+		memcpy(dataout, sha1.result(), SHA1_KEY_SIZE);
+		String retString = "";
+		for (uint8_t i = 0; i < SHA1_KEY_SIZE; i++) retString = String(dataout[i], HEX);
+		PI("Got this SHA-1(sym-id||prevDK1): "); 
+		P(retString);
+		return retString;
+	}
 }
 
 uint8_t lsp::sendSDEVHelloToGW() {
@@ -283,7 +390,9 @@ uint8_t lsp::sendSDEVHelloToGW() {
   			mac_string += String(_SDEVmac[j], HEX);
   			if (j!=5) mac_string += ":";
   		}
-  		_SDEVNonce = random(0xFFFFFFFF);
+  		// FIXME, decomment
+  		//_SDEVNonce = random(0xFFFFFFFF);
+  		_SDEVNonce = 0x98ec4;
   		String nonce = String(_SDEVNonce, HEX);
 			_root["mti"] = STRING_MTI_SDEV_HELLO;
 			_root["SDEVmac"] = mac_string.c_str();
@@ -361,6 +470,7 @@ uint8_t lsp::sendAuthN() {
 		String temp = "";
 		P("Send this JSON:");
 		_root.prettyPrintTo(Serial);
+		P(" ");
 		_root.printTo(temp);
 		int statusCode = _rest_client->post(LSP_PATH, temp.c_str(), &resp);
 		if (statusCode < 300 and statusCode >= 200){
@@ -370,6 +480,17 @@ uint8_t lsp::sendAuthN() {
 				else return statusCode;
 		} else return statusCode;		
 	} else return ERROR_NOT_CONNECTED;
+}
+
+
+String lsp::getSessionId() {
+	return _sessionId;
+}
+
+String lsp::getDK1() {
+	String tmp = "";
+	for (uint8_t i = 0; i < AES_KEY_LENGTH; i++) tmp += String(_dk1[i], HEX);
+	return tmp;
 }
 
 void lsp::bufferSize(char* text, int &length) {
@@ -383,7 +504,6 @@ void lsp::bufferSize(unsigned char* text, int &length) {
 	int buf = round(i / BLOCK_SIZE) * BLOCK_SIZE;
 	length = (buf < i) ? buf + BLOCK_SIZE : length = buf;
 }
-
 
 void lsp::signData(uint8_t* data, uint8_t data_len, String& output) {
 
@@ -422,6 +542,7 @@ void lsp::encryptAndSign(char* plain_text, String& output, int length, String& s
 	String encoded = b64enc.encode(enciphered, encrypted_size, false);
 	output = encoded;
 }
+
 
 
 /*
@@ -471,6 +592,7 @@ bool lsp::decryptAndVerify(String authn, String& decrypted, String GWsigned) {
   	P(GWsigned);
   	PI("Calculated sign:\t\t");
   	P(signedData);
+  	// FIXME: uncomment
   	//if (signedData == GWsigned) {
   		unsigned int binaryLength = decode_base64_length((unsigned char*)authn.c_str());
   		unsigned char decodedb64[binaryLength];
@@ -484,6 +606,44 @@ bool lsp::decryptAndVerify(String authn, String& decrypted, String GWsigned) {
   		P(plainHex);
   		return true;
   	//}
+}
+
+/*
+	Convert plain text to b64 of encrypted data
+	NO use of sequence number
+*/
+void lsp::cryptData(String in, String& out) {
+	P("CRYPTDATA");
+	int length = 0;
+	bufferSize((char*)in.c_str(), length);
+	byte enciphered[length];
+	uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
+	aesEncryptor.process((uint8_t*)in.c_str(), enciphered, length);
+	int encrypted_size = sizeof(enciphered);
+	printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
+	base64 b64enc;
+	String encoded = b64enc.encode(enciphered, encrypted_size, false);
+
+
+	
+	out = encoded;
+}
+
+/*
+	Convert data b64 crypted data to plain text
+	NO use of sequence number
+*/
+void lsp::decryptData(String in, String& out) {
+	P("DECRYPTDATA");
+	unsigned int binaryLength = decode_base64_length((unsigned char*)in.c_str());
+  	unsigned char decodedb64[binaryLength];
+  	memset(decodedb64, 0, binaryLength);
+  	decode_base64((unsigned char*)in.c_str(), decodedb64);
+  	printBuffer(decodedb64, binaryLength, "ENCRYPT_DATA(binary)");
+  	String plainHex;
+	decrypt(decodedb64, plainHex);
+	out = plainHex;
 }
 
 void lsp::decrypt(unsigned char* crypted, String& output) {
