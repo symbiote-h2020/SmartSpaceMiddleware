@@ -359,8 +359,8 @@ public class Lwsp {
 				out=this.error_fc;
 			}
 			currTime = new Timestamp(System.currentTimeMillis());
-			sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime);
 			this.OutBuffer=out;			
+			sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime);
 			sessionRepository.save(sessionInfo);
 			break;
 		case "0x30":
