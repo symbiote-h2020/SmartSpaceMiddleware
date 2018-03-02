@@ -17,7 +17,7 @@ import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
+import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -26,9 +26,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Date;
 import java.util.List;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 /**
  * Created by vasgl on 8/24/2017.
@@ -58,6 +65,8 @@ public class InnkeeperRestController {
 
 	@Autowired
 	InkRegistrationRequest inkRegistrationRequest;
+	@Autowired
+	Lwsp lwsp;
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
@@ -66,7 +75,7 @@ public class InnkeeperRestController {
 	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> registry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException, InvalidArgumentsException {
+	public ResponseEntity<Object> registry(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 
 		// EXAMPLE: CREATION of JSON CloudResource list, used on innkeeper side it to test mongodb interaction
 		/*
@@ -99,9 +108,12 @@ public class InnkeeperRestController {
 
 		ResponseEntity<Object> responseEntity = null;
 
-
-		Lwsp lwsp = new Lwsp(payload,"0x008C");
-
+		
+		lwsp.setData(payload);
+		lwsp.setAllowedCipher("0x008c");
+		String outputMessage = lwsp.processMessage();
+		log.info(outputMessage);
+/*
 		if (session_result != null) {
 			JsonNode node = new ObjectMapper().readTree(lwsp.getRawData());
 			InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
@@ -110,7 +122,7 @@ public class InnkeeperRestController {
 			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo,session_result.getSessionExpiration());	
 			log.info(new ObjectMapper().writeValueAsString(res));
 		}
-
+*/
 
 
 		//save session in mongoDB
@@ -155,8 +167,10 @@ public class InnkeeperRestController {
 	public ResponseEntity<Object> unregistry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 		ResponseEntity<Object> responseEntity = null;
 
-		Lwsp lwsp = new Lwsp(payload);
-		String sessionId = lwspService.unregistry(lwsp);
+		//Lwsp lwsp = new Lwsp(payload);
+		//String sessionId = lwspService.unregistry(lwsp);
+		
+		/*
 		if (sessionId!=null) {
 
 			ObjectMapper m = new ObjectMapper();
@@ -175,8 +189,9 @@ public class InnkeeperRestController {
 
 			}
 		}
+		*/
 		return responseEntity;
-
+		 
 	}
 
 
@@ -184,7 +199,7 @@ public class InnkeeperRestController {
 	public ResponseEntity<Object> keep_alive(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
 		ResponseEntity<Object> responseEntity = null;
-
+/*
 		Lwsp lwsp = new Lwsp(payload);
 		Date currTime = lwspService.keepAliveSession(lwsp);
 		if (currTime!=null) {
@@ -207,7 +222,7 @@ public class InnkeeperRestController {
 			}
 
 		}
-
+*/
 		return responseEntity;
 	}
 

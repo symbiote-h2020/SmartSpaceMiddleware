@@ -92,7 +92,7 @@ public class SessionInfo {
      	} )
      * */
 
-    
+
     @JsonCreator
     public SessionInfo( @JsonProperty("sessionId") String sessionId,
     					@JsonProperty("iv") String iv,

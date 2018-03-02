@@ -17,7 +17,7 @@ public interface SessionRepository extends MongoRepository<SessionInfo, String> 
     
     
     //public Optional<SessionInfo> findById(String cookie);
-	public SessionInfo findById(String id);
-	public SessionInfo findBySymbioteId(String symbioteId);
+	public SessionInfo findBySessionId(String sessionId);
+	//public SessionInfo findBySymbioteId(String symbioteId);
     
 }

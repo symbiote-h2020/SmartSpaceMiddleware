@@ -110,6 +110,9 @@ dependencies {
     //compile('net.sourceforge.owlapi:owlapi-distribution:5.1.1')
     compile('net.sourceforge.owlapi:owlapi-contract:5.1.1')
     compile('net.sourceforge.owlapi:owlapi-util:3.3')
+    
+    //json
+    compile('org.json:json:20171018')
 }
 
 // code quality below
