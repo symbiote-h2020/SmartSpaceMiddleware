@@ -385,10 +385,10 @@ public class Lwsp {
 					if (! regexvalidator(this.kdf        = s.getkdf(),kdfREGEX))               {out=this.error_f7;}
 					this.psk=s.getpsk();
 					this.dk =s.getdk();
-					if (! regexvalidator(this.sn         = s.getsn(),snREGEX))                  {out=this.error_f5;}
-					if (! regexvalidator(this.authn      = s.getauthn(),base64REGEX))           {out=this.error_f4;}
-					if (! regexvalidator(this.sign       = s.getsign(),signREGEX))              {out=this.error_f3;}
-					if (! regexvalidator(this.snonce2    = s.getsnonce2(),nonceREGEX))            {out=this.error_f4;}
+					if (! regexvalidator(this.sn         = jsonData.getString("sn"),snREGEX))                  {out=this.error_f5;}
+					if (! regexvalidator(this.authn      = jsonData.getString("authn"),base64REGEX))           {out=this.error_f4;}
+					if (! regexvalidator(this.sign       = jsonData.getString("sign"),signREGEX))              {out=this.error_f3;}
+					if (! regexvalidator(this.snonce2    = jsonData.getString("nonce2"),nonceREGEX))            {out=this.error_f4;}
 					if (validateAuthn() && out.equals(""))
 					{
 						if (calcSign1().equals(this.sign))
