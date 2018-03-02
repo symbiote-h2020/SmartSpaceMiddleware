@@ -11,6 +11,7 @@ import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationInfo;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
+import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
@@ -22,6 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -113,6 +117,18 @@ public class InnkeeperRestController {
 		lwsp.setAllowedCipher("0x008c");
 		String outputMessage = lwsp.processMessage();
 		log.info(outputMessage);
+		
+		
+		switch (lwsp.get_mti()) {
+		case LwspConstants.SDEV_Hello:
+		case LwspConstants.SDEV_AuthN:
+			HttpHeaders responseHeaders = new HttpHeaders();
+			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+			return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK); 
+		}
+		
+		
+		
 /*
 		if (session_result != null) {
 			JsonNode node = new ObjectMapper().readTree(lwsp.getRawData());

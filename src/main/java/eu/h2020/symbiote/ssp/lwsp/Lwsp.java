@@ -171,14 +171,14 @@ public class Lwsp {
 		Matcher m = p.matcher(data);
 		return m.find();
 	}
-	private String get_mti(String data) 
+	public String get_mti() 
 	{
 		try {
-			JSONObject jsonData = new JSONObject(data);
+			JSONObject jsonData = new JSONObject(this.data);
 			return jsonData.getString("mti");
 
 		}catch (Exception e) {
-			return "INVALID";	
+			return null;	
 		}		
 	}
 	private String cryptochoose(String Offered, String Accept)
@@ -324,7 +324,7 @@ public class Lwsp {
 
 
 
-		switch (get_mti(this.data))
+		switch (this.get_mti())
 		{
 		case "0x10":
 			jsonData =new JSONObject(this.data);
@@ -360,9 +360,8 @@ public class Lwsp {
 			}
 			currTime = new Timestamp(System.currentTimeMillis());
 			sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime);
-			
+			this.OutBuffer=out;			
 			sessionRepository.save(sessionInfo);
-			this.OutBuffer=out;
 			break;
 		case "0x30":
 			/*
@@ -377,6 +376,10 @@ public class Lwsp {
 				if (! regexvalidator(this.sessionId=jsonData.getString("sessionId"),sessionIdREGEX)){out=this.error_fb;}
 				else {
 					s = sessionRepository.findBySessionId(sessionId);
+					
+					log.info("----------------------------\n"+
+					new ObjectMapper().writeValueAsString(s)
+					+"----------------------------\n");
 					if (! regexvalidator(this.iv         = s.getiv(),ivREGEX))                 {out=this.error_f9;}
 					if (! regexvalidator(this.gnonce     = s.getgnonce(),nonceREGEX))          {out=this.error_fd;}
 					if (! regexvalidator(this.snonce     = s.getsnonce(),nonceREGEX))          {out=this.error_fd;}
