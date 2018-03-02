@@ -277,6 +277,217 @@ boolean symAgent::elaborateQuery()
 		}
 	return true;
 }
+////////////////////////////////////////////////////////////////////////
+/// test function to delete
+// callback function to handle the resource request from the ssp
+boolean symAgent::TestelaborateQuery(String resp)
+{
+	P("TEST-RESOURCE-QUERY");
+	//String resp = _server->arg(0);
+	_jsonBuff.clear();
+		JsonObject& _root = _jsonBuff.parseObject(resp);
+		if (!_root.success()) {
+    		P("parseObject() failed");
+    		return false;
+		}
+#if DEBUG_SYM_CLASS == 1
+		_root.prettyPrintTo(Serial);
+		P(" ");
+#endif
+		/*
+			Parse a JSON like this:
+			== GET ==
+			{
+  				"resourceInfo" : [ {
+			    "symbioteId" : "abcdefgh",
+			    "internalId" : "123456",
+			    "type" : "Light"
+
+			  }, {
+			    "type" : "Observation"
+			  } ],
+			  "type" : "GET"
+			}
+
+			== SET ==
+			{
+			  "resourceInfo" : [ {
+			    "symbioteId" : "{symbioteId}",
+			    "internalId" : "{internalId}",
+			    "type" : "{Model}"
+			  } ],
+			  "body" : {
+			    "{capability}": [
+			      { "{restriction}": "{value}" }
+			    ] 
+			  },
+			  "type" : "SET"
+			}
+
+			== HISTORY ==
+			{
+			  "resourceInfo" : [ {
+			    "symbioteId" : "abcdefgh",
+			    "internalId" : "123456",
+			    "type" : "EnvSensor"
+			  }, {
+			    "type" : "Observation"
+			  } ],
+			  "filter" : {
+			    "type" : "expr",
+			    "param" : "temperature",
+			    "cmp" : "EQ",
+			    "val" : "20"
+			  },
+			  "type" : "HISTORY"
+			}
+
+			== SUBSCRIBE ==
+			{
+			  "resourceInfo" : [ {
+			    "symbioteId" : "abcdefgh",
+			    "internalId" : "123456",
+			    "type" : "Light"
+
+			  }, {
+			    "type" : "Observation"
+			  } ],
+			  "type" : "SUBSCRIBE"
+			}
+
+			== UNSUBSCRIBE ==
+			{
+			  "resourceInfo" : [ {
+			    "symbioteId" : "abcdefgh",
+			    "internalId" : "123456",
+			    "type" : "Light"
+
+			  }, {
+			    "type" : "Observation"
+			  } ],
+			  "type" : "UNSUBSCRIBE"
+			}
+		*/
+		String type = _root["type"].as<String>();
+		//if (_root["symbioteId"] == _id) {
+			if (type == "SET") TestsetResource(resp);
+			//else if (type == "GET") getResource();
+			//else if (type == "HISTORY") getResource();
+			// TODO FIXME
+			//else if (type == "SUBSCRIBE") subScribe();
+			//else if (type == "UNSUBSCRIBE") unSubscribe();
+			else {
+				P("Wrong TYPE");
+				String tmpResp = "{ \"id\":\"" + _id + "\", \"value\":\"WrongType\"}";
+				//_server->send(200, "application/json", tmpResp);
+				return false;
+			}
+		//}
+			/*else {
+			P("Wrong SymId");
+			String tmpResp = "{ \"id\":\"" + _id + "\", \"value\":\"WrongSymId\"}";
+			//_server->send(200, "application/json", tmpResp);
+			return false;
+		}*/
+	return true;
+}
+
+void symAgent::TestsetResource(String rapRequest) {
+	P("TEST-SET RESOURCE");
+	//String resp = _server->arg(0);
+	_jsonBuff.clear();
+		JsonObject& _root = _jsonBuff.parseObject(rapRequest);
+		if (!_root.success()) {
+    		P("parseObject() failed");
+    		return;
+		}
+#if DEBUG_SYM_CLASS == 1
+		_root.prettyPrintTo(Serial);
+		P(" ");
+#endif
+		if (_root["resourceInfo"][0]["symbioteId"] == _id) {
+			// check only the first if the array, because the other should be the same
+			for (uint8_t i = 0; i< RES_NUMBER; i++) {
+				//check if any of my resources should be changed
+				for (uint8_t j = 0; j < RES_NUMBER; j++) {
+					if (_root["resourceInfo"][i]["internalId"] == listResources[j]) {
+						String field_value = "";
+						// search for something like this:
+						// _root["body"][1]["red"]["value"] = 200
+						/*
+							{
+							  	"resourceInfo" : [ {
+							    "symbioteId" : "12345",
+							    "internalId" : "red",
+							    "type" : "light"
+							  }, {
+							    "symbioteId" : "12345",
+							    "internalId" : "blue",
+							    "type" : "light"
+							  }],
+							  "body" : {
+							    "red": [
+							      { "{restriction}": "{value}" }
+							    ] 
+							  },
+							  "type" : "SET"
+							}
+						*/
+							//FIXME: wait a concrete example to prse the action
+						field_value = _root["body"][i][(char *)listResources[j].c_str()]["value"].as<String>();
+						PI("\n***********\nFound this value: ");
+						P(field_value);
+						actuatorsFunction[j](field_value.toInt());
+					}
+				}
+				
+			}
+		} else {
+			PI("Mismatch in symId.\nWhat I got: ");
+			P(_root["resourceInfo"][0]["symbioteId"].as<String>());
+			PI("What I expect: ");
+			P(_id);
+			return;
+		}
+
+
+
+		String id = _root["id"].as<String>();
+		if (id == _id){
+			String field = "";
+			String field_value = "";
+			for (int i = 0; i < RES_NUMBER; i++) {
+
+				//TODO CHECK "NA" field
+				field = listResources[i];
+				field_value = _root["action"][field].as<String>();
+				PI(field);
+				PI(" value[");
+				PI(i);
+				PI("]=");
+				P(field_value);
+				actuatorsFunction[i](field_value.toInt());
+			}
+
+			String tmpResp = "{ \"id\":\"" + _id + "\", \"response\": \"OK\"}";
+			//_server->send(200, "application/json", tmpResp);
+			return;
+		} else {
+			P("Wrong id");
+			String tmpResp = "{ \"id\":\"" + _id + "\", \"value\":\"Error\"}";
+			//_server->send(200, "application/json", tmpResp);
+			return;
+		}
+	return;
+}
+
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
 
 void symAgent::setResource(String rapRequest) {
 	P("SET RESOURCE");
@@ -665,6 +876,11 @@ int symAgent::join()
 	String tempJsonPacket = "";
 	String resp = "";
 	_root.printTo(tempClearData);
+	P("Join message (CLEAR-DATA): ");
+#if DEBUG_SYM_CLASS == 1
+	_root.prettyPrintTo(Serial);
+	P(" ");
+#endif
 
 	/*
 		create a JSON like this:
@@ -687,7 +903,7 @@ int symAgent::join()
 	tempJsonPacket = "\r\n" + tempJsonPacket;
 	_rest_client->setContentType("application/encrypted");
 	int statusCode = _rest_client->post(JOIN_PATH, tempJsonPacket.c_str(), &resp);
-	P("Join message: ");
+	P("Join message (SDEVP): ");
 #if DEBUG_SYM_CLASS == 1
 	jsonCrypt.prettyPrintTo(Serial);
 	P(" ");

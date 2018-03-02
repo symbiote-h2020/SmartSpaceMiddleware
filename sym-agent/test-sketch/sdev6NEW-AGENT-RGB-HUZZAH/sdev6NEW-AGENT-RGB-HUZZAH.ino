@@ -4,6 +4,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <Metro.h>
 
+String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"test\",\"internalId\":\"green\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":40}]},\"type\" : \"SET\"}";
 
 #define WS2812_PIN 5
 // How many NeoPixels are attached to the Arduino?
@@ -99,6 +100,8 @@ void setup() {
     }
   }
   else Serial.print("Failed!");
+
+  sdev1.TestelaborateQuery(tmpTestJson);
 }
 
 void loop() {

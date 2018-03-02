@@ -111,6 +111,11 @@ class symAgent
     ~symAgent();
 
     boolean elaborateQuery();
+
+    boolean TestelaborateQuery(String resp);
+    void TestsetResource(String rapRequest);
+
+
     String getSymIdFromFlash();
     void saveIdInFlash();
     void setResource(String rapRequest);
