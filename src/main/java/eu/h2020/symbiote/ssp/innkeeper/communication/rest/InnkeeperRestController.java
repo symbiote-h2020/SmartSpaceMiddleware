@@ -124,19 +124,21 @@ public class InnkeeperRestController {
 		case LwspConstants.SDEV_AuthN:
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-			return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK); 
+			return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
+		case LwspConstants.SDEV_REGISTRY:
+			String decoded_message = outputMessage;			
+			InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(decoded_message, InkRegistrationInfo.class);
+
+			log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
+			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo,lwsp.getSessionExpiration());	
+			log.info(new ObjectMapper().writeValueAsString(res));
 		}
 		
 		
 		
 /*
 		if (session_result != null) {
-			JsonNode node = new ObjectMapper().readTree(lwsp.getRawData());
-			InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
-
-			log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
-			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo,session_result.getSessionExpiration());	
-			log.info(new ObjectMapper().writeValueAsString(res));
+			
 		}
 */
 

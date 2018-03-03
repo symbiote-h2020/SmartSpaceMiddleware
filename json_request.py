@@ -24,14 +24,13 @@ if data["mti"]=="0x20":
 	time.sleep(1)
 
 	data_0x30={ 
-"mti":"0x30",
-"nonce":"abcdef01",
-"sessionId":data["sessionId"],
-"sn":"0d4032",
-"authn":"9cbqYW8kl8tGiyNl9Dc2czxNYucSU62OrvLSt+L7fAk=",
-"sign":"f5c6ea616f2497cb468b2365f43736733c4d62e71253ad8eaef2d2b7e2fb7c09" 
-
-}
+		"mti":"0x30",
+		"nonce":"abcdef01",
+		"sessionId":data["sessionId"],
+		"sn":"0d4032",
+		"authn":"9cbqYW8kl8tGiyNl9Dc2czxNYucSU62OrvLSt+L7fAk=",
+		"sign":"f5c6ea616f2497cb468b2365f43736733c4d62e71253ad8eaef2d2b7e2fb7c09" 
+	}
 
 	print data_0x30
 	data_json=json.dumps(data_0x30)
@@ -39,5 +38,7 @@ if data["mti"]=="0x20":
 	print response
 	data = response.json()
 	print data["mti"]
+	
+	
 
 	
