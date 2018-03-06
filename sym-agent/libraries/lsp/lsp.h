@@ -81,7 +81,7 @@
 	pseudorandom function (PRF) based on HMAC with the SHA-256 
 	hash function
 */
-#define TLS_PSK_WITH_AES_128_GCM_SHA256  		"0x00A8"
+#define TLS_PSK_WITH_AES_128_GCM_SHA256  		"0x00a8"
 
 
 /*
@@ -90,7 +90,7 @@
 	code that requires a 256 bit key and a message and produces 
 	a 128 bit tag
 */
-#define TLS_PSK_WITH_CHACHA20_POLY1305_SHA256 	"0xCCAB"
+#define TLS_PSK_WITH_CHACHA20_POLY1305_SHA256 	"0xccab"
 
 
 /*
@@ -101,7 +101,7 @@
 
 	PRF = SHA1-HMAC 
 */
-#define TLS_PSK_WITH_AES_128_CBC_SHA 			"0x008C"
+#define TLS_PSK_WITH_AES_128_CBC_SHA 			"0x008c"
 
 
 /*
@@ -112,7 +112,7 @@
 	a 128 bit key, SHA as a pseudorandom function (PRF) based on HMAC 
 	with the SHA hash function or as a message authentication code algorithm
 */
-#define TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA 	"0xC004"
+#define TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA 	"0xc004"
 
 
 /*
@@ -146,7 +146,7 @@
 // Network stuff
 #define INNKEEPER_LSP_URL "192.168.97.105"
 #define LSP_PORT 8080
-#define LSP_PATH "/innkeeper/lsp"
+#define LSP_PATH "/innkeeper/registry"
 
 
 class lsp {
@@ -205,6 +205,7 @@ private:
 	//void encrypt(char* plain_text, String& output, int length);
 	unsigned char base64_to_binary(unsigned char c);
 	unsigned int decode_base64_length(unsigned char input[]);
+	uint32_t HEX2Int(String in);
 
 
 	StaticJsonBuffer<SECURITY_JSON_SIZE> _jsonBuff;

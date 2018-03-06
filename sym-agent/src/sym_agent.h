@@ -50,8 +50,8 @@
 
 #define MAX_JSON_SIZE 800
 //#define MAX_JSON_RES_SIZE 300
-#define JOIN_URL "innkeeper.symbiote.org"
-#define JOIN_PATH "/innkeeper/join"
+#define JOIN_URL "192.168.97.105"
+#define JOIN_PATH "/innkeeper/registry"
 #define KEEPALIVE_PATH "/innkeeper/keep_alive"
 
 #define SSP_PORT 8080
@@ -80,23 +80,11 @@
 
 #define RES_NUMBER 3
 
-enum Conn_type { conn_WIFI, conn_BLE, conn_HTTP };
-
-enum Agent_type { agent_SDEV, agent_PLAT };
-
-
-  // This function handle the creation of the JSON String that represent the resources exposed by the agent
-//String createObservedPropertiesString();
-  // This function create the JSON with the key: value of the reading
-//String readSensorsJSON();
-
-//String getProperty(int i);
-
-//void printJoinResp(struct join_resp data);
 void keepAliveISR(void);
 
 String dummyFunctionSensor();
 boolean dummyFunctionActuator(int value);
+
 
 
 class symAgent
@@ -104,7 +92,7 @@ class symAgent
   public:
     symAgent();
       //TODO please remember to add parameter for class BLE in the constructor
-    symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, bool isRoaming);
+    symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming);
     /* This second constructor instantiate also the value for field comment inside obsProperty
     */
     //symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, char** obsPropertyComment, bool isRoaming);
@@ -125,14 +113,7 @@ class symAgent
     boolean begin();
       //join the ssp, return  status code of the request and do side effect of the response from the innkeeper into the join_resp struct
     int join();
-      //set the agent connection type
-    void setConnectionType(Conn_type conn_type);
-      //get back the agent connection type
-    Conn_type getConnectionType();
-      //set the agent type if a platform agent or a SDEV agent. 
-    void setAgentType(Agent_type agent_type);
-      //get back the agent type
-    Agent_type getAgentType();
+    String createSemanticDescription();
       //set the keep alive interval for the agent
     void setKeepAlive(unsigned long keep_alive);
       //get back the keep alive interval for the agent
@@ -158,6 +139,7 @@ class symAgent
     //String (* _readSensorsJSON)();
 
   private:
+    /************************* FUNCTIONS *************************/
       //This function calculate the password of the symbiotic ssid.
       // Remember that max 32 characters are allowed for wifi ssid
       // EG: if the ssid is "sym-2e4467f2a7b03255a2a4" then the psw is "2e4467f2a7b03255a2a42e4467f2a7b03255a2a4"
@@ -165,20 +147,19 @@ class symAgent
       //Try to connect to wifi for 15 seconds and send back response
     boolean connect(String ssid, String psw);
 
+
+    /************************* VARIABLES *************************/
     String _wifi_ssid;
     String _wifi_psw;
     String _mac;
       //this is the SSP identifier
-    String _ssp_id;
+    String _sspId;
       //this is the agent identifier
-    String _id;
-    String _name;
+    String _symId;
+    String _internalId;
     String _description;
 
     String _obsPropertyComment[RES_NUMBER];
-
-    Agent_type _agent_type;
-    Conn_type _conn_type;
 
     unsigned long _keep_alive;
     bool _roaming;
@@ -189,7 +170,6 @@ class symAgent
       they are not intended to be reused. As a consequence, using a global JsonBuffer is not recommended.
     */
     StaticJsonBuffer<MAX_JSON_SIZE> _jsonBuff;
-    //StaticJsonBuffer<MAX_JSON_RES_SIZE> _resourceJsonBuff;
 
     RestClient* _rest_client;
     ESP8266WebServer* _server;

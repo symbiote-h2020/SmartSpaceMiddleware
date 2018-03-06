@@ -3,8 +3,9 @@
 #include <sym_agent.h>
 #include <Adafruit_NeoPixel.h>
 #include <Metro.h>
+#include <semantic_resources.h>
 
-String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"test\",\"internalId\":\"green\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":40}]},\"type\" : \"SET\"}";
+String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalId\":\"green\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":40}]},\"type\" : \"SET\"}";
 
 #define WS2812_PIN 5
 // How many NeoPixels are attached to the Arduino?
@@ -12,7 +13,8 @@ String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"test\",\"internalId\"
 
 //uint8_t ppsk[HMAC_DIGEST_SIZE] = {0x46, 0x72, 0x31, 0x73, 0x80, 0x52, 0x78, 0x92, 0x52, 0x81, 0xad, 0xd7, 0x57, 0x2c, 0x04, 0xa5, 0xdd, 0x84, 0x16, 0x68};
 
-symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent on HUZZAH", "RGB Leds HAT", false);
+//symAgent sdev1(agent_SDEV, conn_WIFI, 10000, "sym-Agent on HUZZAH", "RGB Leds HAT", false);
+symAgent sdev1(10000, "sym-Agent on HUZZAH", "RGB Leds HAT", false);
 
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
 // Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
@@ -101,7 +103,7 @@ void setup() {
   }
   else Serial.print("Failed!");
 
-  sdev1.TestelaborateQuery(tmpTestJson);
+  //sdev1.TestelaborateQuery(tmpTestJson);
 }
 
 void loop() {

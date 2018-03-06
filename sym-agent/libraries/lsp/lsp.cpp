@@ -15,7 +15,6 @@
 *******************************************************************************/
 #include "lsp.h"
 
-
 lsp::lsp(char* cp, char* kdf, uint8_t* psk, uint8_t psk_len) {
 	_kdf = String(kdf);
 	_cp = String(cp);
@@ -126,7 +125,7 @@ void lsp::calculateDK1(uint8_t num_iterations) {
 			uint32_t tmpnonce = ENDIAN_SWAP_32(_SDEVNonce);
 			memcpy(salt, (uint8_t*)&tmpnonce, 4);
 			tmpnonce = ENDIAN_SWAP_32(_GWNonce);
-			memcpy(salt+4, (uint8_t*)&_GWNonce, 4);
+			memcpy(salt+4, (uint8_t*)&tmpnonce, 4);
 
 			printBuffer(salt, 8, "DK1salt");
 
@@ -145,6 +144,7 @@ void lsp::calculateDK1(uint8_t num_iterations) {
 	
 }
 
+/*
 void lsp::calculateDK2(uint8_t num_iterations) {
 	P("\nStart calculating DK2 key....");
 	if (_kdf == "PBKDF2") {
@@ -155,7 +155,8 @@ void lsp::calculateDK2(uint8_t num_iterations) {
 
 			memcpy(salt, (uint8_t*)_psk, (_psk_len/2));
 
-			uint32_t tmpnonce = ENDIAN_SWAP_32(0x98ec4);
+			//uint32_t tmpnonce = ENDIAN_SWAP_32(0x98ec4);
+			uint32_t tmpnonce = ENDIAN_SWAP_32(_SDEVNonce);
 			memcpy(salt+10, (uint8_t*)&tmpnonce, 4);
 			tmpnonce = ENDIAN_SWAP_32(_GWNonce);
 			memcpy(salt+14, (uint8_t*)&_GWNonce, 4);
@@ -163,6 +164,46 @@ void lsp::calculateDK2(uint8_t num_iterations) {
 			printBuffer(salt, sizeof(salt), "DK2salt");
 
 			PBKDF2function( _psk, _psk_len, salt, sizeof(salt), _dk2, sizeof(_dk2), num_iterations );
+#ifdef DEBUG_SYM_CLASS
+			printBuffer(_dk2, AES_KEY_LENGTH, "DK2");
+#endif
+		} else {
+			//TBD
+			P("DK2: CRYPTO SUITE NOT IMPLEMENTED ");
+		}
+		
+	} else {
+		//TBD
+		P("HKDF already not implemented!");
+	}
+	
+}*/
+
+void lsp::calculateDK2(uint8_t num_iterations) {
+	P("\nStart calculating DK2 key....");
+	if (_kdf == "PBKDF2") {
+		if (_cp == TLS_PSK_WITH_AES_128_CBC_SHA) {
+			uint8_t dk2Password[8+(_psk_len/2)];
+			
+			uint8_t salt[8];
+			memset(salt, 0, sizeof(salt));
+			memset(dk2Password, 0, sizeof(dk2Password));
+
+			// the new password is: firstpart(PSK/2)||SDEVnonce||GW_INKnonce
+			memcpy(dk2Password, (uint8_t*)_psk, (_psk_len/2));
+
+			uint32_t tmpnonce = ENDIAN_SWAP_32(_SDEVNonce);
+			memcpy(dk2Password+10, (uint8_t*)&tmpnonce, 4);
+			memcpy(salt, (uint8_t*)&tmpnonce, 4);
+
+			tmpnonce = ENDIAN_SWAP_32(_GWNonce);
+			memcpy(dk2Password+14, (uint8_t*)&tmpnonce, 4);
+			memcpy(salt+8, (uint8_t*)&tmpnonce, 4);
+
+			printBuffer(dk2Password, sizeof(dk2Password), "DK2password");
+			printBuffer(salt, sizeof(salt), "DK2salt");
+
+			PBKDF2function( dk2Password, sizeof(dk2Password), salt, sizeof(salt), _dk2, sizeof(_dk2), num_iterations );
 #ifdef DEBUG_SYM_CLASS
 			printBuffer(_dk2, AES_KEY_LENGTH, "DK2");
 #endif
@@ -186,6 +227,7 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
     	P("parseObject() failed");
     	return JSON_PARSE_ERR;
 	}
+	P("\nGOT this response from INNK:");
 	_root.prettyPrintTo(Serial);
 	String mti = _root["mti"].as<String>();
 	if (mti == STRING_MTI_GW_INK_HELLO) {
@@ -201,13 +243,21 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 				"sessionId": <abCD123a>
 			}
 		*/
-		P("GOT MTI GW INK HELLO");
+		P("\nGOT MTI GW INK HELLO");
 		String _cc = _root["cc"].as<String>();
 		if (_cc != _cp) {
 			P("Crypto Choice different from Crypto Proposal, process degraded, I continue usign CP");
 		}
 		_iv = _root["iv"].as<String>();
-		_GWNonce = _root["nonce"].as<String>().toInt();
+		String tmpConvString = _root["nonce"].as<String>();
+		PI("DEBUG: GWnonce(STRING)=");
+		P(tmpConvString);
+		_GWNonce = HEX2Int(tmpConvString);
+		PI("DEBUG: GWnonce=");
+		P(_GWNonce);
+		PI("DEBUG: iv=");
+		P(_iv);
+		//_GWNonce = _root["nonce"].as<String>().toInt();
 		if (_iv != "") {
 			// we need to use the init vector for the key calculation
 			P("Init vector found");
@@ -264,6 +314,66 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 	}
 }
 
+uint32_t lsp::HEX2Int(String in) {
+	uint32_t ret = 0;
+	for (uint8_t i = 1; i <= in.length(); i++) {
+		switch (in.charAt(i-1)){
+			case '0':
+			break;
+			case '1':
+				ret += 1<<((in.length()-i)*4);
+			break;
+			case '2':
+				ret += 2<<((in.length()-i)*4);
+			break;
+			case '3':
+				ret += 3<<((in.length()-i)*4);
+			break;
+			case '4':
+				ret += 4<<((in.length()-i)*4);
+			break;
+			case '5':
+				ret += 5<<((in.length()-i)*4);
+			break;
+			case '6':
+				ret += 6<<((in.length()-i)*4);
+			break;
+			case '7':
+				ret += 7<<((in.length()-i)*4);
+			break;
+			case '8':
+				ret += 8<<((in.length()-i)*4);
+			break;
+			case '9':
+				ret += 9<<((in.length()-i)*4);
+			break;
+			case 'a':
+				ret += 10<<((in.length()-i)*4);
+			break;
+			case 'b':
+				ret += 11<<((in.length()-i)*4);
+			break;
+			case 'c':
+				ret += 12<<((in.length()-i)*4);
+			break;
+			case 'd':
+				ret += 13<<((in.length()-i)*4);
+			break;
+			case 'e':
+				ret += 14<<((in.length()-i)*4);
+			break;
+			case 'f':
+				ret += 15<<((in.length()-i)*4);
+			break;
+			default:
+				P("ERROR HEX2INT");
+			break;
+		}
+			
+
+	}
+	return ret;
+}
 
 void lsp::begin(String SSPId) {
 	randomSeed(analogRead(0));
@@ -391,8 +501,8 @@ uint8_t lsp::sendSDEVHelloToGW() {
   			if (j!=5) mac_string += ":";
   		}
   		// FIXME, decomment
-  		//_SDEVNonce = random(0xFFFFFFFF);
-  		_SDEVNonce = 0x98ec4;
+  		_SDEVNonce = random(0xFFFFFFFF);
+  		//_SDEVNonce = 0x98ec4;
   		String nonce = String(_SDEVNonce, HEX);
 			_root["mti"] = STRING_MTI_SDEV_HELLO;
 			_root["SDEVmac"] = mac_string.c_str();
@@ -439,7 +549,7 @@ uint8_t lsp::sendAuthN() {
 	//"authn": <			     b64 ( ENC_dk1 ( SHA-1(HEX_STRING(SDEVnonce)||HEX_STRING(GWnonce))  || HEX_STRING(sn) ) )  >
 	//"sign":  <b64( SHA-1-HMAC_dk2( ENC_dk1 ( SHA-1(HEX_STRING(SDEVnonce)||HEX_STRING(GWnonce))  || HEX_STRING(sn) ) ) )>
 
-	P("\nEnter sendAuthN");
+	P("\nEnter sendAuthN\n*********************\n");
 	String resp = "";
 	if (WiFi.status() == WL_CONNECTED) {
 		_jsonBuff.clear();
@@ -468,10 +578,11 @@ uint8_t lsp::sendAuthN() {
 				// use DK2 to sign
 			_root["sign"] = signedData;
 		String temp = "";
-		P("Send this JSON:");
+		P("\n*********************\nSend this JSON:");
 		_root.prettyPrintTo(Serial);
 		P(" ");
 		_root.printTo(temp);
+		temp = "\r\n" + temp;
 		int statusCode = _rest_client->post(LSP_PATH, temp.c_str(), &resp);
 		if (statusCode < 300 and statusCode >= 200){
 			//_sn++; must be incremented by the INNK
@@ -528,7 +639,10 @@ void lsp::signData(uint8_t* data, uint8_t data_len, String& output) {
 void lsp::encryptAndSign(char* plain_text, String& output, int length, String& signature) {
 	
 	byte enciphered[length];
-	uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+	//uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+	uint8_t iv[16];
+	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
+	printBuffer(iv, 16, "IV");
 	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
 	aesEncryptor.process((uint8_t*)plain_text, enciphered, length);
 	int encrypted_size = sizeof(enciphered);
@@ -553,8 +667,8 @@ void lsp::encryptAndSign(char* plain_text, String& output, int length, String& s
 void lsp::encryptDataAndSign(char* plain_text, String& output, String& signature) {
 	int length = 0;
 	String dataToEncrypt = String(plain_text) + String(_sn, HEX);
-	//PI("This is what I'm going to ENCRYPT: ");
-	//P(dataToEncrypt);
+	PI("ADD this SN to encrypt:");
+	P(String(_sn, HEX));
 	bufferSize((char*)dataToEncrypt.c_str(), length);
 	String encrypted;
 	String tmpSign;
