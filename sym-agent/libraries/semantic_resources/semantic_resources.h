@@ -17,13 +17,17 @@
 #ifndef SYM_SEMANTICS_RESOURCES
 #define SYM_SEMANTICS_RESOURCES
 
+#include <Arduino.h>
+#include <sym_agent.h>
+#include <lsp.h>
+
 /*
 
 {
 	"@c":".SmartDevice"
 	"connectedTo":"*tba*",
     "available":"True",
-    "agentType":"SDEV",    // SDEV, Platform
+    //"agentType":"SDEV",    // SDEV, Platform
     // SDEV one resource only
     "hasResource": 
         {
@@ -47,6 +51,7 @@
 			    [
 			        {
 			            "name":"Red",
+			            "@c":".Parameter"
 			            "isArray":false,
 			            "datatype":"xsd:unsignedByte",
 			            "mandatory":true,
@@ -60,6 +65,7 @@
 			        },
 			        {
 			            "name":"Green",
+			            "@c":".Parameter",
 			            "isArray":false,
 			            "datatype":"xsd:unsignedByte",
 			            "mandatory":true,
@@ -73,6 +79,7 @@
 			        },
 			        {
 			            "name":"Blue",
+			            "@c":".Parameter",
 			            "isArray":false,
 			            "datatype":"xsd:unsignedByte",
 			            "mandatory":true,
@@ -118,6 +125,59 @@ RAP RESPONSE
 
 
 */
+
+class Property {
+  public:
+    Property(String name, String description);
+    String returnSemanticString();
+    String getName();
+  private:
+    String _name;
+    String _description;
+};
+
+class Parameter {
+  public:
+    Parameter(String name, String datatype, String _restrictionMin, String restrictionMax);
+    String returnSemanticString();
+    String getName();
+    uint8_t getMinRestriction();
+    uint8_t getMaxRestriction();
+  private:
+    
+    String _name;
+    bool _isArray = false;
+    String _dataType;
+    bool _mandatory = true;
+    String _restrictionMin;
+    String _restrictionMax;
+};
+
+class Capability {
+  public:
+    Capability(String name, uint8_t param_num, Parameter* parameter);
+    String returnSemanticString();
+  private:
+    String _name;
+    uint8_t _paramNum; 
+    Parameter* _param;
+};
+
+class Semantic {
+  public:
+    Semantic( String internalId, String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property);
+    String returnSemanticString();
+  private:
+  	String _name;
+  	String _internalId;
+  	String _url;
+    uint8_t _capabilityNumber;
+    Capability* _capability;
+    uint8_t _obsPropertyNumber;
+    Property* _obsProperty;
+};
+
+
 
 
 #endif // SYM_SEMANTICS_RESOURCES
