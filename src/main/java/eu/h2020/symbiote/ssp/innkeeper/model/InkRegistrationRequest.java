@@ -3,6 +3,9 @@ package eu.h2020.symbiote.ssp.innkeeper.model;
 import java.util.Date;
 import java.util.List;
 
+import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyFactory;
+import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
+import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicy;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +65,7 @@ public class InkRegistrationRequest {
 			log.debug("Updating resource with symbioteId: " + symbioteId + ", internalId: " + internalId);
 			//FIXME: if msg.getSingleTokenAccessPolicy()== null do not addPolicy
 			try {
-				addPolicy(symbioteId, internalId, msg.getSingleTokenAccessPolicy());
+				addPolicy(symbioteId, internalId, msg.getAccessPolicy());
 			}catch (NullPointerException e) {
 				log.error("error during addPolicy process, AccessPolicy is null\n");
 			}
@@ -102,9 +105,9 @@ public class InkRegistrationRequest {
 	}
 
 
-	private void addPolicy(String resourceId, String internalId, SingleTokenAccessPolicySpecifier accPolicy) throws InvalidArgumentsException {
+	private void addPolicy(String resourceId, String internalId, IAccessPolicySpecifier accPolicy) throws InvalidArgumentsException {
 		try {
-			IAccessPolicy policy = SingleTokenAccessPolicyFactory.getSingleTokenAccessPolicy(accPolicy);
+			IAccessPolicy policy = AccessPolicyFactory.getAccessPolicy(accPolicy);
 			AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
 			log.debug("ADD POLICY ACTION");
 			accessPolicyRepository.save(ap);

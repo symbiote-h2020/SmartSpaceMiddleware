@@ -172,7 +172,7 @@ public class InnkeeperRestController {
 			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo);	
 			log.info(sdevm.writeValueAsString(res));
 			break;
-		default:
+		default:git
 			break;
 		}
 		 */
