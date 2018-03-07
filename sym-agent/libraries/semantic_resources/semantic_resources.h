@@ -157,6 +157,8 @@ class Capability {
   public:
     Capability(String name, uint8_t param_num, Parameter* parameter);
     String returnSemanticString();
+    String getName();
+    String getParametersName(uint8_t paramNumber);
   private:
     String _name;
     uint8_t _paramNum; 
@@ -167,6 +169,10 @@ class Semantic {
   public:
     Semantic( String internalId, String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property);
     String returnSemanticString();
+    String getName();
+    String getInternalId();
+    String getURL();
+    String getPropertyName(uint8_t propertyNumber);
   private:
   	String _name;
   	String _internalId;

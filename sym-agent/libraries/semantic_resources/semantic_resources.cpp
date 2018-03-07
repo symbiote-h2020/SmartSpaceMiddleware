@@ -52,6 +52,29 @@ String Semantic::returnSemanticString()
 	return tmpString;
 }
 
+String Semantic::getName()
+{
+	return _name;
+}
+
+String Semantic::getInternalId()
+{
+	return _internalId;
+}
+
+String Semantic::getURL()
+{
+	return _url;
+}
+
+String Semantic::getPropertyName(uint8_t propertyNumber)
+{
+	if (propertyNumber < _obsPropertyNumber) {
+		return _obsProperty[propertyNumber].getName();
+	} 
+	else return "OutOfRange"; 
+}
+
 Capability::Capability(String name, uint8_t param_num, Parameter* parameter)
 {
 	_name = name;
@@ -79,6 +102,17 @@ String Capability::returnSemanticString()
 	tmpString += _param[_paramNum-1].getName();
 	tmpString += "\"]}";
 	return tmpString;
+}
+
+String Capability::getName()
+{
+	return _name;
+}
+
+String Capability::getParametersName(uint8_t paramNumber)
+{
+	if (paramNumber < _paramNum) return _param[paramNumber].getName();
+	else return "OutOfRange";
 }
 
 Parameter::Parameter(String name, String datatype, String restrictionMin, String restrictionMax)
