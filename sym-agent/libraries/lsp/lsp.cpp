@@ -198,7 +198,7 @@ void lsp::calculateDK2(uint8_t num_iterations) {
 
 			tmpnonce = ENDIAN_SWAP_32(_GWNonce);
 			memcpy(dk2Password+14, (uint8_t*)&tmpnonce, 4);
-			memcpy(salt+8, (uint8_t*)&tmpnonce, 4);
+			memcpy(salt+4, (uint8_t*)&tmpnonce, 4);
 
 			printBuffer(dk2Password, sizeof(dk2Password), "DK2password");
 			printBuffer(salt, sizeof(salt), "DK2salt");
@@ -293,9 +293,15 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 					P("ERR: wrong session ID");
 					return COMMUNICATION_ERROR;
 				}
-				String gwnonce = _root["nonce"].as<String>();
+				//String gwnonce = _root["nonce"].as<String>();
 				// save the new GWnonce
-				_GWNonce = gwnonce.toInt();
+				//_GWNonce = gwnonce.toInt();
+				String tmpConvString = _root["nonce"].as<String>();
+				PI("DEBUG: GWnonce(STRING)=");
+				P(tmpConvString);
+				_GWNonce = HEX2Int(tmpConvString);
+				PI("DEBUG: GWnonce=");
+				P(_GWNonce);
 				String authn = _root["authn"].as<String>();
 				String sign = _root["sign"].as<String>();
 				String decrypted;
@@ -644,7 +650,8 @@ void lsp::encryptAndSign(char* plain_text, String& output, int length, String& s
 	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
 	printBuffer(iv, 16, "IV");
 	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
-	aesEncryptor.process((uint8_t*)plain_text, enciphered, length);
+	//aesEncryptor.process((uint8_t*)plain_text, enciphered, length);
+	aesEncryptor.processNoPad((uint8_t*)plain_text, enciphered, length);
 	int encrypted_size = sizeof(enciphered);
 	printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
 
@@ -666,13 +673,43 @@ void lsp::encryptAndSign(char* plain_text, String& output, int length, String& s
 */
 void lsp::encryptDataAndSign(char* plain_text, String& output, String& signature) {
 	int length = 0;
+	unsigned int tmpLen = 0;
+	// todo fixme
+	tmpLen = SHA1_KEY_SIZE + String(_sn, HEX).length();
 	String dataToEncrypt = String(plain_text) + String(_sn, HEX);
-	PI("ADD this SN to encrypt:");
+	PI("ADD this SN to encrypt:\t");
 	P(String(_sn, HEX));
-	bufferSize((char*)dataToEncrypt.c_str(), length);
+
+	char* arrayOfDataToEncrypt[(tmpLen)+1];
+	memset(arrayOfDataToEncrypt, 0, (tmpLen+1));
+	dataToEncrypt.getBytes((byte*)arrayOfDataToEncrypt, (unsigned int)(tmpLen+1)); 
+	printBuffer((uint8_t*)arrayOfDataToEncrypt, tmpLen,"arrayOfDataToEncrypt");
+	//bufferSize((char*)dataToEncrypt.c_str(), length);
+	bufferSize((char*)arrayOfDataToEncrypt, length);
+	//PI("Lenght of the data without padding(asClass):\t");
+	//P(dataToEncrypt.length());
+	PI("Lenght of the data without padding(asBArray):\t");
+	P(tmpLen);
+	PI("Lenght of the data with padding:\t");
+	P(length);
 	String encrypted;
 	String tmpSign;
-	encryptAndSign((char*)dataToEncrypt.c_str(), encrypted, length, tmpSign);
+	uint8_t arrayOfDataToEncrypt_padded[length];
+	memcpy(arrayOfDataToEncrypt_padded, arrayOfDataToEncrypt, tmpLen);
+	if (tmpLen < length) {
+		// we need to pad the data
+		for (uint8_t i = tmpLen; i < length; i++) arrayOfDataToEncrypt_padded[i] = 0x55;
+	}
+
+	/// add 0x55 as pad if needed
+	//for (uint8_t i = dataToEncrypt.length(); i < length; i++) dataToEncrypt.concat('U');
+	//for (uint8_t i = tmpLen; i < length; i++) dataToEncrypt.concat('U');
+	///printBuffer((uint8_t*)dataToEncrypt.c_str(), dataToEncrypt.length(),"DATA2ENCRYPT");
+	printBuffer(arrayOfDataToEncrypt_padded, length,"DATA2ENCRYPT(padded)");
+
+
+	//encryptAndSign((char*)dataToEncrypt.c_str(), encrypted, length, tmpSign);
+	encryptAndSign((char*)arrayOfDataToEncrypt_padded, encrypted, length, tmpSign);
 	output = encrypted;	
 	signature = tmpSign;
 }
