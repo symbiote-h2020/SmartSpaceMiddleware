@@ -531,9 +531,15 @@ uint8_t lsp::sendSDEVHelloToGW() {
 }
 
 void lsp::createAuthNPacket(uint8_t* dataout) {
-	uint8_t tmpHash[20];
-	String dataToHash = String(_SDEVNonce, HEX) + String(_GWNonce, HEX);
-	PI("SHA1(SDEVnonce||GWnonce) = SHA1(");
+	//uint8_t tmpHash[20];
+	String gwNonceString = String(_GWNonce, HEX);
+	while (gwNonceString.length() < 8) {
+		// we need to add '0'
+		gwNonceString = '0' + gwNonceString;
+
+	}
+	String dataToHash = String(_SDEVNonce, HEX) + gwNonceString;
+	PI("SHA1(");
 	PI(dataToHash);
 	PI(")");
 	sha1.init();
@@ -616,6 +622,12 @@ void lsp::bufferSize(char* text, int &length) {
 	length = (buf < i) ? buf + BLOCK_SIZE : length = buf;
 }
 
+void lsp::bufferSize(char* text, int text_len, int &length) {
+	int i = text_len;
+	int buf = round(i / BLOCK_SIZE) * BLOCK_SIZE;
+	length = (buf < i) ? buf + BLOCK_SIZE : length = buf;
+}
+
 void lsp::bufferSize(unsigned char* text, int &length) {
 	int i = strlen((const char*)text);
 	int buf = round(i / BLOCK_SIZE) * BLOCK_SIZE;
@@ -648,7 +660,7 @@ void lsp::encryptAndSign(char* plain_text, String& output, int length, String& s
 	//uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
 	uint8_t iv[16];
 	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
-	printBuffer(iv, 16, "IV");
+	printBuffer(iv, 16, "IV\t");
 	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
 	//aesEncryptor.process((uint8_t*)plain_text, enciphered, length);
 	aesEncryptor.processNoPad((uint8_t*)plain_text, enciphered, length);
@@ -675,23 +687,36 @@ void lsp::encryptDataAndSign(char* plain_text, String& output, String& signature
 	int length = 0;
 	unsigned int tmpLen = 0;
 	// todo fixme
-	tmpLen = SHA1_KEY_SIZE + String(_sn, HEX).length();
-	String dataToEncrypt = String(plain_text) + String(_sn, HEX);
-	PI("ADD this SN to encrypt:\t");
-	P(String(_sn, HEX));
 
-	char* arrayOfDataToEncrypt[(tmpLen)+1];
+
+
+	tmpLen = SHA1_KEY_SIZE + String(_sn, HEX).length();
+	//String dataToEncrypt = String(plain_text) + String(_sn, HEX);
+	PI("ADD this SN to encrypt:\t= ");
+	P(String(_sn, HEX));
+/*
+	PI("Data2Encrypt(String):\t= {");
+	for (uint8_t i = 0; i < tmpLen-1; i++) {
+		Serial.print((uint8_t)dataToEncrypt.charAt(i), HEX);
+		PI(", ")
+	} 
+	Serial.print((uint8_t)dataToEncrypt.charAt(tmpLen-1), HEX);
+	P("}");
+	char arrayOfDataToEncrypt[(tmpLen)+1];
 	memset(arrayOfDataToEncrypt, 0, (tmpLen+1));
 	dataToEncrypt.getBytes((byte*)arrayOfDataToEncrypt, (unsigned int)(tmpLen+1)); 
-	printBuffer((uint8_t*)arrayOfDataToEncrypt, tmpLen,"arrayOfDataToEncrypt");
-	//bufferSize((char*)dataToEncrypt.c_str(), length);
+	printBuffer((uint8_t*)arrayOfDataToEncrypt, tmpLen,"Data2Encrypt(array)");
 	bufferSize((char*)arrayOfDataToEncrypt, length);
-	//PI("Lenght of the data without padding(asClass):\t");
-	//P(dataToEncrypt.length());
-	PI("Lenght of the data without padding(asBArray):\t");
-	P(tmpLen);
-	PI("Lenght of the data with padding:\t");
-	P(length);
+*/ 
+	uint8_t arrayOfDataToEncrypt[tmpLen];
+	memset(arrayOfDataToEncrypt, 0, tmpLen);
+	//dataToEncrypt.getBytes((byte*)arrayOfDataToEncrypt, (unsigned int)tmpLen); 
+	memcpy(arrayOfDataToEncrypt, plain_text, SHA1_KEY_SIZE);
+	for (uint8_t i = SHA1_KEY_SIZE; i < tmpLen; i++) arrayOfDataToEncrypt[i] = String(_sn, HEX).charAt(i-SHA1_KEY_SIZE);
+
+	printBuffer((uint8_t*)arrayOfDataToEncrypt, tmpLen,"Data2Encrypt(array)");
+	bufferSize((char*)arrayOfDataToEncrypt, tmpLen, length);;
+	
 	String encrypted;
 	String tmpSign;
 	uint8_t arrayOfDataToEncrypt_padded[length];
@@ -706,7 +731,10 @@ void lsp::encryptDataAndSign(char* plain_text, String& output, String& signature
 	//for (uint8_t i = tmpLen; i < length; i++) dataToEncrypt.concat('U');
 	///printBuffer((uint8_t*)dataToEncrypt.c_str(), dataToEncrypt.length(),"DATA2ENCRYPT");
 	printBuffer(arrayOfDataToEncrypt_padded, length,"DATA2ENCRYPT(padded)");
-
+	PI("Lenght of the data without padding:\t");
+	P(tmpLen);
+	PI("Lenght of the data with padding:\t");
+	P(length);
 
 	//encryptAndSign((char*)dataToEncrypt.c_str(), encrypted, length, tmpSign);
 	encryptAndSign((char*)arrayOfDataToEncrypt_padded, encrypted, length, tmpSign);

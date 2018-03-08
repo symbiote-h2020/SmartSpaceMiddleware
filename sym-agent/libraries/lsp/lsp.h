@@ -201,6 +201,7 @@ public:
 private:
 	void bufferSize(char* text, int &length);
 	void bufferSize(unsigned char* text, int &length);
+	void bufferSize(char* text, int text_len, int &length);
 	void encryptAndSign(char* plain_text, String& output, int length, String& signature);
 	//void encrypt(char* plain_text, String& output, int length);
 	unsigned char base64_to_binary(unsigned char c);
