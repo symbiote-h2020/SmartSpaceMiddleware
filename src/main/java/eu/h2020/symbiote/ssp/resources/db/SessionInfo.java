@@ -79,7 +79,7 @@ public class SessionInfo {
     private String authn;
 
     @JsonProperty("psk")
-    private char[] psk;
+    private byte[] psk;
     
     /* HOWTO read expiration time directly via mongoDB client
       db.sessions.aggregate(     
@@ -96,7 +96,7 @@ public class SessionInfo {
     @JsonCreator
     public SessionInfo( @JsonProperty("sessionId") String sessionId,
     					@JsonProperty("iv") String iv,
-    					@JsonProperty("psk") char[] psk,
+    					@JsonProperty("psk") byte[] psk,
     					@JsonProperty("dk") String dk,
     					@JsonProperty("dk1") String dk1,
     					@JsonProperty("dk2") String dk2,
@@ -258,11 +258,11 @@ public class SessionInfo {
       }
 
     @JsonProperty("psk")
-    public void setpsk(char[] psk) 
+    public void setpsk(byte[] psk) 
       {
        this.psk = psk;
       }
-    public char[] getpsk() 
+    public byte[] getpsk() 
       {
        return this.psk;
       }
