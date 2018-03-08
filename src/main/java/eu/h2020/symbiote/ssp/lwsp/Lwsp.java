@@ -346,10 +346,27 @@ public class Lwsp {
 		log.info("\n aescbcHash(): "   +toHex(aescoded));
 		return aescoded;
 	}
-	private String calcSign1() throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, UnsupportedEncodingException
+	private String calcSign40() throws GeneralSecurityException, IOException
 	{
-		log.info("\n calcSign1(): ");
-		return BArray2HexS(aescbcHash(this.snonce,this.gnonce,this.sn,this.dk));
+		byte[] tmp4=HexSS2BArray(this.sn.length()==8?this.sn:(zeros(8-this.sn.length())+this.sn));
+		log.info("\n calcSign40() sn->: "+BArray2HexS(tmp4));
+		byte[] tmp=aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk1);
+		
+		byte[] tmp2=concat_LE(tmp4,tmp);
+		log.info("\n calcSign30(): dk2->  "+this.dk.split(":")[2]);
+		byte[] tmp3=HmacSHA1(tmp2,HexSS2BArray(this.dk2.split(":")[2]));
+		
+		log.info("\n     calcSign40(): "+
+		         "\n payload to hmac: "+ BArray2HexS(tmp2) +
+		         "\n sequence number: "+ (this.sn.length()==8?sn:(zeros(8-this.sn.length())+sn))+
+		         "\n            data: "+ BArray2HexS(tmp)+
+		         "\n             dk2: "+ this.dk2.split(":")[2]+
+		         "\n            sign: "+ BArray2HexS(tmp3)+
+		         "\n         signb64: "+ Base64.getEncoder().encodeToString(tmp3)+
+				 "\n      RemoteSign: "+this.sign		         
+		         
+				);
+	    return Base64.getEncoder().encodeToString(tmp3);
 	}
 
     public static byte[] HmacSHA1(byte[] data, byte[] key) throws GeneralSecurityException, IOException 
@@ -367,17 +384,17 @@ public class Lwsp {
         hmacData = mac.doFinal(data);
         return hmacData;
     }	
-	private String calcSign2() throws GeneralSecurityException, IOException
+	private String calcSign30() throws GeneralSecurityException, IOException
 	{
 		byte[] tmp4=HexSS2BArray(this.sn.length()==8?this.sn:(zeros(8-this.sn.length())+this.sn));
-		log.info("\n calcSign2() sn->: "+BArray2HexS(tmp4));
+		log.info("\n calcSign30() sn->: "+BArray2HexS(tmp4));
 		byte[] tmp=aescbcHash(this.snonce,this.gnonce,this.sn,this.dk1);
 		
 		byte[] tmp2=concat_LE(tmp4,tmp);
-		log.info("\n calcSign2(): dk2->  "+this.dk.split(":")[2]);
+		log.info("\n calcSign30(): dk2->  "+this.dk.split(":")[2]);
 		byte[] tmp3=HmacSHA1(tmp2,HexSS2BArray(this.dk2.split(":")[2]));
 		
-		log.info("\n     calcSign2(): "+
+		log.info("\n     calcSign30(): "+
 		         "\n payload to hmac: "+ BArray2HexS(tmp2) +
 		         "\n sequence number: "+ (this.sn.length()==8?sn:(zeros(8-this.sn.length())+sn))+
 		         "\n            data: "+ BArray2HexS(tmp)+
@@ -428,11 +445,18 @@ public class Lwsp {
 	}
 	private static byte[] aes128dec(byte[] data, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException
 	{
+        int padLen=16 - (data.length & 0xf);
+        byte[] pad_data=BAGet(padLen);
+        log.info("\naes128dec()\n data len: " +data.length+
+        		 "\n"+padLen );
+        
 		Key aesKey = new SecretKeySpec(key, "AES");
-		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+		Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
 		IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 		cipher.init(Cipher.DECRYPT_MODE, aesKey,ivParameterSpec);
-		byte[] decrypted = cipher.doFinal(data);
+		byte[] tmp=concat_LE(pad_data,data);
+		log.info("\n\n\n\naes128enc() pad data: " +BArray2HexS(tmp)+"\n\n\n\n");
+		byte[] decrypted = cipher.doFinal(tmp);
 		return decrypted;
 	}
 
@@ -533,18 +557,17 @@ public class Lwsp {
 						         "\n dk2: "+ this.dk2						         
 								);
 						
-						if (calcSign2().equals(this.sign))
+						if (calcSign30().equals(this.sign))
 						{
 							log.info("\n*************calcsign2 test*************\n");
 							this.psk=getPSK(); 
-							//this.dk2=pbkdf2_SHA1(psk, this.snonce2 ,4);
 							this.gnonce2=BArray2HexS(getSalt());
 							incsn();
 							jsonData1 = new JSONObject();
 							jsonData1.put("sessionId", this.sessionId);
 							jsonData1.put("mti", "0x40");
 							jsonData1.put("nonce", this.gnonce=dk2.split(":")[1].substring(8,16));
-							jsonData1.put("sign", calcSign2());
+							jsonData1.put("sign", calcSign40());
 							jsonData1.put("sn", this.sn);
 							jsonData1.put("authn", Base64.getEncoder().encodeToString(aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk2)));
 							out=jsonData1.toString();
