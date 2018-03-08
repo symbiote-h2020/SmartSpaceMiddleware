@@ -108,6 +108,8 @@ public class Lwsp {
 	private final String DecJson=         "{\"mti\": \"0x55\",\"data\": \"%s\"}";
 	private final String EncJson=         "{\"mti\": \"0x60\",\"data\": \"%s\",\"sessionId\": \"%s\"}";
 
+	private Timestamp sessionExpiration;
+
 	/*
   _____      _            _         __  __      _   _               _
  |  __ \    (_)          | |       |  \/  |    | | | |             | |
@@ -546,9 +548,11 @@ public class Lwsp {
 							jsonData1.put("sn", this.sn);
 							jsonData1.put("authn", Base64.getEncoder().encodeToString(aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk2)));
 							out=jsonData1.toString();
-							currTime = new Timestamp(System.currentTimeMillis());
-							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime);
+							this.sessionExpiration = new Timestamp(System.currentTimeMillis());
+							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration);
 							sessionRepository.save(sessionInfo);
+							
+
 						}
 					}
 					else {out=out.equals("")?this.error_f2:out;}
@@ -588,6 +592,11 @@ public class Lwsp {
 						String decoded= new String(aes128dec(Base64.getDecoder().decode(jsonData.getString("data").getBytes()),HexSS2BArray(dk.split(":")[2]),iv.getBytes()));
 						this.OutBuffer=String.format(DecJson, decoded);
 					} 
+										
+					// KEEP ALIVE					
+					this.sessionExpiration = new Timestamp(System.currentTimeMillis());
+					s.setSessionExpiration(this.sessionExpiration);
+					sessionRepository.save(s);
 				}
 			}
 			log.info("Sent back 0x60:\n"+OutBuffer);
@@ -619,6 +628,12 @@ public class Lwsp {
 		sessionRepository.save(sessionInfo);
 		 */		
 		return this.OutBuffer;
+	}
+	public Date getSessionExpiration() {
+		return this.sessionExpiration;
+	}
+	public void setSessionExpiration() {
+		
 	}
 	public void send_data(String data, SessionRepository sessionRepository) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException 
 	{
