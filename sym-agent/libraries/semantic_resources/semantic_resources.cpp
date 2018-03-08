@@ -75,6 +75,16 @@ String Semantic::getPropertyName(uint8_t propertyNumber)
 	else return "OutOfRange"; 
 }
 
+uint8_t Semantic::getObsPropertyNum()
+{
+	return _obsPropertyNumber;
+}
+
+String Semantic::getObsPropertyValue(uint8_t propertyNumber)
+{
+	return _obsProperty[propertyNumber].getValue();
+}
+
 Capability::Capability(String name, uint8_t param_num, Parameter* parameter)
 {
 	_name = name;
@@ -115,12 +125,24 @@ String Capability::getParametersName(uint8_t paramNumber)
 	else return "OutOfRange";
 }
 
-Parameter::Parameter(String name, String datatype, String restrictionMin, String restrictionMax)
+bool Capability::actuateCapability(String capName, int in)
+{
+	bool resp = false;
+	for (uint8_t i = 0; i < _paramNum; i++) {
+		if (getParametersName(i) == capName) {
+				resp = _param->actuateProperty(in);
+		}
+	}
+	return resp;
+}
+
+Parameter::Parameter(String name, String datatype, String restrictionMin, String restrictionMax, bool (* actuate)(int))
 {
 	_name = name;
 	_dataType = datatype;
 	_restrictionMin = restrictionMin;
 	_restrictionMax = restrictionMax;
+	_actuate = actuate;
 }
 
 String Parameter::returnSemanticString()
@@ -153,10 +175,16 @@ uint8_t Parameter::getMaxRestriction()
 	return _restrictionMax.toInt();
 }
 
-Property::Property(String name, String description)
+bool Parameter::actuateProperty(int in)
+{
+	return _actuate(in);
+}
+
+Property::Property(String name, String description, String (* function)())
 {
 	_name = name;
 	_description = description;
+	_function = function;
 }
 
 String Property::returnSemanticString()
@@ -169,4 +197,11 @@ String Property::returnSemanticString()
 String Property::getName()
 {
 	return _name;
+}
+
+String Property::getValue()
+{
+	String tmpString = "";
+	tmpString = _function();
+	return tmpString;
 }

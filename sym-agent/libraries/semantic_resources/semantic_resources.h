@@ -128,21 +128,24 @@ RAP RESPONSE
 
 class Property {
   public:
-    Property(String name, String description);
+    Property(String name, String description, String (* function)());
     String returnSemanticString();
     String getName();
+    String getValue();
   private:
     String _name;
     String _description;
+    String (* _function)();
 };
 
 class Parameter {
   public:
-    Parameter(String name, String datatype, String _restrictionMin, String restrictionMax);
+    Parameter(String name, String datatype, String _restrictionMin, String restrictionMax, bool (* actuate)(int));
     String returnSemanticString();
     String getName();
     uint8_t getMinRestriction();
     uint8_t getMaxRestriction();
+    bool actuateProperty(int in);
   private:
     
     String _name;
@@ -151,6 +154,7 @@ class Parameter {
     bool _mandatory = true;
     String _restrictionMin;
     String _restrictionMax;
+    bool (* _actuate)(int);
 };
 
 class Capability {
@@ -159,6 +163,7 @@ class Capability {
     String returnSemanticString();
     String getName();
     String getParametersName(uint8_t paramNumber);
+    bool actuateCapability(String capName, int in);
   private:
     String _name;
     uint8_t _paramNum; 
@@ -173,6 +178,8 @@ class Semantic {
     String getInternalId();
     String getURL();
     String getPropertyName(uint8_t propertyNumber);
+    uint8_t getObsPropertyNum();
+    String getObsPropertyValue(uint8_t propertyNumber);
   private:
   	String _name;
   	String _internalId;
