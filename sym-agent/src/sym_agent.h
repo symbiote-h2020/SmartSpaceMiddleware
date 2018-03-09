@@ -12,6 +12,7 @@
 #include <RestClient.h>
 #include <EEPROM.h>
 #include <lsp.h>
+#include <semantic_resources.h>
 
 
 #if defined ESP8266
@@ -93,6 +94,7 @@ class symAgent
     symAgent();
       //TODO please remember to add parameter for class BLE in the constructor
     symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming);
+    symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming, Semantic* semantic);
     /* This second constructor instantiate also the value for field comment inside obsProperty
     */
     //symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, char** obsPropertyComment, bool isRoaming);
@@ -159,7 +161,7 @@ class symAgent
     String _internalId;
     String _description;
 
-    String _obsPropertyComment[RES_NUMBER];
+    //String _obsPropertyComment[RES_NUMBER];
 
     unsigned long _keep_alive;
     bool _roaming;
@@ -175,6 +177,7 @@ class symAgent
     ESP8266WebServer* _server;
 
     lsp* _security;
+    Semantic* _semantic;
 
 };
 

@@ -67,7 +67,52 @@ String Semantic::getURL()
 	return _url;
 }
 
-String Semantic::getPropertyName(uint8_t propertyNumber)
+String Semantic::getParamName(uint8_t capNum, uint8_t paramNum)
+{
+	if (capNum < _capabilityNumber && paramNum < getParamNum(capNum)) {
+		return _capability[capNum].getParametersName(paramNum);
+	}
+}
+
+uint8_t Semantic::getParamNum(uint8_t capNum)
+{
+	if (capNum < _capabilityNumber) {
+		return _capability[capNum].getParametersNum();
+	} 
+}
+
+uint8_t Semantic::getCapabilityNum()
+{
+	return _capabilityNumber;
+}
+
+String Semantic::getCapabilityName(uint8_t capNum)
+{
+	if (capNum<_capabilityNumber) {
+		return _capability[capNum].getName();
+	} else return "ERROR";
+}
+
+bool Semantic::actuateParameterOfCapability(uint8_t capNum, uint8_t paramNum, int in)
+{
+
+	if (capNum < _capabilityNumber && paramNum < _capability[capNum].getParametersNum()) {
+		//check for overflow index
+		return _capability[capNum].actuateCapability(_capability[capNum].getParametersName(paramNum), in);
+	} else return false;
+
+}
+
+bool Semantic::actuateParameterOfCapability(uint8_t capNum, String paramName, int in)
+{
+	if (capNum < _capabilityNumber) {
+		//check for overflow index
+		return _capability[capNum].actuateCapability(paramName, in);
+	} else return false;
+
+}
+
+String Semantic::getObsPropertyName(uint8_t propertyNumber)
 {
 	if (propertyNumber < _obsPropertyNumber) {
 		return _obsProperty[propertyNumber].getName();
@@ -125,11 +170,16 @@ String Capability::getParametersName(uint8_t paramNumber)
 	else return "OutOfRange";
 }
 
-bool Capability::actuateCapability(String capName, int in)
+uint8_t Capability::getParametersNum()
+{
+	return _paramNum;
+}
+
+bool Capability::actuateCapability(String paramName, int in)
 {
 	bool resp = false;
 	for (uint8_t i = 0; i < _paramNum; i++) {
-		if (getParametersName(i) == capName) {
+		if (getParametersName(i) == paramName) {
 				resp = _param->actuateProperty(in);
 		}
 	}

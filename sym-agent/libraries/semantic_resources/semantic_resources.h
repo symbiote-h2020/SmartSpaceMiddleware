@@ -18,7 +18,7 @@
 #define SYM_SEMANTICS_RESOURCES
 
 #include <Arduino.h>
-#include <sym_agent.h>
+//#include <sym_agent.h>
 #include <lsp.h>
 
 /*
@@ -162,8 +162,11 @@ class Capability {
     Capability(String name, uint8_t param_num, Parameter* parameter);
     String returnSemanticString();
     String getName();
+
     String getParametersName(uint8_t paramNumber);
-    bool actuateCapability(String capName, int in);
+    uint8_t getParametersNum();
+    //uint8_t getIndexOfParameter(String paramName);
+    bool actuateCapability(String paramName, int in);
   private:
     String _name;
     uint8_t _paramNum; 
@@ -177,7 +180,16 @@ class Semantic {
     String getName();
     String getInternalId();
     String getURL();
-    String getPropertyName(uint8_t propertyNumber);
+
+    String getParamName(uint8_t capNum, uint8_t paramNum);
+    uint8_t getParamNum(uint8_t capNum);
+
+    uint8_t getCapabilityNum();
+    String getCapabilityName(uint8_t capNum);
+    bool actuateParameterOfCapability(uint8_t capNum, uint8_t propertyNum, int in);
+    bool actuateParameterOfCapability(uint8_t capNum, String paramName, int in);
+
+    String getObsPropertyName(uint8_t propertyNumber);
     uint8_t getObsPropertyNum();
     String getObsPropertyValue(uint8_t propertyNumber);
   private:

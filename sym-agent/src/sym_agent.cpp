@@ -19,7 +19,7 @@
 volatile boolean keepAlive_triggered = false;
 volatile unsigned long keep_alive_interval = 0;
 String listResources[RES_NUMBER];
-String (* functions[RES_NUMBER])();
+//String (* functions[RES_NUMBER])();
 boolean (* actuatorsFunction[RES_NUMBER])(int);
 uint8_t ppsk[HMAC_DIGEST_SIZE] = {0x46, 0x72, 0x31, 0x73, 0x80, 0x52, 0x78, 0x92, 0x52, 0x81, 0xad, 0xd7, 0x57, 0x2c, 0x04, 0xa5, 0xdd, 0x84, 0x16, 0x68};
 
@@ -50,7 +50,6 @@ symAgent::symAgent()
 		// calculate the ssp-id based on the WiFi MAC. TODO: maybe this is possible only when it is connected by wifi, or maybe is better to create this
 }
       //TODO please remember to add parameter for class BLE in the constructor
-//symAgent::symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, bool isRoaming)
 symAgent::symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming)
 {
 	pinMode(JOIN_LED, OUTPUT);
@@ -66,12 +65,36 @@ symAgent::symAgent(unsigned long keep_alive, String internalId, String descripti
 	_security = new lsp(TLS_PSK_WITH_AES_128_CBC_SHA ,"PBKDF2", ppsk, HMAC_DIGEST_SIZE);
 	_roaming = isRoaming;
 		// if nothing is provided, initialize to NA the field comment of the obsProperty	
-	for (int i = 0; i < RES_NUMBER; i++) {
-		_obsPropertyComment[i] = "NA";
-	}
+	//for (int i = 0; i < RES_NUMBER; i++) {
+		//_obsPropertyComment[i] = "NA";
+	//}
 	_server = new ESP8266WebServer();
 	_regExpiration = 0; 
 }
+
+symAgent::symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming, Semantic* semantic)
+{
+	pinMode(JOIN_LED, OUTPUT);
+	pinMode(KEEPALIVE_LED, OUTPUT);
+	JOIN_LED_OFF
+	KEEPALIVE_LED_OFF
+		//set internal keep alive interval to the correct value to be used in the timer0_write()
+	_keep_alive = keep_alive * TICK_MILLISECONDS;
+		// change the value of the global variable keep_alive_interval accordingly
+	keep_alive_interval = _keep_alive;
+	_internalId = internalId;
+	_description = description;
+	_security = new lsp(TLS_PSK_WITH_AES_128_CBC_SHA ,"PBKDF2", ppsk, HMAC_DIGEST_SIZE);
+	_roaming = isRoaming;
+		// if nothing is provided, initialize to NA the field comment of the obsProperty	
+	//for (int i = 0; i < RES_NUMBER; i++) {
+	//	_obsPropertyComment[i] = "NA";
+	//}
+	_server = new ESP8266WebServer();
+	_semantic = semantic;
+	_regExpiration = 0; 
+}
+
 
 
 String symAgent::getSymIdFromFlash() {
@@ -351,13 +374,6 @@ boolean symAgent::TestelaborateQuery(String resp)
 				//_server->send(200, "application/json", tmpResp);
 				return false;
 			}
-		//}
-			/*else {
-			P("Wrong SymId");
-			String tmpResp = "{ \"id\":\"" + _symId + "\", \"value\":\"WrongSymId\"}";
-			//_server->send(200, "application/json", tmpResp);
-			return false;
-		}*/
 	return true;
 }
 
@@ -374,81 +390,55 @@ void symAgent::TestsetResource(String rapRequest) {
 		_root.prettyPrintTo(Serial);
 		P(" ");
 #endif
-		if (_root["resourceInfo"][0]["symbioteId"] == _symId) {
+		if (_root["resourceInfo"][0]["symbioteId"] == _symId && _root["resourceInfo"][0]["internalId"] == _semantic->getInternalId()) {
 			// check only the first if the array, because the other should be the same
-			for (uint8_t i = 0; i< RES_NUMBER; i++) {
+			for (uint8_t i = 0; i < _semantic->getCapabilityNum(); i++) {
 				//check if any of my resources should be changed
-				for (uint8_t j = 0; j < RES_NUMBER; j++) {
-					if (_root["resourceInfo"][i]["internalId"] == listResources[j]) {
-						String field_value = "";
-						// search for something like this:
-						// _root["body"][1]["red"]["value"] = 200
-						/*
-							{
-							  	"resourceInfo" : [ {
-							    "symbioteId" : "12345",
-							    "internalId" : "red",
-							    "type" : "light"
-							  }, {
-							    "symbioteId" : "12345",
-							    "internalId" : "blue",
-							    "type" : "light"
-							  }],
-							  "body" : {
-							    "red": [
-							      { "{restriction}": "{value}" }
-							    ] 
-							  },
-							  "type" : "SET"
+				String tmpString = _root["body"][_semantic->getCapabilityName(i)].as<String>();
+				PI("READ this capability:");
+				P(tmpString);
+				if ( tmpString != "" ) {
+					JsonArray& body = _root["body"][_semantic->getCapabilityName(i)];
+					int arraySize = body.size();
+					PI("Size of the array:\t");
+					P(arraySize);
+					for (uint8_t j = 0; j < _semantic-> getParamNum(i); j++) {
+						if (j < arraySize) {
+													// ex: root["body"][RGBCapability][0]
+							JsonObject& restriction = _root["body"][_semantic->getCapabilityName(i)][j];
+								// return somwthing like "RGB"
+							String restrictionNameString = restriction.begin()->key;
+							if (restrictionNameString != "") {
+								PI("Actuating: ");
+								PI(_semantic->getCapabilityName(i));
+								PI(" => ");
+								PI(restrictionNameString);
+								int value = restriction[restrictionNameString].as<int>();
+								PI(" : ");
+								PI(value);
+								if (_semantic->actuateParameterOfCapability(i, restrictionNameString, value)) {
+									P(" OK");
+								} else {
+									P("KO");
+								} 
+							} else {
+								PI("No restriction found at:\t");
+								P(j);
 							}
-						*/
-							//FIXME: wait a concrete example to prse the action
-						field_value = _root["body"][i][(char *)listResources[j].c_str()]["value"].as<String>();
-						PI("\n***********\nFound this value at j=");
-						PI(j);
-						PI(" and i=");
-						PI(i);
-						PI(" : ");
-						P(field_value);
-						actuatorsFunction[j](field_value.toInt());
+						}
+						
 					}
 				}
-				
 			}
 		} else {
-			PI("Mismatch in symId.\nWhat I got: ");
+			PI("Mismatch in symId.\nWhat I got:\nSym-Id:\t");
 			P(_root["resourceInfo"][0]["symbioteId"].as<String>());
-			PI("What I expect: ");
+			PI("InternalId:\t");
+			P(_root["resourceInfo"][0]["internalId"].as<String>());
+			PI("What I expect:\nSym-Id:\t");
 			P(_symId);
-			return;
-		}
-
-
-
-		String id = _root["id"].as<String>();
-		if (id == _symId){
-			String field = "";
-			String field_value = "";
-			for (int i = 0; i < RES_NUMBER; i++) {
-
-				//TODO CHECK "NA" field
-				field = listResources[i];
-				field_value = _root["action"][field].as<String>();
-				PI(field);
-				PI(" value[");
-				PI(i);
-				PI("]=");
-				P(field_value);
-				actuatorsFunction[i](field_value.toInt());
-			}
-
-			String tmpResp = "{ \"id\":\"" + _symId + "\", \"response\": \"OK\"}";
-			//_server->send(200, "application/json", tmpResp);
-			return;
-		} else {
-			P("Wrong id");
-			String tmpResp = "{ \"id\":\"" + _symId + "\", \"value\":\"Error\"}";
-			//_server->send(200, "application/json", tmpResp);
+			PI("InternalId:\t");
+			P(_semantic->getInternalId());
 			return;
 		}
 	return;
@@ -552,20 +542,22 @@ void symAgent::getResource() {
 			DynamicJsonBuffer dinamicJsonBuffer;
 				//create main array
 			JsonArray& root = dinamicJsonBuffer.createArray();
-			while (res_index < RES_NUMBER) {
+			while (res_index < _semantic->getObsPropertyNum()) {
 					// this return something like "33 °C"
-				String tmpString = functions[res_index]();
+				String tmpString = _semantic->getObsPropertyValue(res_index);
 					//create the nested object for each resource
 				JsonObject& root_internal = root.createNestedObject();
 					//this save only the value before the " ", so in this case "33"
 				root_internal["value"] = tmpString.substring(0, tmpString.indexOf(" "));
 				JsonObject& obsProperty = root_internal.createNestedObject("obsProperty");
-					obsProperty["label"] = listResources[res_index];
-					obsProperty["comment"] = _obsPropertyComment[res_index];
+					obsProperty["@c"] = ".Property";
+					obsProperty["name"] = _semantic->getObsPropertyName(res_index);
+					obsProperty["description"] = "";
 				JsonObject& uom = root_internal.createNestedObject("uom");
+					uom["@c"] = "UnitOfMeasurment";
 					uom["symbol"] = tmpString.substring((tmpString.indexOf(" ") + 1));
-					uom["label"] = "NA";
-					uom["comment"] = "NA";
+					uom["name"] = tmpString.substring((tmpString.indexOf(" ") + 1));
+					uom["description"] = "";
 	#if DEBUG_SYM_CLASS == 1
 					P(" ");
 					root.prettyPrintTo(Serial);
