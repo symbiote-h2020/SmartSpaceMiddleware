@@ -1,11 +1,15 @@
 package eu.h2020.symbiote.ssp.innkeeper.model;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
+import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 
 
@@ -50,6 +54,16 @@ public class InkRegistrationInfo {
 	}
 	public List<CloudResource> getSemanticDescription() {
 		return this.semanticDescription;
+	}
+	
+	public Map<String, Resource> getSemanticDescriptionMap() {
+		Map<String,Resource> m = new HashMap<String,Resource>();
+		for (CloudResource s : this.semanticDescription) {
+			System.out.println("here");
+			m.put(s.getInternalId(), s.getResource());
+			
+		}
+		return m;
 	}
 	
 	public void setSemanticDescription(List<CloudResource> cr) {

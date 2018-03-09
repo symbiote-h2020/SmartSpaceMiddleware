@@ -94,7 +94,6 @@ public class InkRegistrationRequest {
 			resourceInfo.setObservedProperties(obsProperties);
 		if(pluginId != null && pluginId.length()>0)
 			resourceInfo.setPluginId(pluginId);
-		log.info("::::::::::::::::: ADD RESOURCE :::::::::::::::::::");
 		resourcesRepository.save(resourceInfo);
 
 		try {

@@ -1,41 +1,40 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
+import eu.h2020.symbiote.core.cci.ResourceRegistryRequest;
+import eu.h2020.symbiote.model.cim.Resource;
+import eu.h2020.symbiote.security.commons.SecurityConstants;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationInfo;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationResponse;
+import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
-import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Date;
-import java.util.List;
+import java.util.Map;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -52,6 +51,10 @@ public class InnkeeperRestController {
 
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
 
+    
+	@Value("${symbIoTe.core.interface.url}") String cloudCoreIntefaceUrl;
+	@Value("${symbIoTe.aam.integration}") Boolean securityEnabled;
+	
 	//FIXME: still necessary?
 	@Value("${innkeeper.tag.connected_to}")
 	private String innk_connected_to;
@@ -71,6 +74,9 @@ public class InnkeeperRestController {
 	InkRegistrationRequest inkRegistrationRequest;
 	@Autowired
 	Lwsp lwsp;
+	
+	@Autowired
+	AuthorizationService authorizationService;
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
@@ -113,70 +119,43 @@ public class InnkeeperRestController {
 		ResponseEntity<Object> responseEntity = null;
 
 		
-		lwsp.setData(payload);
-		lwsp.setAllowedCipher("0x008c");
-		String outputMessage = lwsp.processMessage();
-		log.info(outputMessage);
-		
-		
-		switch (lwsp.get_mti()) {
-		case LwspConstants.SDEV_Hello:
-		case LwspConstants.SDEV_AuthN:
-			HttpHeaders responseHeaders = new HttpHeaders();
-			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-			return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
-		case LwspConstants.SDEV_REGISTRY:
-			String decoded_message = outputMessage;			
-			InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(decoded_message, InkRegistrationInfo.class);
+		boolean lwspEnabled = false;
+		if (lwspEnabled) {
+			lwsp.setData(payload);
+			lwsp.setAllowedCipher("0x008c");
+			String outputMessage = lwsp.processMessage();
+			log.info(outputMessage);
+			switch (lwsp.get_mti()) {
+			case LwspConstants.SDEV_Hello:
+			case LwspConstants.SDEV_AuthN:
+				HttpHeaders responseHeaders = new HttpHeaders();
+				responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+				return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
+			case LwspConstants.SDEV_REGISTRY:
+				String decoded_message = outputMessage;			
+				InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(decoded_message, InkRegistrationInfo.class);
 
-			log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
-			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo,lwsp.getSessionExpiration());	
-			log.info(new ObjectMapper().writeValueAsString(res));
-		}
-		
-		
-		
-/*
-		if (session_result != null) {
-			
-		}
-*/
-
-
-		//save session in mongoDB
-		// check MTI: if exists -> negotiation else DATA
-
-
-		/*
-		InkRegistrationInfo info = new InkRegistrationInfo();
-
-
-
-
-		switch (lwsp.getMti()) {
-		case LwspConstants.GW_INK_AuthN:
-			ObjectMapper sdevm = new ObjectMapper();
-
-			InkRegistrationInfo innksdevregInfo = sdevm.readValue(lwsp.decode(), InkRegistrationInfo.class);
-
-			if (innksdevregInfo.getSymId() == "") {
-				log.info("New SDEV Registartion Request");
-				// TODO: PERFORM OPERATIONS TO GET NEW SYMBIOTE ID FROM CORE
-			}else {
-				// TODO: UPDATE REGISTRATION
-				lwspService.saveSession(lwsp);
+				log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
+				InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo,lwsp.getSessionExpiration());	
+				log.info(new ObjectMapper().writeValueAsString(res));
 			}
-			innksdevregInfo.setConnectedTo(innk_connected_to);
-
-			//registry on RAP mongoDB
-			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo);	
-			log.info(sdevm.writeValueAsString(res));
-			break;
-		default:git
-			break;
+		} else {
+			
+			InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(payload, InkRegistrationInfo.class);
+			/*
+			Date session_expiration =  new Timestamp(System.currentTimeMillis());
+			log.info("MOCK:" + new ObjectMapper().writeValueAsString(innksdevregInfo));
+			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo,session_expiration);
+			*/
+			// Registry on Core
+			Map <String,Resource> resMap = innksdevregInfo.getSemanticDescriptionMap();
+			log.info("MOCK: " + resMap);
+	        sendResourceRegistrationRequest(resMap);
 		}
-		 */
 
+        
+		
+		
 		return responseEntity;
 
 	}
@@ -408,4 +387,41 @@ public class InnkeeperRestController {
 		return timerTask;
 	}
 	 */
+	
+	
+	
+	
+	public void sendResourceRegistrationRequest(Map<String, Resource> resources) throws JsonProcessingException {
+		// Create the security request and add it to the headers
+		
+
+		if (securityEnabled) {
+
+			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+
+			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
+			// sending to the core
+
+			HttpEntity<Object> httpEntity = new HttpEntity<>(new ResourceRegistryRequest(resources), httpHeaders);
+
+			RestTemplate restTemplate = new RestTemplate();
+			// The Object should be replaced by the class representing the response that you expect
+			ResponseEntity<Object> response = restTemplate.exchange(cloudCoreIntefaceUrl, HttpMethod.POST,
+					httpEntity, Object.class);
+
+
+			// Here, the componentId is "registry", because this is the component which will handle registration requests
+			// The platformId for the SymbIoTeCore components is always SecurityConstants.CORE_AAM_INSTANCE_ID
+			authorizationService.validateServiceResponse("registry", SecurityConstants.CORE_AAM_INSTANCE_ID,
+					response.getHeaders());
+			ResourceRegistryRequest req = new ResourceRegistryRequest(resources);
+			log.info("[REAL] : " +  new ObjectMapper().writeValueAsString(req.getBody()) );
+		}else {
+			//HttpEntity<Object> httpEntity = new HttpEntity<>(new ResourceRegistryRequest(resources), null);
+			ResourceRegistryRequest req = new ResourceRegistryRequest(resources);
+			log.info("[MOCK] : " +  new ObjectMapper().writeValueAsString(req.getBody()) );
+			
+		}
+	
+	}
 }
