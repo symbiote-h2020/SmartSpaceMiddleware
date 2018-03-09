@@ -1,13 +1,13 @@
 package eu.h2020.symbiote.ssp.innkeeper.services;
 
+import eu.h2020.symbiote.security.commons.SecurityConstants;
 import eu.h2020.symbiote.ssp.innkeeper.helpers.AuthorizationServiceHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +56,30 @@ public class ExampleService {
         // We add the service response, which is included in securityChecks, to the response
         return AuthorizationServiceHelper.addSecurityService(response, new HttpHeaders(),
                 HttpStatus.OK, (String) securityChecks.getBody());
+    }
+
+    /**
+     * Example of how you can send a registration request to the core
+     */
+    public void sendExampleResourceRegistrationRequest() {
+        // Create the security request and add it to the headers
+        HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+
+        // Create the httpEntity which you are going to send. The Object should be replaced by the message you are
+        // sending to the core
+        HttpEntity<Object> httpEntity = new HttpEntity<>(new Object(), httpHeaders);
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        // The Object should be replaced by the class representing the response that you expect
+        ResponseEntity<Object> response = restTemplate.exchange("cloudCoreIntefaceUrl", HttpMethod.POST,
+                httpEntity, Object.class);
+
+
+        // Here, the componentId is "registry", because this is the component which will handle registration requests
+        // The platformId for the SymbIoTeCore components is always SecurityConstants.CORE_AAM_INSTANCE_ID
+        authorizationService.validateServiceResponse("registry", SecurityConstants.CORE_AAM_INSTANCE_ID,
+                response.getHeaders());
     }
 
 

@@ -1,10 +1,12 @@
 package eu.h2020.symbiote.ssp.innkeeper.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.h2020.symbiote.security.ComponentSecurityHandlerFactory;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyFactory;
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
 import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier;
+import eu.h2020.symbiote.security.commons.SecurityConstants;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
@@ -157,6 +159,59 @@ public class AuthorizationService {
             return new ResponseEntity<>(message, HttpStatus.OK);
         }
 
+    }
+
+    /**
+     * Generate headers containing the security request
+     * @return httpHeaders containing the security request
+     */
+    public HttpHeaders getHttpHeadersWithSecurityRequest() {
+        HttpHeaders httpHeaders = new HttpHeaders();
+
+        if (securityEnabled) {
+            try {
+                SecurityRequest securityRequest = componentSecurityHandler.generateSecurityRequestUsingLocalCredentials();
+                for (Map.Entry<String, String> entry : securityRequest.getSecurityRequestHeaderParams().entrySet()) {
+                    httpHeaders.add(entry.getKey(), entry.getValue());
+                }
+
+            } catch (SecurityHandlerException | JsonProcessingException e) {
+                log.info("Could not create security request", e);
+            }
+        }
+
+        return httpHeaders;
+    }
+
+    /**
+     * Validate the service response
+     * @param component the component which will handle your request
+     * @param platformId the platformId
+     * @param httpHeaders the headers of the response
+     * @return
+     */
+    public boolean validateServiceResponse(String component, String platformId, HttpHeaders httpHeaders) {
+        String serviceResponse = httpHeaders.get(SecurityConstants.SECURITY_RESPONSE_HEADER).get(0);
+
+        if (serviceResponse == null)
+            log.warn("There no was service response in the reply of " + component + " platform " + platformId);
+
+
+        boolean isServiceResponseVerified;
+        try {
+            isServiceResponseVerified = componentSecurityHandler.
+                    isReceivedServiceResponseVerified(serviceResponse, component, platformId);
+        } catch (SecurityHandlerException e) {
+            log.warn("Exception during verifying service response", e);
+            return false;
+        }
+
+        if (!isServiceResponseVerified) {
+            log.warn("The service response in the reply of " + component + " platform " + platformId + " was not verified");
+            return false;
+        }
+
+        return true;
     }
 
     /**
