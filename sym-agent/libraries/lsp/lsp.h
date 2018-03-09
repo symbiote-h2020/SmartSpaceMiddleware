@@ -177,7 +177,7 @@ public:
 	void encryptDataAndSign(char* plain_text, String& output, String& signature);
 	void signData(uint8_t* data, uint8_t data_len, String& output);
 	bool decryptAndVerify(String authn, String& decrypted, String GWsigned);
-	void decrypt(unsigned char* crypted, String& output);
+	void decrypt(unsigned char* crypted, uint8_t cryptedSize, String& output);
 
 /* decode_base64:
 

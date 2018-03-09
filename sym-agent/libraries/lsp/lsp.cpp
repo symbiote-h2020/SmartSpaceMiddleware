@@ -269,7 +269,7 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 		_sessionId = _root["sessionId"].as<String>();
 		return COMMUNICATION_OK;
 	} else if (mti == STRING_MTI_GW_INK_AUTHN) {
-		P("GOT MTI GW INK AUTHN");
+		P("\nGOT MTI GW INK AUTHN");
 /*
 		This is a GW INK AUTHN RESPONSE:
 			{	
@@ -282,7 +282,11 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 			}
 */
 			String sn = _root["sn"].as<String>();
-			if (sn.toInt() == (_sn+1)) {
+			P("SEQUENCE NUMBER GOT(String):");
+			P(sn);
+			PI("SEQUENCE NUMBER GOT(INT):");
+			Serial.println(HEX2Int(sn), HEX);
+			if (HEX2Int(sn) == (_sn+1)) {
 				// everything ok
 				// Increment the _sn index of 1 unit to match with the 
 				// _sn value used by the innkeeeper
@@ -539,7 +543,7 @@ void lsp::createAuthNPacket(uint8_t* dataout) {
 
 	}
 	String dataToHash = String(_SDEVNonce, HEX) + gwNonceString;
-	PI("SHA1(");
+	PI("\n**********\nSHA1(");
 	PI(dataToHash);
 	PI(")");
 	sha1.init();
@@ -772,7 +776,7 @@ bool lsp::decryptAndVerify(String authn, String& decrypted, String GWsigned) {
   	PI("Calculated sign:\t\t");
   	P(signedData);
   	// FIXME: uncomment
-  	//if (signedData == GWsigned) {
+  	if (signedData == GWsigned) {
   		unsigned int binaryLength = decode_base64_length((unsigned char*)authn.c_str());
   		unsigned char decodedb64[binaryLength];
   		memset(decodedb64, 0, binaryLength);
@@ -780,11 +784,11 @@ bool lsp::decryptAndVerify(String authn, String& decrypted, String GWsigned) {
   		decode_base64((unsigned char*)authn.c_str(), decodedb64);
   		printBuffer(decodedb64, binaryLength, "AUTHN(binary)");
   		String plainHex;
-  		decrypt(decodedb64, plainHex);
+  		decrypt(decodedb64, binaryLength, plainHex);
   		PI("PlainHex decrypted: ");
   		P(plainHex);
   		return true;
-  	//}
+  	}
 }
 
 /*
@@ -796,7 +800,11 @@ void lsp::cryptData(String in, String& out) {
 	int length = 0;
 	bufferSize((char*)in.c_str(), length);
 	byte enciphered[length];
-	uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+	//uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+	uint8_t iv[16];
+	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
+	printBuffer(iv, 16, "IV\t");
+
 	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
 	aesEncryptor.process((uint8_t*)in.c_str(), enciphered, length);
 	int encrypted_size = sizeof(enciphered);
@@ -821,19 +829,25 @@ void lsp::decryptData(String in, String& out) {
   	decode_base64((unsigned char*)in.c_str(), decodedb64);
   	printBuffer(decodedb64, binaryLength, "ENCRYPT_DATA(binary)");
   	String plainHex;
-	decrypt(decodedb64, plainHex);
+	decrypt(decodedb64, binaryLength, plainHex);
 	out = plainHex;
 }
 
-void lsp::decrypt(unsigned char* crypted, String& output) {
+void lsp::decrypt(unsigned char* crypted, uint8_t cryptedSize, String& output) {
 	
 	// TODO FIXME iv must be the same accorded with INNKEEPER
 	int length = 0;
- 	bufferSize(crypted, length);
+ 	bufferSize((char*)crypted, cryptedSize, length);
   	byte deciphered[length];
-  	uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+  	//uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+
+  	uint8_t iv[16];
+	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
+	printBuffer(iv, 16, "IV\t");
+
   	AES aesDencryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_DECRYPT);
   	aesDencryptor.process((uint8_t*)crypted, deciphered, length);
+  	printBuffer(deciphered, length, "DECRYPT(BINARY)");
   	for (uint8_t i = 0; i< length; i++) output += String(deciphered[i], HEX);
   	//output = String(deciphered, HEX);
   	//strcpy(output, (char*)deciphered);
