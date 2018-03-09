@@ -358,7 +358,7 @@ public class Lwsp {
 		
 		log.info("\n     calcSign40(): "+
 		         "\n payload to hmac: "+ BArray2HexS(tmp2) +
-		         "\n sequence number: "+ (this.sn.length()==8?sn:(zeros(8-this.sn.length())+sn))+
+		         "\n sequence number: "+ tmp4 +
 		         "\n            data: "+ BArray2HexS(tmp)+
 		         "\n             dk2: "+ this.dk2.split(":")[2]+
 		         "\n            sign: "+ BArray2HexS(tmp3)+
@@ -396,7 +396,7 @@ public class Lwsp {
 		
 		log.info("\n     calcSign30(): "+
 		         "\n payload to hmac: "+ BArray2HexS(tmp2) +
-		         "\n sequence number: "+ (this.sn.length()==8?sn:(zeros(8-this.sn.length())+sn))+
+		         "\n sequence number: "+ tmp4+
 		         "\n            data: "+ BArray2HexS(tmp)+
 		         "\n             dk2: "+ this.dk2.split(":")[2]+
 		         "\n            sign: "+ BArray2HexS(tmp3)+
@@ -411,7 +411,7 @@ public class Lwsp {
 		long value = new BigInteger(this.sn, 16).longValue();
 		//    	this.sn=Long.toHexString(++value);
 		//    	String.format("%08x", this.sn);
-		this.sn=String.format("%08x", ++value);
+		this.sn=String.format("%x", ++value);
 	}
 	private boolean validateAuthn() throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, UnsupportedEncodingException 
 	{
@@ -429,7 +429,7 @@ public class Lwsp {
 	}
 	private static byte[] aes128enc(byte[] data, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException
 	{
-        int padLen=16 - (data.length & 0xf);
+        int padLen=(data.length & 0xf)==0?0:16 - (data.length & 0xf);
         byte[] pad_data=BAGet(padLen);
         log.info("\naes128enc()\n data len: " +data.length+
         		 "\n"+padLen );
@@ -446,7 +446,6 @@ public class Lwsp {
 	private static byte[] aes128dec(byte[] data, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException
 	{
         int padLen=16 - (data.length & 0xf);
-        byte[] pad_data=BAGet(padLen);
         log.info("\naes128dec()\n data len: " +data.length+
         		 "\n"+padLen );
         
@@ -454,9 +453,8 @@ public class Lwsp {
 		Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
 		IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 		cipher.init(Cipher.DECRYPT_MODE, aesKey,ivParameterSpec);
-		byte[] tmp=concat_LE(pad_data,data);
-		log.info("\n\n\n\naes128enc() pad data: " +BArray2HexS(tmp)+"\n\n\n\n");
-		byte[] decrypted = cipher.doFinal(tmp);
+		log.info("\n\n\n\naes128enc() pad data: " +BArray2HexS(data)+"\n\n\n\n");
+		byte[] decrypted = cipher.doFinal(data);
 		return decrypted;
 	}
 
@@ -566,16 +564,22 @@ public class Lwsp {
 							jsonData1 = new JSONObject();
 							jsonData1.put("sessionId", this.sessionId);
 							jsonData1.put("mti", "0x40");
-							jsonData1.put("nonce", this.gnonce=dk2.split(":")[1].substring(8,16));
+							jsonData1.put("nonce", this.gnonce2);
 							jsonData1.put("sign", calcSign40());
 							jsonData1.put("sn", this.sn);
-							jsonData1.put("authn", Base64.getEncoder().encodeToString(aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk2)));
+							jsonData1.put("authn", Base64.getEncoder().encodeToString(aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk1)));
 							out=jsonData1.toString();
 							this.sessionExpiration = new Timestamp(System.currentTimeMillis());
 							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration);
 							sessionRepository.save(sessionInfo);
+							out=jsonData1.toString();
+							log.info("\n+--------------------------------+"+
+							         "\n|"+
+							         "\n| out: "+ out+
+							         "\n|"+
+							         "\n+--------------------------------+"						         
+									);
 							
-
 						}
 					}
 					else {out=out.equals("")?this.error_f2:out;}
@@ -583,7 +587,7 @@ public class Lwsp {
 			} else {out=this.error_fa;}
 			this.OutBuffer=out;
 			//System.out.println(Base64.getEncoder().encodeToString(aes128enc("{\"campo0\":\"topolino\",\"campo1\":\"pippo\",\"campo2\":\"pluto\",\"campo3\":\"paperino\",\"campo5\":\"qui\",\"campo6\":\"quo\",\"campo7\":\"qua\",\"campo8\":\"paperone\",\"campo9\":\"clarabella\"}".getBytes(),HexSS2BArray(dk.split(":")[2]),iv.getBytes())));
-			log.info("Sent back 0x40:\n"+OutBuffer);
+			log.info("\n+--\n|\n+Sent back 0x40: "+OutBuffer+"\n|\n+--");
 			break;
 		case "0x50":
 			/*
