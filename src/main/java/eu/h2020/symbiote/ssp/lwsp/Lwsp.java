@@ -346,9 +346,8 @@ public class Lwsp {
 		log.info("\n aescbcHash(): "   +toHex(aescoded));
 		return aescoded;
 	}
-	private String calcSign1() throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, UnsupportedEncodingException
+	private String calcSign40() throws GeneralSecurityException, IOException
 	{
-<<<<<<< HEAD
 		byte[] tmp4=HexSS2BArray(this.sn.length()==8?this.sn:(zeros(8-this.sn.length())+this.sn));
 		log.info("\n calcSign40() sn->: "+BArray2HexS(tmp4));
 		byte[] tmp=aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk1);
@@ -368,10 +367,6 @@ public class Lwsp {
 		         
 				);
 	    return Base64.getEncoder().encodeToString(tmp3);
-=======
-		log.info("\n calcSign1(): ");
-		return BArray2HexS(aescbcHash(this.snonce,this.gnonce,this.sn,this.dk));
->>>>>>> 01db47f553689bbbcf8572f2c804e63eb2714ccd
 	}
 
     public static byte[] HmacSHA1(byte[] data, byte[] key) throws GeneralSecurityException, IOException 
@@ -389,17 +384,17 @@ public class Lwsp {
         hmacData = mac.doFinal(data);
         return hmacData;
     }	
-	private String calcSign2() throws GeneralSecurityException, IOException
+	private String calcSign30() throws GeneralSecurityException, IOException
 	{
 		byte[] tmp4=HexSS2BArray(this.sn.length()==8?this.sn:(zeros(8-this.sn.length())+this.sn));
-		log.info("\n calcSign2() sn->: "+BArray2HexS(tmp4));
+		log.info("\n calcSign30() sn->: "+BArray2HexS(tmp4));
 		byte[] tmp=aescbcHash(this.snonce,this.gnonce,this.sn,this.dk1);
 		
 		byte[] tmp2=concat_LE(tmp4,tmp);
-		log.info("\n calcSign2(): dk2->  "+this.dk.split(":")[2]);
+		log.info("\n calcSign30(): dk2->  "+this.dk.split(":")[2]);
 		byte[] tmp3=HmacSHA1(tmp2,HexSS2BArray(this.dk2.split(":")[2]));
 		
-		log.info("\n     calcSign2(): "+
+		log.info("\n     calcSign30(): "+
 		         "\n payload to hmac: "+ BArray2HexS(tmp2) +
 		         "\n sequence number: "+ tmp4+
 		         "\n            data: "+ BArray2HexS(tmp)+
@@ -450,21 +445,15 @@ public class Lwsp {
 	}
 	private static byte[] aes128dec(byte[] data, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException
 	{
-<<<<<<< HEAD
         int padLen=16 - (data.length & 0xf);
         log.info("\naes128dec()\n data len: " +data.length+
         		 "\n"+padLen );
         
-=======
->>>>>>> 01db47f553689bbbcf8572f2c804e63eb2714ccd
 		Key aesKey = new SecretKeySpec(key, "AES");
-		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+		Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
 		IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 		cipher.init(Cipher.DECRYPT_MODE, aesKey,ivParameterSpec);
-<<<<<<< HEAD
 		log.info("\n\n\n\naes128enc() pad data: " +BArray2HexS(data)+"\n\n\n\n");
-=======
->>>>>>> 01db47f553689bbbcf8572f2c804e63eb2714ccd
 		byte[] decrypted = cipher.doFinal(data);
 		return decrypted;
 	}
@@ -566,23 +555,17 @@ public class Lwsp {
 						         "\n dk2: "+ this.dk2						         
 								);
 						
-						if (calcSign2().equals(this.sign))
+						if (calcSign30().equals(this.sign))
 						{
 							log.info("\n*************calcsign2 test*************\n");
 							this.psk=getPSK(); 
-							//this.dk2=pbkdf2_SHA1(psk, this.snonce2 ,4);
 							this.gnonce2=BArray2HexS(getSalt());
 							incsn();
 							jsonData1 = new JSONObject();
 							jsonData1.put("sessionId", this.sessionId);
 							jsonData1.put("mti", "0x40");
-<<<<<<< HEAD
 							jsonData1.put("nonce", this.gnonce2);
 							jsonData1.put("sign", calcSign40());
-=======
-							jsonData1.put("nonce", this.gnonce=dk2.split(":")[1].substring(8,16));
-							jsonData1.put("sign", calcSign2());
->>>>>>> 01db47f553689bbbcf8572f2c804e63eb2714ccd
 							jsonData1.put("sn", this.sn);
 							jsonData1.put("authn", Base64.getEncoder().encodeToString(aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk1)));
 							out=jsonData1.toString();
@@ -722,3 +705,4 @@ public class Lwsp {
 		this.allowedCipher=allowedCipher;
 	}
 }
+
