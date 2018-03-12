@@ -18,9 +18,9 @@
 
 volatile boolean keepAlive_triggered = false;
 volatile unsigned long keep_alive_interval = 0;
-String listResources[RES_NUMBER];
+//String listResources[RES_NUMBER];
 //String (* functions[RES_NUMBER])();
-boolean (* actuatorsFunction[RES_NUMBER])(int);
+//boolean (* actuatorsFunction[RES_NUMBER])(int);
 uint8_t ppsk[HMAC_DIGEST_SIZE] = {0x46, 0x72, 0x31, 0x73, 0x80, 0x52, 0x78, 0x92, 0x52, 0x81, 0xad, 0xd7, 0x57, 0x2c, 0x04, 0xa5, 0xdd, 0x84, 0x16, 0x68};
 
 void keepAliveISR(void){
@@ -49,7 +49,7 @@ symAgent::symAgent()
 		//create the json object, refers to https://github.com/bblanchon/ArduinoJson/blob/master/examples/JsonGeneratorExample/JsonGeneratorExample.ino
 		// calculate the ssp-id based on the WiFi MAC. TODO: maybe this is possible only when it is connected by wifi, or maybe is better to create this
 }
-      //TODO please remember to add parameter for class BLE in the constructor
+
 symAgent::symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming)
 {
 	pinMode(JOIN_LED, OUTPUT);
@@ -64,12 +64,9 @@ symAgent::symAgent(unsigned long keep_alive, String internalId, String descripti
 	_description = description;
 	_security = new lsp(TLS_PSK_WITH_AES_128_CBC_SHA ,"PBKDF2", ppsk, HMAC_DIGEST_SIZE);
 	_roaming = isRoaming;
-		// if nothing is provided, initialize to NA the field comment of the obsProperty	
-	//for (int i = 0; i < RES_NUMBER; i++) {
-		//_obsPropertyComment[i] = "NA";
-	//}
 	_server = new ESP8266WebServer();
 	_regExpiration = 0; 
+	_subscribe = false;
 }
 
 symAgent::symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming, Semantic* semantic)
@@ -86,13 +83,10 @@ symAgent::symAgent(unsigned long keep_alive, String internalId, String descripti
 	_description = description;
 	_security = new lsp(TLS_PSK_WITH_AES_128_CBC_SHA ,"PBKDF2", ppsk, HMAC_DIGEST_SIZE);
 	_roaming = isRoaming;
-		// if nothing is provided, initialize to NA the field comment of the obsProperty	
-	//for (int i = 0; i < RES_NUMBER; i++) {
-	//	_obsPropertyComment[i] = "NA";
-	//}
 	_server = new ESP8266WebServer();
 	_semantic = semantic;
 	_regExpiration = 0; 
+	_subscribe = false;
 }
 
 
@@ -253,8 +247,8 @@ boolean symAgent::elaborateQuery()
 			else if (type == "GET") getResource();
 			else if (type == "HISTORY") getResource();
 			// TODO FIXME
-			//else if (type == "SUBSCRIBE") subScribe();
-			//else if (type == "UNSUBSCRIBE") unSubscribe();
+			else if (type == "SUBSCRIBE") subscribe();
+			else if (type == "UNSUBSCRIBE") unsubscribe();
 			else {
 				P("Wrong TYPE");
 				String tmpResp = "{ \"id\":\"" + _symId + "\", \"value\":\"WrongType\"}";
@@ -364,10 +358,10 @@ boolean symAgent::TestelaborateQuery(String resp)
 		//if (_root["symbioteId"] == _symId) {
 			if (type == "SET") setResource(resp);
 			else if (type == "GET") getResource();
-			//else if (type == "HISTORY") getResource();
+			else if (type == "HISTORY") getResource();
 			// TODO FIXME
-			//else if (type == "SUBSCRIBE") subScribe();
-			//else if (type == "UNSUBSCRIBE") unSubscribe();
+			else if (type == "SUBSCRIBE") subscribe();
+			else if (type == "UNSUBSCRIBE") unsubscribe();
 			else {
 				P("Wrong TYPE");
 				String tmpResp = "{ \"id\":\"" + _symId + "\", \"value\":\"WrongType\"}";
@@ -534,6 +528,16 @@ void symAgent::setResource(String rapRequest) {
 }
 */
 
+void symAgent::subscribe()
+{
+	_subscribe = true;
+}
+
+void symAgent::unsubscribe()
+{
+	_subscribe = false;
+}
+
 void symAgent::getResource() {
 	// push resource to RAP
 	// right now push all the resources
@@ -617,6 +621,9 @@ boolean symAgent::begin()
 				//create a new http client class 
 				_rest_client = new RestClient(JOIN_URL, SSP_PORT);
 				_rest_client->setContentType("application/json");
+
+				//_RapClient = new RestClient(RAP_URL, RAP_PORT);
+				//_RapClient->setContentType("application/json");
 				PI("Got this IDs:\n\tsspId: ");
 				P(_sspId);
 				PI("\tid: ");
@@ -886,6 +893,11 @@ int symAgent::sendKeepAlive(String& response)
 		// TODO: parse response from innkeper
 		keepAlive_triggered = false;
 		KEEPALIVE_LED_OFF
+		// if subscribe enabled, send resource information to RAP
+		if (_subscribe) {
+			String rapData = getResourceAsString();
+			statusCode = _rest_client->post(RAP_PATH, rapData.c_str(), &resp);
+		}
 		return statusCode;
 	} else {
 		// http error code from innkeeper
@@ -914,6 +926,49 @@ int symAgent::sendKeepAlive(String& response)
 	return statusCode;
 }
 
+// create the JSON to pash data to RAP
+String symAgent::getResourceAsString()
+{
+	P("GET RESOURCE");
+	int res_index = 0;
+			DynamicJsonBuffer dinamicJsonBuffer;
+				//create main array
+			JsonArray& root = dinamicJsonBuffer.createArray();
+			while (res_index < _semantic->getObsPropertyNum()) {
+					// this return something like "33 °C"
+				String tmpString = _semantic->getObsPropertyValue(res_index);
+				//PI("This is the resource value: ");
+				//P(tmpString);
+					//create the nested object for each resource
+				JsonObject& root_internal = root.createNestedObject();
+					//this save only the value before the " ", so in this case "33"
+				root_internal["value"] = tmpString.substring(0, tmpString.indexOf(" "));
+				JsonObject& obsProperty = root_internal.createNestedObject("obsProperty");
+					obsProperty["@c"] = ".Property";
+					obsProperty["name"] = _semantic->getObsPropertyName(res_index);
+					obsProperty["description"] = "";
+				JsonObject& uom = root_internal.createNestedObject("uom");
+					uom["@c"] = "UnitOfMeasurment";
+					uom["symbol"] = tmpString.substring((tmpString.indexOf(" ") + 1));
+					uom["name"] = tmpString.substring((tmpString.indexOf(" ") + 1));
+					uom["description"] = "";
+	#if DEBUG_SYM_CLASS == 1
+					P(" ");
+					root.prettyPrintTo(Serial);
+					P(" ");
+	#endif
+				res_index++;
+			}
+			String resp = "";
+			root.printTo(resp);
+			resp = "\r\n" + resp;
+#if DEBUG_SYM_CLASS == 1
+		root.prettyPrintTo(Serial);
+		P(" ");
+#endif
+		dinamicJsonBuffer.clear();
+		return resp;
+}
 
 void symAgent::handleSSPRequest()
 {

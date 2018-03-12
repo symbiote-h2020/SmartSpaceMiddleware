@@ -52,10 +52,13 @@
 #define MAX_JSON_SIZE 2500
 //#define MAX_JSON_RES_SIZE 300
 #define JOIN_URL "192.168.97.105"
+//#define RAP_URL "192.168.97.105"
 #define JOIN_PATH "/innkeeper/registry"
+#define RAP_PATH "/rap/v1/request"
 #define KEEPALIVE_PATH "/innkeeper/keep_alive"
 
 #define SSP_PORT 8080
+//#define RAP_PORT 8080
 
   // This is the pin led definition to led on board
 #define JOIN_LED 0
@@ -97,18 +100,19 @@ class symAgent
     symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming, Semantic* semantic);
     /* This second constructor instantiate also the value for field comment inside obsProperty
     */
-    //symAgent(Agent_type agent_type, Conn_type conn_type, unsigned long keep_alive, String name, String description, char** obsPropertyComment, bool isRoaming);
     ~symAgent();
 
     boolean elaborateQuery();
 
     boolean TestelaborateQuery(String resp);
-    //void TestsetResource(String rapRequest);
-
 
     String getSymIdFromFlash();
     void saveIdInFlash();
     void setResource(String rapRequest);
+
+    void subscribe();
+    void unsubscribe();
+
     void getResource();
       // search for well-known symbiotic ssid and try to connect to it.
       // return true if found a symbiotic ssid and so ssp and connect to it, false otherwise
@@ -129,6 +133,7 @@ class symAgent
     boolean elaborateRequest();
     boolean actuateRequest();
 
+    String getResourceAsString();
     void handleSSPRequest();
 
     uint32_t getRegExpiration();
@@ -165,6 +170,7 @@ class symAgent
 
     unsigned long _keep_alive;
     bool _roaming;
+    bool _subscribe;
     uint32_t _regExpiration;
 
     /**
@@ -174,6 +180,7 @@ class symAgent
     StaticJsonBuffer<MAX_JSON_SIZE> _jsonBuff;
 
     RestClient* _rest_client;
+    //RestClient* _RapClient;
     ESP8266WebServer* _server;
 
     lsp* _security;

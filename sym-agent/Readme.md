@@ -1,5 +1,6 @@
 Symbiote Agent resources
 ===========================================
+# warning: README outdated, need to be updated
 
 This project contain a set of resources to use a symbiote agent in the symbiote ecosystem.
 Symbiote is a platform cooperation and interoperability project found by the European commission. Learn more at: https://www.symbiote-h2020.eu/

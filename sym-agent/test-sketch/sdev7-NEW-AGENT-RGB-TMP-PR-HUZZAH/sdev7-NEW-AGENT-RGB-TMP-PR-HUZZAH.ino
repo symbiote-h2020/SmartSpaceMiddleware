@@ -94,7 +94,6 @@ void setup() {
   Serial.println("Start...");
   pixels.begin(); // This initializes the NeoPixel library
   if (sdev1.begin() == true) {
-    //setupBind(listResources, functions, actuatorsFunction);
   int joinresp = sdev1.join();
   if (joinresp < 300 and joinresp >= 200) {
     join_success = 1;
@@ -117,6 +116,7 @@ void setup() {
   sdev1.TestelaborateQuery(tmpTestJson);
   delay(3000);
   sdev1.TestelaborateQuery(tmpTestJson2);
+  if (join_success) Serial.println("\nJoin success!");
 }
 
 void loop() {

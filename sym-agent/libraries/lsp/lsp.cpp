@@ -144,41 +144,6 @@ void lsp::calculateDK1(uint8_t num_iterations) {
 	
 }
 
-/*
-void lsp::calculateDK2(uint8_t num_iterations) {
-	P("\nStart calculating DK2 key....");
-	if (_kdf == "PBKDF2") {
-		if (_cp == TLS_PSK_WITH_AES_128_CBC_SHA) {
-			// size of salt should be 4 + 4 + 10 bytes
-			uint8_t salt[8+(_psk_len/2)];
-			memset(salt, 0, sizeof(salt));
-
-			memcpy(salt, (uint8_t*)_psk, (_psk_len/2));
-
-			//uint32_t tmpnonce = ENDIAN_SWAP_32(0x98ec4);
-			uint32_t tmpnonce = ENDIAN_SWAP_32(_SDEVNonce);
-			memcpy(salt+10, (uint8_t*)&tmpnonce, 4);
-			tmpnonce = ENDIAN_SWAP_32(_GWNonce);
-			memcpy(salt+14, (uint8_t*)&_GWNonce, 4);
-
-			printBuffer(salt, sizeof(salt), "DK2salt");
-
-			PBKDF2function( _psk, _psk_len, salt, sizeof(salt), _dk2, sizeof(_dk2), num_iterations );
-#ifdef DEBUG_SYM_CLASS
-			printBuffer(_dk2, AES_KEY_LENGTH, "DK2");
-#endif
-		} else {
-			//TBD
-			P("DK2: CRYPTO SUITE NOT IMPLEMENTED ");
-		}
-		
-	} else {
-		//TBD
-		P("HKDF already not implemented!");
-	}
-	
-}*/
-
 void lsp::calculateDK2(uint8_t num_iterations) {
 	P("\nStart calculating DK2 key....");
 	if (_kdf == "PBKDF2") {
@@ -512,7 +477,6 @@ uint8_t lsp::sendSDEVHelloToGW() {
   		}
   		// FIXME, decomment
   		_SDEVNonce = random(0xFFFFFFFF);
-  		//_SDEVNonce = 0x98ec4;
   		String nonce = String(_SDEVNonce, HEX);
 			_root["mti"] = STRING_MTI_SDEV_HELLO;
 			_root["SDEVmac"] = mac_string.c_str();
@@ -535,7 +499,6 @@ uint8_t lsp::sendSDEVHelloToGW() {
 }
 
 void lsp::createAuthNPacket(uint8_t* dataout) {
-	//uint8_t tmpHash[20];
 	String gwNonceString = String(_GWNonce, HEX);
 	while (gwNonceString.length() < 8) {
 		// we need to add '0'
@@ -661,7 +624,6 @@ void lsp::signData(uint8_t* data, uint8_t data_len, String& output) {
 void lsp::encryptAndSign(char* plain_text, String& output, int length, String& signature) {
 	
 	byte enciphered[length];
-	//uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
 	uint8_t iv[16];
 	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
 	printBuffer(iv, 16, "IV\t");
@@ -691,27 +653,10 @@ void lsp::encryptDataAndSign(char* plain_text, String& output, String& signature
 	int length = 0;
 	unsigned int tmpLen = 0;
 	// todo fixme
-
-
-
 	tmpLen = SHA1_KEY_SIZE + String(_sn, HEX).length();
 	//String dataToEncrypt = String(plain_text) + String(_sn, HEX);
 	PI("ADD this SN to encrypt:\t= ");
 	P(String(_sn, HEX));
-/*
-	PI("Data2Encrypt(String):\t= {");
-	for (uint8_t i = 0; i < tmpLen-1; i++) {
-		Serial.print((uint8_t)dataToEncrypt.charAt(i), HEX);
-		PI(", ")
-	} 
-	Serial.print((uint8_t)dataToEncrypt.charAt(tmpLen-1), HEX);
-	P("}");
-	char arrayOfDataToEncrypt[(tmpLen)+1];
-	memset(arrayOfDataToEncrypt, 0, (tmpLen+1));
-	dataToEncrypt.getBytes((byte*)arrayOfDataToEncrypt, (unsigned int)(tmpLen+1)); 
-	printBuffer((uint8_t*)arrayOfDataToEncrypt, tmpLen,"Data2Encrypt(array)");
-	bufferSize((char*)arrayOfDataToEncrypt, length);
-*/ 
 	uint8_t arrayOfDataToEncrypt[tmpLen];
 	memset(arrayOfDataToEncrypt, 0, tmpLen);
 	//dataToEncrypt.getBytes((byte*)arrayOfDataToEncrypt, (unsigned int)tmpLen); 
@@ -800,7 +745,6 @@ void lsp::cryptData(String in, String& out) {
 	int length = 0;
 	bufferSize((char*)in.c_str(), length);
 	byte enciphered[length];
-	//uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
 	uint8_t iv[16];
 	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
 	printBuffer(iv, 16, "IV\t");
@@ -839,7 +783,6 @@ void lsp::decrypt(unsigned char* crypted, uint8_t cryptedSize, String& output) {
 	int length = 0;
  	bufferSize((char*)crypted, cryptedSize, length);
   	byte deciphered[length];
-  	//uint8_t iv[16] = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
 
   	uint8_t iv[16];
 	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
@@ -849,8 +792,6 @@ void lsp::decrypt(unsigned char* crypted, uint8_t cryptedSize, String& output) {
   	aesDencryptor.process((uint8_t*)crypted, deciphered, length);
   	printBuffer(deciphered, length, "DECRYPT(BINARY)");
   	for (uint8_t i = 0; i< length; i++) output += String(deciphered[i], HEX);
-  	//output = String(deciphered, HEX);
-  	//strcpy(output, (char*)deciphered);
 }
 
 
