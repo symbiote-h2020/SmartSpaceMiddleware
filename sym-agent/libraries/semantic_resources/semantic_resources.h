@@ -145,7 +145,7 @@ class Parameter {
     String getName();
     uint8_t getMinRestriction();
     uint8_t getMaxRestriction();
-    bool actuateProperty(int in);
+    bool actuateParameter(int in);
   private:
     
     String _name;

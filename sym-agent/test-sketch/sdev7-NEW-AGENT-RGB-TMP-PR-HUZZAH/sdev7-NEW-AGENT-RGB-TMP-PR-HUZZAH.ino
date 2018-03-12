@@ -6,7 +6,8 @@
 #include <Metro.h>
 #include <semantic_resources.h>
 
-String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalId\":\"sym1\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":40}]},\"type\" : \"SET\"}";
+String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalId\":\"sym1\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":40},{\"b\":80}]},\"type\" : \"SET\"}";
+String tmpTestJson2 = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalId\":\"sym1\",\"type\":\"Light\"},{\"type\" :\"Observation\"}],\"type\":\"GET\"}";
 
 #define SDA 4
 #define SCL 5
@@ -26,7 +27,7 @@ String readTemp()
 String readPr()
 {
     // return in kPa
-  return String (baro.getPressure() * 0.01) + " mBar";
+  return String(baro.getPressure() * 0.01) + " mBar";
 }
 
 bool setRed(int in)
@@ -86,6 +87,10 @@ int join_success = 0;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  if (! baro.begin()) {
+    Serial.println("Couldnt find sensor");
+    return;
+  }
   Serial.println("Start...");
   pixels.begin(); // This initializes the NeoPixel library
   if (sdev1.begin() == true) {
@@ -104,7 +109,14 @@ void setup() {
   }
   else Serial.print("Failed!");
   Serial.println("\n\n***************\n\n");
+  Serial.print("Pressure:\t");
+  Serial.println(readPr());
+
+  Serial.print("Temperature:\t");
+  Serial.println(readTemp());
   sdev1.TestelaborateQuery(tmpTestJson);
+  delay(3000);
+  sdev1.TestelaborateQuery(tmpTestJson2);
 }
 
 void loop() {

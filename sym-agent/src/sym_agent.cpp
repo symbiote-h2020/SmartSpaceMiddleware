@@ -362,8 +362,8 @@ boolean symAgent::TestelaborateQuery(String resp)
 		*/
 		String type = _root["type"].as<String>();
 		//if (_root["symbioteId"] == _symId) {
-			if (type == "SET") TestsetResource(resp);
-			//else if (type == "GET") getResource();
+			if (type == "SET") setResource(resp);
+			else if (type == "GET") getResource();
 			//else if (type == "HISTORY") getResource();
 			// TODO FIXME
 			//else if (type == "SUBSCRIBE") subScribe();
@@ -377,7 +377,7 @@ boolean symAgent::TestelaborateQuery(String resp)
 	return true;
 }
 
-void symAgent::TestsetResource(String rapRequest) {
+void symAgent::setResource(String rapRequest) {
 	P("TEST-SET RESOURCE");
 	//String resp = _server->arg(0);
 	_jsonBuff.clear();
@@ -445,7 +445,7 @@ void symAgent::TestsetResource(String rapRequest) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-
+/*
 void symAgent::setResource(String rapRequest) {
 	P("SET RESOURCE");
 	//String resp = _server->arg(0);
@@ -486,7 +486,7 @@ void symAgent::setResource(String rapRequest) {
 							  },
 							  "type" : "SET"
 							}
-						*/
+						
 							//FIXME: wait a concrete example to prse the action
 						field_value = _root["body"][i][(char *)listResources[j].c_str()]["value"].as<String>();
 						actuatorsFunction[j](field_value.toInt());
@@ -532,7 +532,7 @@ void symAgent::setResource(String rapRequest) {
 		}
 	return;
 }
-
+*/
 
 void symAgent::getResource() {
 	// push resource to RAP
@@ -545,6 +545,8 @@ void symAgent::getResource() {
 			while (res_index < _semantic->getObsPropertyNum()) {
 					// this return something like "33 °C"
 				String tmpString = _semantic->getObsPropertyValue(res_index);
+				//PI("This is the resource value: ");
+				//P(tmpString);
 					//create the nested object for each resource
 				JsonObject& root_internal = root.createNestedObject();
 					//this save only the value before the " ", so in this case "33"
@@ -807,7 +809,7 @@ int symAgent::join()
 
 
 String symAgent::createSemanticDescription() {
-
+	return _semantic->returnSemanticString();
 }
 
       //set the keep alive interval for the agent

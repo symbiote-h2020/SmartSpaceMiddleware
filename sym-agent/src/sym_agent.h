@@ -49,7 +49,7 @@
   // 16 HEX bytes for sym-Id
 #define FLASH_AGENT_END_SYMID   63
 
-#define MAX_JSON_SIZE 800
+#define MAX_JSON_SIZE 2500
 //#define MAX_JSON_RES_SIZE 300
 #define JOIN_URL "192.168.97.105"
 #define JOIN_PATH "/innkeeper/registry"
@@ -103,7 +103,7 @@ class symAgent
     boolean elaborateQuery();
 
     boolean TestelaborateQuery(String resp);
-    void TestsetResource(String rapRequest);
+    //void TestsetResource(String rapRequest);
 
 
     String getSymIdFromFlash();

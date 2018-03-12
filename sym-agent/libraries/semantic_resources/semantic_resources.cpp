@@ -180,7 +180,7 @@ bool Capability::actuateCapability(String paramName, int in)
 	bool resp = false;
 	for (uint8_t i = 0; i < _paramNum; i++) {
 		if (getParametersName(i) == paramName) {
-				resp = _param->actuateProperty(in);
+				resp = _param[i].actuateParameter(in);
 		}
 	}
 	return resp;
@@ -225,7 +225,7 @@ uint8_t Parameter::getMaxRestriction()
 	return _restrictionMax.toInt();
 }
 
-bool Parameter::actuateProperty(int in)
+bool Parameter::actuateParameter(int in)
 {
 	return _actuate(in);
 }
