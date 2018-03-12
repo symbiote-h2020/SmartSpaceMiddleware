@@ -1,44 +1,39 @@
 package eu.h2020.symbiote.ssp.rap;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.interfaces.NorthboundRestController;
+import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
+import eu.h2020.symbiote.ssp.rap.managers.AuthorizationResult;
 import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
-import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
-import eu.h2020.symbiote.ssp.rap.plugin.SpecificPlugin;
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Map;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MockMvc;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import static org.mockito.Mockito.*;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Value;
-
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
-import static org.hamcrest.Matchers.*;
+import org.springframework.test.context.ActiveProfiles;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -52,14 +47,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @TestConfiguration 
+@ActiveProfiles("test")
 public class TestRestController {
     
     @InjectMocks
     @Autowired
     NorthboundRestController controller;
-    
-    @Value("${securityEnabled}")
-    private Boolean securityEnabled;
     
     @Value("${rap.enableSpecificPlugin}")
     private Boolean enableSpecificPlugin;
@@ -67,7 +60,7 @@ public class TestRestController {
     private MockMvc mockMvc;
     
     @Autowired
-    private IComponentSecurityHandler securityHandler;
+    private AuthorizationManager authorizationManager;
     
     @Autowired
     private ResourcesRepository resourcesRepository;
@@ -80,6 +73,8 @@ public class TestRestController {
         mockMvc = standaloneSetup(controller)
                 //.setSingleView(mockView)
                 .build();
+        doReturn(new AuthorizationResult("Validated", true)).when(authorizationManager)
+                .checkResourceUrlRequest(any(), any());
     }
     
     @Test
@@ -101,7 +96,7 @@ public class TestRestController {
             //insert
             String platformResourceId = "pl_1";
             List<String> obsProperties = null;
-            String pluginId = SpecificPlugin.PLUGIN_ID;
+            String pluginId = "plugin_01";
             ResourceInfo resourceInfoResult = addResource(resourceId, platformResourceId, obsProperties, pluginId);
             assert(resourceInfoResult != null);
             //test get
@@ -121,11 +116,10 @@ public class TestRestController {
                 res.andExpect(status().isInternalServerError());
             }
             //test security
-            if(securityEnabled){
-                res = mockMvc.perform(get("/rap/Sensor/"+resourceId)
-                    .headers(getHeader(false)));
-                res.andExpect(status().isInternalServerError());
-            }
+            res = mockMvc.perform(get("/rap/Sensor/"+resourceId)
+                .headers(getHeader()));
+            res.andExpect(status().isInternalServerError());
+            
             //delete
             resourcesRepository.delete(resourceId);
             List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
@@ -155,7 +149,7 @@ public class TestRestController {
             //insert
             String platformResourceId = "pl_1";
             List<String> obsProperties = null;
-            String pluginId = SpecificPlugin.PLUGIN_ID;
+            String pluginId = "plugin_01";
             ResourceInfo resourceInfoResult = addResource(resourceId, platformResourceId, obsProperties, pluginId);
             assert(resourceInfoResult != null);
             //test history
@@ -175,12 +169,11 @@ public class TestRestController {
             else{
                 res.andExpect(status().isInternalServerError());
             }
-            //test security
-            if(securityEnabled){
-                res = mockMvc.perform(get("/rap/Sensor/"+resourceId+"/history")
-                    .headers(getHeader(false)));
-                res.andExpect(status().isInternalServerError());
-            }
+            //test security            
+            res = mockMvc.perform(get("/rap/Sensor/"+resourceId+"/history")
+                .headers(getHeader()));
+            res.andExpect(status().isInternalServerError());
+
             //delete
             resourcesRepository.delete(resourceId);
             List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
@@ -212,7 +205,7 @@ public class TestRestController {
             //insert
             String platformResourceId = "pl_1";
             List<String> obsProperties = null;
-            String pluginId = SpecificPlugin.PLUGIN_ID;
+            String pluginId = "plugin_01";
             ResourceInfo resourceInfoResult = addResource(resourceId, platformResourceId, obsProperties, pluginId);
             assert(resourceInfoResult != null);
             //test set
@@ -230,11 +223,11 @@ public class TestRestController {
                 assert(content.equals(""));
             }
             //test security
-            if(securityEnabled){
+            
                 res = mockMvc.perform(post("/rap/Actuator/"+resourceId)
-                    .headers(getHeader(false)));
+                    .headers(getHeader()));
                 res.andExpect(status().isInternalServerError());
-            }
+            
             //delete
             resourcesRepository.delete(resourceId);
             List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
@@ -243,34 +236,9 @@ public class TestRestController {
             log.error(e.getMessage(), e);
         }
     }
-    
-    
-    
-    private HttpHeaders getHeader(){
-        return getHeader(true);
-    }
-    
-    private HttpHeaders getHeader(Boolean addSecurity){
-        Map<String, String> securityRequestHeaders = null;
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
         
-        if(securityEnabled && addSecurity){
-            try {
-                SecurityRequest securityRequest = securityHandler.generateSecurityRequestUsingLocalCredentials();
-                securityRequestHeaders = securityRequest.getSecurityRequestHeaderParams();
-
-                for (Map.Entry<String, String> entry : securityRequestHeaders.entrySet()) {
-                    httpHeaders.add(entry.getKey(), entry.getValue());
-                }
-                log.info("request headers: " + httpHeaders);
-
-            } catch (SecurityHandlerException | JsonProcessingException e) {
-                log.error("Fail to take header",e);
-            }
-        }
-        return httpHeaders;
+    private HttpHeaders getHeader(){
+        return authorizationManager.getServiceRequestHeaders().getServiceRequestHeaders();
     }
     
     private ResourceInfo addResource(String resourceId, String platformResourceId, List<String> obsProperties, String pluginId) {

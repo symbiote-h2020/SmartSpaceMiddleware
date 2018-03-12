@@ -10,6 +10,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
+import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
+import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
@@ -63,26 +65,20 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     @Autowired
     private ResourcesRepository resourcesRepo;
     
-    @Autowired        
-    private AccessPolicyRepository accessPolicyRepo;
-    
     @Autowired
     private PluginRepository pluginRepo;
     
     @Autowired
-    private IComponentSecurityHandler securityHandler;
+    private RapCommunicationHandler communicationHandler;
     
     @Autowired
     private RestTemplate restTemplate;
-    
-    @Value("${symbiote.rap.cram.url}") 
-    private String notificationUrl;
-    
-    @Value("${rap.debug.disableSecurity}")
-    private Boolean disableSecurity;
 
     @Value("${rap.plugin.requestEndpoint}") 
     private String pluginRequestEndpoint;
+
+    @Value("${rap.json.property.type}")
+    private String jsonPropertyClassName;
     
     private StorageHelper storageHelper;
     
@@ -91,8 +87,8 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     public void init(OData odata, ServiceMetadata sm) {
     //    this.odata = odata;
     //    this.serviceMetadata = sm;
-        storageHelper = new StorageHelper(resourcesRepo, pluginRepo, accessPolicyRepo, securityHandler, 
-                                        restTemplate, pluginRequestEndpoint, notificationUrl);
+        storageHelper = new StorageHelper(resourcesRepo, pluginRepo, communicationHandler,
+                                        restTemplate, pluginRequestEndpoint, jsonPropertyClassName);
     }
 
     @Override
@@ -191,8 +187,10 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
                 resourceInfoList = storageHelper.getResourceInfoList(typeNameList,keyPredicates);
                 for(ResourceInfo resourceInfo: resourceInfoList){
                     String symbioteIdTemp = resourceInfo.getSymbioteId();
-                    if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
+                    if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
                         symbioteId = symbioteIdTemp;
+                        break;
+                    }
                 }
             } catch(ODataApplicationException odataExc){
                 log.error("Entity not found: " + odataExc.getMessage(), odataExc);
@@ -202,21 +200,12 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
                 return;
             }
 
-            if(!disableSecurity) {
-            // checking access policies
-                try {
-                    for(ResourceInfo resource : resourceInfoList) {
-                        String sid = resource.getSymbioteId();
-                        if(sid != null && sid.length() > 0)
-                            storageHelper.checkAccessPolicies(request, sid);
-                    }
-                } catch (Exception ex) {
-                    log.error("Access policy check error: " + ex.getMessage(), ex);
-                    customOdataException = new CustomODataApplicationException(symbioteId, ex.getMessage(), 
-                            HttpStatusCode.UNAUTHORIZED.getStatusCode(), Locale.ROOT);
-                    setErrorResponse(response, customOdataException, responseFormat);
-                    return;
-                }
+            if(!storageHelper.checkAccessPolicies(request, symbioteId)) {
+                log.error("Access policy check error" );
+                customOdataException = new CustomODataApplicationException(symbioteId, "Access policy check error",
+                        HttpStatusCode.UNAUTHORIZED.getStatusCode(), Locale.ROOT);
+                setErrorResponse(response, customOdataException, responseFormat);
+                return;
             }
 
             try {
@@ -230,6 +219,7 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
             }       
 
             try {
+
                 map.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
                 String json = map.writeValueAsString(obj);
                 stream = new ByteArrayInputStream(json.getBytes("UTF-8"));
@@ -240,7 +230,7 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
             }
 
             if(customOdataException == null && stream != null)
-                storageHelper.sendSuccessfulAccessMessage(symbioteId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
+                communicationHandler.sendSuccessfulAccessMessage(symbioteId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
 
             // 4th: configure the response object: set the body, headers and status code
             //response.setContent(serializerResult.getContent());
@@ -250,7 +240,7 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
             response.addHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            throw e;
+            throw new ODataApplicationException(e.getMessage(), HttpStatusCode.UNAUTHORIZED.getStatusCode(), Locale.ROOT);
         }
     }
     
