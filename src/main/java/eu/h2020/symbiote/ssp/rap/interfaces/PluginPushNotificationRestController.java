@@ -7,8 +7,10 @@ package eu.h2020.symbiote.ssp.rap.interfaces;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.netflix.discovery.converters.Auto;
 import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import eu.h2020.symbiote.ssp.rap.pushNotificationService.WebSocketController;
@@ -31,58 +33,54 @@ import org.springframework.web.bind.annotation.RestController;
  *
 * @author Luca Tomaselli <l.tomaselli@nextworks.it>
 */
-@RestController("/rap/plugin")
+@RestController("/rap/v1/plugin")
 public class PluginPushNotificationRestController {
     private static final Logger log = LoggerFactory.getLogger(PluginPushNotificationRestController.class);
 
     @Autowired
     WebSocketController webSocketController;
     
-    @Value("${symbiote.rap.cram.url}") 
-    private String notificationUrl;
-    
     @Autowired
-    private IComponentSecurityHandler securityHandler;
+    RapCommunicationHandler communicationHandler;
+
+    @Value("${rap.json.property.type}")
+    private String jsonPropertyClassName;
     
     @RequestMapping(value="/notification", method=RequestMethod.POST)
-    public ResponseEntity<?> getPushNotificationFromSubscribedResource(@RequestBody String payload, @RequestParam(required = false) String resourceId) {
+    public ResponseEntity<?> getPushNotificationFromSubscribedResource(@RequestBody Object payload, @RequestParam(required = false) String resourceId) {
         try {
             log.debug("Plugin Notification message received.\n" + payload);
+
+            String responseString = (payload instanceof byte[]) ? new String((byte[]) payload, "UTF-8") : payload.toString();
+            // checking if plugin response is a valid json
             try {
                 ObjectMapper mapper = new ObjectMapper();
-                Observation obs = mapper.readValue(payload, Observation.class);
-                if(resourceId == null || resourceId.length() < 1) 
+                JsonNode jsonObj = mapper.readTree(responseString);
+                if (!jsonObj.has(jsonPropertyClassName)) {
+                    log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
+                    //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
+                }
+            } catch (Exception ex) {
+                log.error("Response from plugin is not a valid json", ex);
+                throw new Exception("Response from plugin is not a valid json");
+            }
+
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                Observation obs = mapper.readValue(responseString, Observation.class);
+                if (resourceId == null || resourceId.length() < 1)
                     resourceId = obs.getResourceId();
             } catch (Exception e) {
                 log.warn("Payload is not an Observation");
             }
-            sendSuccessfulPushMessage(resourceId);
+            communicationHandler.sendSuccessfulPushMessage(resourceId);
             
-            webSocketController.SendMessage(resourceId, payload);
+            webSocketController.SendMessage(resourceId, responseString);
         } catch (Exception e) {
             log.info("Error during plugin registration process\n" + e.getMessage());
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         
         return new ResponseEntity<>(HttpStatus.OK);
-    }
-    
-    public void sendSuccessfulPushMessage(String symbioteId){
-        String jsonNotificationMessage = null;
-        ObjectMapper map = new ObjectMapper();
-        map.configure(SerializationFeature.INDENT_OUTPUT, true);
-        map.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-        
-        List<Date> dateList = new ArrayList();
-        dateList.add(new Date());
-        ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
-        
-        try{
-            notificationMessage.SetSuccessfulPushes(symbioteId, dateList);
-            jsonNotificationMessage = map.writeValueAsString(notificationMessage);
-        } catch (JsonProcessingException e) {
-            log.error(e.getMessage());
-        }
-        notificationMessage.SendSuccessfulPushes(jsonNotificationMessage);
     }
 }

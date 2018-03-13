@@ -1,18 +1,17 @@
 package eu.h2020.symbiote.ssp.rap;
 
-import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
-import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
+import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
+import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
 import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
-import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
+import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
+import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.accesspolicies.common.SingleTokenAccessPolicyFactory;
 import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier;
-import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier.SingleTokenAccessPolicyType;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /*
@@ -42,6 +42,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @TestConfiguration 
+@ActiveProfiles("test")
 public class TestDb {
     private static final Logger log = LoggerFactory.getLogger(TestDb.class);
     
@@ -99,31 +100,32 @@ public class TestDb {
     public void testPlatformInfo() throws Exception{
         //insert
         String pluginId = "plugin_1";
-        String pluginUrl = "http://example.com";
+        String pluginUrl = "www.example.com";
         boolean hasFilters = false;
         boolean hasNotifications = false;
         PluginInfo pluginInfo = addPlugin(pluginId, pluginUrl, hasFilters, hasNotifications);
         assert(pluginInfo != null);
         //search
-        Optional<PluginInfo> pluginInfoOptional = pluginRepository.findById(pluginId);
-        assert(pluginInfoOptional.isPresent());
-        pluginInfoOptional = pluginRepository.findById(pluginId+"2");
-        assert(!pluginInfoOptional.isPresent());
+        Optional<PluginInfo> platformInfoOptional = pluginRepository.findById(pluginId);
+        assert(platformInfoOptional.isPresent());
+        platformInfoOptional = pluginRepository.findById(pluginId+"2");
+        assert(!platformInfoOptional.isPresent());
         //delete
         pluginRepository.delete(pluginId);
-        pluginInfoOptional = pluginRepository.findById(pluginId+"2");
-        assert(!pluginInfoOptional.isPresent());
+        platformInfoOptional = pluginRepository.findById(pluginId+"2");
+        assert(!platformInfoOptional.isPresent());
     }
     
-    private PluginInfo addPlugin(String platformId, String pluginUrl, boolean hasFilters, boolean hasNotifications) {
-        PluginInfo pluginInfo = new PluginInfo(platformId, pluginUrl, hasFilters, hasNotifications);
-        PluginInfo pluginInfoResponse = pluginRepository.save(pluginInfo);
-        return pluginInfoResponse;
+    private PluginInfo addPlugin(String pluginId, String pluginUrl, boolean hasFilters, boolean hasNotifications) {
+        PluginInfo platformInfo = new PluginInfo(pluginId, pluginUrl, hasFilters, hasNotifications);
+        PluginInfo platformInfoResponse = pluginRepository.save(platformInfo);
+        return platformInfoResponse;
     }
     
     @Test 
     public void testAccessPolicy() throws Exception{
         //insert resource
+        /*
         String resourceId = "1";
         String platformResourceId = "pl_1";
         List<String> obsProperties = null;
@@ -153,7 +155,7 @@ public class TestDb {
         //delete
         resourcesRepository.delete(resourceId);
         Optional<ResourceInfo> resourceInfoOptional = resourcesRepository.findById(resourceId);
-        assert(!resourceInfoOptional.isPresent());
+        assert(!resourceInfoOptional.isPresent());*/
     }
     
     private AccessPolicy addPolicy(String resourceId, String internalId, SingleTokenAccessPolicySpecifier accPolicy) throws InvalidArgumentsException {

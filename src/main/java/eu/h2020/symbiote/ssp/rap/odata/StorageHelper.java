@@ -8,8 +8,10 @@ package eu.h2020.symbiote.ssp.rap.odata;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessGetMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessHistoryMessage;
@@ -72,13 +74,12 @@ public class StorageHelper {
     
     private final int TOP_LIMIT = 100;
     
-    private final IComponentSecurityHandler securityHandler;
-    private final AccessPolicyRepository accessPolicyRepo;
+    private final RapCommunicationHandler communicationHandler;
     private final ResourcesRepository resourcesRepo;
     private final PluginRepository pluginRepo;
     private final RestTemplate restTemplate;
-    private final String notificationUrl;
     private final String pluginRequestEndpoint;
+    private final String jsonPropertyClassName;
     
     private static final Pattern PATTERN = Pattern.compile(
             "\\p{Digit}{1,4}-\\p{Digit}{1,2}-\\p{Digit}{1,2}"
@@ -86,15 +87,14 @@ public class StorageHelper {
             + "(Z|([-+]\\p{Digit}{1,2}:\\p{Digit}{2}))?");
 
     public StorageHelper(ResourcesRepository resourcesRepository, PluginRepository pluginRepository,
-                        AccessPolicyRepository accessPolicyRepository, IComponentSecurityHandler securityHandlerComponent,
-                         RestTemplate restTemplate,  String pluginRequestEndpoint, String notificationUrl) {
+                         RapCommunicationHandler communicationHandler, RestTemplate restTemplate,
+                         String pluginRequestEndpoint, String jsonPropertyClassName) {
         this.resourcesRepo = resourcesRepository;
         this.pluginRepo = pluginRepository;
-        this.accessPolicyRepo = accessPolicyRepository;
-        this.securityHandler = securityHandlerComponent;
+        this.communicationHandler= communicationHandler;
         this.restTemplate = restTemplate;
-        this.notificationUrl = notificationUrl;
         this.pluginRequestEndpoint = pluginRequestEndpoint;
+        this.jsonPropertyClassName = jsonPropertyClassName;
     }
 
     public ResourceInfo getResourceInfo(List<UriParameter> keyParams) {
@@ -167,7 +167,21 @@ public class StorageHelper {
             if (responseEntity == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
-            }            
+            }
+
+            Object obj = responseEntity.getBody();
+            String responseString = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+            // checking if plugin response is a valid json
+            try {
+                JsonNode jsonObj = mapper.readTree(responseString);
+                if(!jsonObj.has(jsonPropertyClassName)) {
+                    log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
+                    //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
+                }
+            } catch (Exception ex){
+                log.error("Response from plugin is not a valid json", ex);
+                throw new Exception("Response from plugin is not a valid json");
+            }
             
             return responseEntity;
         } catch (Exception e) {
@@ -218,7 +232,23 @@ public class StorageHelper {
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
             responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
-            
+
+            Object obj = responseEntity.getBody();
+            if(obj != null) {
+                String responseString = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+                // checking if plugin response is a valid json
+                try {
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode jsonObj = mapper.readTree(responseString);
+                    if (!jsonObj.has(jsonPropertyClassName)) {
+                        log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
+                        //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
+                    }
+                } catch (Exception ex) {
+                    log.error("Response from plugin is not a valid json", ex);
+                    throw new Exception("Response from plugin is not a valid json");
+                }
+            }
         } catch (Exception e) {
             log.error(e.getMessage(),e);
             throw new ODataApplicationException("Internal Error", HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ROOT);
@@ -313,9 +343,7 @@ public class StorageHelper {
                 } catch (ParseException e) {
                     try {
                         date = dateFormat1.parse(dateParse);
-                    } catch (ParseException e1) {
-
-                    }
+                    } catch (ParseException e1) { }
                 }
             }
         }
@@ -364,76 +392,9 @@ public class StorageHelper {
         }
         return resourceInfoList;
     }
-    
+
     public boolean checkAccessPolicies(ODataRequest request, String resourceId) throws Exception {
-        log.debug("Checking access policies for resource " + resourceId);
-        Map<String,List<String>> headers = request.getAllHeaders();
-        Map<String, String> secHdrs = new HashMap();
-        for(String key : headers.keySet()) {
-            secHdrs.put(key, request.getHeader(key));
-        }
-        log.info("Headers: " + secHdrs);
-        SecurityRequest securityReq = new SecurityRequest(secHdrs);
-
-        checkAuthorization(securityReq, resourceId);
-        
-        return true;
-    }
-    
-    private void checkAuthorization(SecurityRequest request, String resourceId) throws Exception {
-        log.debug("Received a security request : " + request.toString());
-         // building dummy access policy
-        Map<String, IAccessPolicy> accessPolicyMap = new HashMap<>();
-        // to get policies here
-        Optional<AccessPolicy> accPolicy = accessPolicyRepo.findById(resourceId);
-        if(accPolicy == null) {
-            log.error("No access policies for resource");
-            throw new Exception("No access policies for resource");
-        }
-        
-        accessPolicyMap.put(resourceId, accPolicy.get().getPolicy());
-        String mapString = accessPolicyMap.entrySet().stream().map(entry -> entry.getKey() + " - " + entry.getValue())
-                .collect(Collectors.joining(", "));
-        log.info("accessPolicyMap: " + mapString);
-        log.info("request: " + request.toString());
-
-        Set<String> ids = null;
-        try {
-            ids = securityHandler.getSatisfiedPoliciesIdentifiers(accessPolicyMap, request);
-        } catch (Exception e) {
-            log.error("Exception thrown during checking policies:", e);
-            throw new Exception(e.getMessage());
-        }
-        if(!ids.contains(resourceId)) {
-            log.error("Security Policy is not valid");
-            throw new Exception("Security Policy is not valid");
-        }
-    }
-    
-    public void sendSuccessfulAccessMessage(String symbioteId, String accessType){
-        try{
-            String jsonNotificationMessage = null;
-            if(accessType == null || accessType.isEmpty())
-                accessType = SuccessfulAccessInfoMessage.AccessType.NORMAL.name();
-            ObjectMapper map = new ObjectMapper();
-            map.configure(SerializationFeature.INDENT_OUTPUT, true);
-            map.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-
-            List<Date> dateList = new ArrayList<>();
-            dateList.add(new Date());
-            ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
-
-            try{
-                notificationMessage.SetSuccessfulAttempts(symbioteId, dateList, accessType);
-                jsonNotificationMessage = map.writeValueAsString(notificationMessage);
-            } catch (JsonProcessingException e) {
-                log.error(e.toString(), e);
-            }
-            notificationMessage.SendSuccessfulAttempts(jsonNotificationMessage);
-        }catch(Exception e){
-            log.error("Error to send SetSuccessfulAttempts to CRAM");
-            log.error(e.getMessage(),e);
-        }
+        return communicationHandler.checkAccessPolicies(request, resourceId);
     }
 }
 

@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * @author Matteo Pardi <m.pardi@nextworks.it>
  */
-@RestController("/rap/plugin/registration")
+@RestController("/rap/v1/plugin/registration")
 public class PluginRegistrationRestController {
     
     private static final Logger log = LoggerFactory.getLogger(PluginRegistrationRestController.class);

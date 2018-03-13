@@ -9,7 +9,6 @@ package eu.h2020.symbiote.ssp.rap.interfaces;
  *
  * @author Luca Tomaselli <l.tomaselli@nextworks.it>
  */
-import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
 import eu.h2020.symbiote.ssp.rap.interfaces.conditions.NBInterfaceODataCondition;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -18,6 +17,8 @@ import java.util.Enumeration;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
+
+import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
 import org.apache.olingo.commons.api.ex.ODataException;
 
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -43,19 +44,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import eu.h2020.symbiote.ssp.rap.odata.RapEdmProvider;
 import eu.h2020.symbiote.ssp.rap.odata.RapEntityCollectionProcessor;
 import eu.h2020.symbiote.ssp.rap.odata.RapEntityProcessor;
 import eu.h2020.symbiote.ssp.rap.odata.RapPrimitiveProcessor;
-import java.io.InputStream;
-import java.util.Date;
-import org.springframework.beans.factory.annotation.Value;
 
 /*
 *
@@ -71,7 +63,6 @@ public class NorthboundEdmController {
 
     private static final String URI = "rap/";
     private int split = 0;
-    public final String SECURITY_RESPONSE_HEADER = "x-auth-response";
 
     @Autowired
     private RapEdmProvider edmProvider;
@@ -86,13 +77,10 @@ public class NorthboundEdmController {
     private RapPrimitiveProcessor primitiveProcessor;
     
     @Autowired
-    private IComponentSecurityHandler securityHandler;
-            
-    @Value("${symbiote.rap.cram.url}") 
-    private String notificationUrl;
-    
-    @Value("${rap.debug.disableSecurity}")
-    private Boolean disableSecurity;
+    private AuthorizationManager authManager;
+
+    @Autowired
+    private RapCommunicationHandler communicationHandler;
     
     /**
      * Process.
@@ -117,7 +105,7 @@ public class NorthboundEdmController {
         String responseStr = null;
         MultiValueMap<String, String> headers = new HttpHeaders();
         HttpStatus httpStatus = null;
-        try {            
+        try {
             OData odata = OData.newInstance();
             ServiceMetadata edm = odata.createServiceMetadata(edmProvider, new ArrayList());
             ODataHttpHandler handler = odata.createHandler(edm);
@@ -126,91 +114,23 @@ public class NorthboundEdmController {
             handler.register(primitiveProcessor);
 
             response = handler.process(createODataRequest(req, split));
-            
-            
-            if(response.getStatusCode() != HttpStatus.OK.value()){
-                String errorMessage = Integer.toString(response.getStatusCode());
-                InputStream inputStream = response.getContent();
-                if(inputStream != null)
-                    errorMessage = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-                responseStr = sendFailMessage(req, errorMessage);
-            }
-            else 
-                responseStr = StreamUtils.copyToString(
-                    response.getContent(), Charset.defaultCharset());
+            responseStr = StreamUtils.copyToString(response.getContent(), Charset.defaultCharset());
 
-
-            httpStatus = HttpStatus.valueOf(response.getStatusCode());            
+            httpStatus = HttpStatus.valueOf(response.getStatusCode());
         } catch (IOException | ODataException e) {
-            responseStr = sendFailMessage(req, e.getMessage());
             log.error(e.getMessage(), e);
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         }
-        try{
-            headers.add("Access-Control-Allow-Origin", "*");
-            headers.add("Access-Control-Allow-Credentials", "true");
-            headers.add("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT");
-            headers.add("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token");
-            
-            if(!disableSecurity){
-                String securityResponseHrd = securityHandler.generateServiceResponse();
-                headers.add(SECURITY_RESPONSE_HEADER, securityResponseHrd);
-            }
-        }
-        catch(SecurityHandlerException sce){
-            log.error(sce.getMessage(), sce);
-            throw sce;
-        }
-        catch(Exception e){
-            log.error(e.getMessage(), e);
-        }
+
+        headers.add("Access-Control-Allow-Origin", "*");
+        headers.add("Access-Control-Allow-Credentials", "true");
+        headers.add("Access-Control-Allow-Methods", "OPTIONS, GET, POST, PUT");
+        headers.add("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token");
+
+        headers = communicationHandler.generateServiceResponse();
         
         return new ResponseEntity(responseStr, headers, httpStatus);
     }
-
-    private String sendFailMessage(HttpServletRequest request, String error) {
-        String message = "";
-        try{
-            String jsonNotificationMessage = null;
-            String symbioTeId = "";
-            String appId = "";
-            String issuer = ""; 
-            String validationStatus = "";
-            CustomODataApplicationException customOdataExc = null;
-            ObjectMapper mapper = new ObjectMapper();
-
-            String code = Integer.toString(HttpStatus.INTERNAL_SERVER_ERROR.value());
-            message = "Error: " + error;               
-            try {
-                customOdataExc = mapper.readValue(message, CustomODataApplicationException.class);
-            } catch (IOException ex) {
-            }
-            if(customOdataExc != null){
-                if(customOdataExc.getSymbioteId() != null)
-                    symbioTeId = customOdataExc.getSymbioteId();
-                message = customOdataExc.getMessage();
-            }            
-            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            List<Date> dateList = new ArrayList<>();
-            dateList.add(new Date());
-            ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
-            try {
-                notificationMessage.SetFailedAttempts(symbioTeId, dateList, 
-                code, message, appId, issuer, validationStatus, request.getRequestURI()); 
-                jsonNotificationMessage = mapper.writeValueAsString(notificationMessage);
-            } catch (JsonProcessingException jsonEx) {
-                log.error(jsonEx.toString(), jsonEx);
-            }
-            notificationMessage.SendFailAttempts(jsonNotificationMessage);
-        }catch(Exception e){
-            log.error("Error to send FailAccessMessage to CRAM");
-            log.error(e.getMessage(),e);
-        }
-        return message;
-    }
-    
-    
 
     /**
      * Creates the o data request.

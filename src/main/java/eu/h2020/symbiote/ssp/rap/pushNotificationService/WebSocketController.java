@@ -5,6 +5,7 @@
  */
 package eu.h2020.symbiote.ssp.rap.pushNotificationService;
 
+import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -74,21 +75,12 @@ public class WebSocketController extends TextWebSocketHandler {
     
     @Autowired
     PluginRepository pluginRepo;
-    
+
     @Autowired
-    private AccessPolicyRepository accessPolicyRepo;
-    
-    @Value("${symbiote.rap.cram.url}") 
-    private String notificationUrl;
-    
-    @Autowired
-    private IComponentSecurityHandler securityHandler;
+    private RapCommunicationHandler communicationHandler;
     
     @Autowired
     private RestTemplate restTemplate;
-    
-    @Value("${rap.debug.disableSecurity}")
-    private Boolean disableSecurity;
 
     private final HashMap<String, WebSocketSession> idSession = new HashMap();
 
@@ -127,6 +119,7 @@ public class WebSocketController extends TextWebSocketHandler {
         Exception e = null;
         HttpStatus code = HttpStatus.INTERNAL_SERVER_ERROR;
         String message = "";
+        List<String> resourceIds = null;
         try {
             message = jsonTextMessage.getPayload();
             log.info("message received: " + message);
@@ -137,24 +130,24 @@ public class WebSocketController extends TextWebSocketHandler {
             WebSocketMessageSecurityRequest webSocketMessageSecurity = mapper.readValue(message, WebSocketMessageSecurityRequest.class);
             
             Map<String,String> securityRequest = webSocketMessageSecurity.getSecRequest();
-            if(securityRequest == null && !disableSecurity)
+            if(securityRequest == null)
                 throw new Exception("Security Request cannot be empty");
             
             WebSocketMessage webSocketMessage = webSocketMessageSecurity.getPayload();
-            List<String> resourcesId = webSocketMessage.getIds();
-            log.debug("Ids: " + resourcesId);
+            resourceIds = webSocketMessage.getIds();
+            log.debug("Ids: " + resourceIds);
             
-            checkAccessPolicies(securityRequest,resourcesId);
+            communicationHandler.checkAccessPolicies(securityRequest,resourceIds);
             
             Action act = webSocketMessage.getAction();
             switch(act) {
                 case SUBSCRIBE:
                     log.debug("Subscribing resources..");
-                    Subscribe(session, resourcesId, securityRequest);
+                    Subscribe(session, resourceIds, securityRequest);
                     break;
                 case UNSUBSCRIBE:
                     log.debug("Unsubscribing resources..");
-                    Unsubscribe(session, resourcesId, securityRequest);
+                    Unsubscribe(session, resourceIds, securityRequest);
                     break;
             }
         } catch (JsonParseException jsonEx){
@@ -177,13 +170,13 @@ public class WebSocketController extends TextWebSocketHandler {
         
         if(e != null){
             session.sendMessage(new TextMessage(code.name()+ " " + e.getMessage()));
-            sendFailMessage(message, e);
+            communicationHandler.sendFailAccessMessage(message, resourceIds, e);
         }
     }
     
-    private void Subscribe(WebSocketSession session, List<String> resourcesId, Map<String,String> securityReq) throws Exception {
+    private void Subscribe(WebSocketSession session, List<String> resourceIds, Map<String,String> securityReq) throws Exception {
         HashMap<String, List> subscribeList = new HashMap();
-        for (String resId : resourcesId) {
+        for (String resId : resourceIds) {
             // adding new resource info to subscribe map, with pluginUrl as key
             ResourceInfo resInfo = getResourceInfo(resId);            
             String pluginId = resInfo.getPluginId();
@@ -228,20 +221,20 @@ public class WebSocketController extends TextWebSocketHandler {
             HttpEntity<String> httpEntity = new HttpEntity<>(json, headers);
             ResponseEntity<?> responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             
-            sendSuccessfulAccessMessage(resourcesId, SuccessfulAccessInfoMessage.AccessType.SUBSCRIPTION_START.name());
+            communicationHandler.sendSuccessfulAccessMessage(resourceIds, SuccessfulAccessInfoMessage.AccessType.SUBSCRIPTION_START.name());
             
             if(responseEntity.getStatusCode() == HttpStatus.OK || 
                responseEntity.getStatusCode() == HttpStatus.ACCEPTED)
-                log.debug("Subscription for resources [" + resourcesId + "] successfully sent to " + pluginUrl);
+                log.debug("Subscription for resources [" + resourceIds + "] successfully sent to " + pluginUrl);
             else
-                log.warn("Error while sending subscription for resources [" + resourcesId + "] to " + pluginUrl);
+                log.warn("Error while sending subscription for resources [" + resourceIds + "] to " + pluginUrl);
             
         }        
     }
     
-    private void Unsubscribe(WebSocketSession session, List<String> resourcesId, Map<String,String> securityReq) throws Exception {
+    private void Unsubscribe(WebSocketSession session, List<String> resourceIds, Map<String,String> securityReq) throws Exception {
         HashMap<String, List> unsubscribeList = new HashMap();
-        for (String resId : resourcesId) {
+        for (String resId : resourceIds) {
             // adding new resource info to subscribe map, with pluginUrl as key
             ResourceInfo resInfo = getResourceInfo(resId);            
             String pluginId = resInfo.getPluginId();
@@ -288,51 +281,53 @@ public class WebSocketController extends TextWebSocketHandler {
             HttpEntity<String> httpEntity = new HttpEntity<>(json, headers);
             ResponseEntity<?> responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             
-            sendSuccessfulAccessMessage(resourcesId, SuccessfulAccessInfoMessage.AccessType.SUBSCRIPTION_END.name());
+            communicationHandler.sendSuccessfulAccessMessage(resourceIds, SuccessfulAccessInfoMessage.AccessType.SUBSCRIPTION_END.name());
             
             if(responseEntity.getStatusCode() == HttpStatus.OK || 
                responseEntity.getStatusCode() == HttpStatus.ACCEPTED)
-                log.debug("Subscription for resources [" + resourcesId + "] successfully sent to " + pluginUrl);
+                log.debug("Subscription for resources [" + resourceIds + "] successfully sent to " + pluginUrl);
             else
-                log.warn("Error while sending subscription for resources [" + resourcesId + "] to " + pluginUrl);
+                log.warn("Error while sending subscription for resources [" + resourceIds + "] to " + pluginUrl);
             
         }
     }
 
     public void SendMessage(String resourceId, String payload) {
-        Map<String,String> secResponse = new HashMap();
-        if(!disableSecurity){
-            try{
-                String serResponse = securityHandler.generateServiceResponse();
-                secResponse.put(SECURITY_RESPONSE_HEADER, serResponse);
-            }
-            catch(SecurityHandlerException sce){
-                log.error(sce.getMessage(), sce);
-            }
-        }
-        
-        WebSocketMessageSecurityResponse messageSecurityResp = new WebSocketMessageSecurityResponse(secResponse, payload);
-        
-        ResourceInfo resInfo = getResourceByInternalId(resourceId);
-        List<String> sessionIdList = resInfo.getSessionId();
-        HashSet<WebSocketSession> sessionList = new HashSet<>();
-        if (sessionIdList != null && !sessionIdList.isEmpty()) {
-            for (String sessionId : sessionIdList) {
-                WebSocketSession session = idSession.get(sessionId);
-                if(session != null)
-                    sessionList.add(session);
-            }
+        try {
+            Map<String, String> secResponse = new HashMap();
 
-            String mess = "";
-            try {
-                ObjectMapper map = new ObjectMapper();
-                map.configure(SerializationFeature.INDENT_OUTPUT, true);
-                map.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-                mess = map.writeValueAsString(messageSecurityResp);
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
+            HttpHeaders hdrs = communicationHandler.generateServiceResponse();
+            for (String key : hdrs.keySet()) {
+                List<String> hList = hdrs.get(key);
+                for (String h : hList)
+                    secResponse.put(key, h);
             }
-            sendAll(sessionList, mess);
+            WebSocketMessageSecurityResponse messageSecurityResp = new WebSocketMessageSecurityResponse(secResponse, payload);
+
+            ResourceInfo resInfo = getResourceByInternalId(resourceId);
+            List<String> sessionIdList = resInfo.getSessionId();
+            HashSet<WebSocketSession> sessionList = new HashSet<>();
+            if (sessionIdList != null && !sessionIdList.isEmpty()) {
+                for (String sessionId : sessionIdList) {
+                    WebSocketSession session = idSession.get(sessionId);
+                    if (session != null)
+                        sessionList.add(session);
+                }
+
+                String mess = "";
+                try {
+                    ObjectMapper map = new ObjectMapper();
+                    map.configure(SerializationFeature.INDENT_OUTPUT, true);
+                    map.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+                    mess = map.writeValueAsString(messageSecurityResp);
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
+                sendAll(sessionList, mess);
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw e;
         }
     }
 
@@ -373,90 +368,5 @@ public class WebSocketController extends TextWebSocketHandler {
         }
 
         return resInfo;
-    }
-    
-    
-    public void sendSuccessfulAccessMessage(List<String> symbioteIdList, String accessType){
-        String jsonNotificationMessage = null;
-        ObjectMapper map = new ObjectMapper();
-        map.configure(SerializationFeature.INDENT_OUTPUT, true);
-        map.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-        
-        List<Date> dateList = new ArrayList();
-        dateList.add(new Date());
-        ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
-        
-        try{
-            notificationMessage.SetSuccessfulAttemptsList(symbioteIdList, dateList, accessType);
-            jsonNotificationMessage = map.writeValueAsString(notificationMessage);
-        } catch (JsonProcessingException e) {
-            log.error(e.getMessage());
-        }
-        notificationMessage.SendSuccessfulAttempts(jsonNotificationMessage);
-    }
-    
-    private void sendFailMessage(String path, Exception e) {
-        String jsonNotificationMessage = null;
-        String appId = "";String issuer = ""; String validationStatus = "";
-        String symbioteId = "";
-        ObjectMapper mapper = new ObjectMapper();
-        
-        String code = Integer.toString(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        String message = e.getMessage();
-        if(message == null)
-            message = e.toString();
-        
-        if(e.getClass().equals(EntityNotFoundException.class)){
-            code = Integer.toString(((EntityNotFoundException) e).getHttpStatus().value());
-            symbioteId = ((EntityNotFoundException) e).getSymbioteId();
-        }
-            
-        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        List<Date> dateList = new ArrayList();
-        dateList.add(new Date());
-        ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
-        try {
-            notificationMessage.SetFailedAttempts(symbioteId, dateList, 
-            code, message, appId, issuer, validationStatus, path); 
-            jsonNotificationMessage = mapper.writeValueAsString(notificationMessage);
-        } catch (JsonProcessingException jsonEx) {
-            log.error(jsonEx.getMessage());
-        }
-        notificationMessage.SendFailAttempts(jsonNotificationMessage);
-    }
-    
-    public boolean checkAccessPolicies(Map<String, String> secHdrs, List<String> resourceIdList) throws Exception {
-        if(!disableSecurity){
-            log.info("secHeaders: " + secHdrs);
-            SecurityRequest securityReq = new SecurityRequest(secHdrs);
-
-            for(String resourceId: resourceIdList){
-                checkAuthorization(securityReq, resourceId);
-            }
-        }
-        return true;
-    }
-    
-    private void checkAuthorization(SecurityRequest request, String resourceId) throws Exception {
-        log.debug("RAP received a security request : " + request.toString());        
-         // building dummy access policy
-        Map<String, IAccessPolicy> accessPolicyMap = new HashMap<>();
-        // to get policies here
-        Optional<AccessPolicy> accPolicy = accessPolicyRepo.findById(resourceId);
-        if(accPolicy == null)
-            throw new Exception("No access policies for resource");
-        
-        accessPolicyMap.put(resourceId, accPolicy.get().getPolicy());
-
-        Set<String> ids = null;
-        try {
-            ids = securityHandler.getSatisfiedPoliciesIdentifiers(accessPolicyMap, request);
-        } catch (Exception e) {
-            log.error("Exception thrown during checking policies:", e);
-            throw new Exception(e.getMessage());
-        }
-        if(!ids.contains(resourceId))
-            throw new Exception("Security Policy is not valid");
     }
 }

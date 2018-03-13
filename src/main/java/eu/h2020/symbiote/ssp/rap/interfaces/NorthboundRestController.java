@@ -6,12 +6,14 @@
 package eu.h2020.symbiote.ssp.rap.interfaces;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
+import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
+import eu.h2020.symbiote.ssp.rap.managers.ServiceResponseResult;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import eu.h2020.symbiote.ssp.rap.exceptions.*;
 import eu.h2020.symbiote.ssp.rap.interfaces.conditions.NBInterfaceRESTCondition;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessGetMessage;
@@ -73,22 +75,15 @@ public class NorthboundRestController {
     
     @Autowired
     private PluginRepository pluginRepo;
-    
+
     @Autowired
-    private IComponentSecurityHandler securityHandler; 
-    
-    @Autowired
-    private AccessPolicyRepository accessPolicyRepo;
-   
-    @Value("${symbiote.rap.cram.url}") 
-    private String notificationUrl;
-    
-    @Value("${rap.plugin.requestEndpoint}") 
+    private RapCommunicationHandler communicationHandler;
+
+    @Value("${rap.plugin.requestEndpoint}")
     private String pluginRequestEndpoint;
-    
-    @Value("${rap.debug.disableSecurity}")
-    private Boolean disableSecurity;
-      
+
+    @Value("${rap.json.property.type}")
+    private String jsonPropertyClassName;
     
     /**
      * Used to retrieve the current value of a registered resource
@@ -106,10 +101,10 @@ public class NorthboundRestController {
         Object response = null;
         try {
         
-            log.info("Received read resource request for ID = " + resourceId);       
-            
+            log.info("Received read resource request for ID = " + resourceId);
             // checking access policies
-            checkAccessPolicies(request, resourceId);
+            if(!communicationHandler.checkAccessPolicies(request, resourceId))
+                    throw new Exception("Auhtorization refused");
             
             ResourceInfo info = getResourceInfo(resourceId);
             List<ResourceInfo> infoList = new ArrayList();
@@ -139,34 +134,38 @@ public class NorthboundRestController {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
-            if (response == null) {
+            Object obj = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            if (obj == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
             }
-            
-            if(!disableSecurity){
-                try {
-                    String serResponse = securityHandler.generateServiceResponse();
-                    responseHeaders.set(SECURITY_RESPONSE_HEADER, serResponse);
-                } catch (SecurityHandlerException sce){
-                    log.error(sce.getMessage(), sce);
-                    throw sce;
+
+            String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+            // checking if plugin response is a valid json
+            try {
+                JsonNode jsonObj = mapper.readTree(resp.toString());
+                if(!jsonObj.has(jsonPropertyClassName)) {
+                    log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
+                    //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
                 }
-            
+                response = jsonObj;
+            } catch (Exception ex){
+                log.error("Response from plugin is not a valid json", ex);
+                throw new Exception("Response from plugin is not a valid json");
             }
-            sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
+            communicationHandler.sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
             
         } catch(EntityNotFoundException e) {
             log.error(e.getMessage(),e);           
-            sendFailAccessMessage(path, resourceId, e);
+            communicationHandler.sendFailAccessMessage(path, resourceId, e);
             return new ResponseEntity<>(e.getMessage(), responseHeaders, e.getHttpStatus());
         } catch (Exception e) {            
             log.error(e.getMessage(), e);
-            sendFailAccessMessage(path, resourceId, e);
+            communicationHandler.sendFailAccessMessage(path, resourceId, e);
             return new ResponseEntity<>(e.getMessage(), responseHeaders, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        
+        responseHeaders = communicationHandler.generateServiceResponse();
+
         return new ResponseEntity<>(response , responseHeaders, HttpStatus.OK);
     }
     
@@ -185,9 +184,10 @@ public class NorthboundRestController {
         Object response = null;
         try {        
             log.info("Received read history resource request for ID = " + resourceId);
-            
+
             // checking access policies
-            checkAccessPolicies(request, resourceId);
+            if(!communicationHandler.checkAccessPolicies(request, resourceId))
+                throw new Exception("Auhtorization refused");
             
             ResourceInfo info = getResourceInfo(resourceId);
             List<ResourceInfo> infoList = new ArrayList();
@@ -217,34 +217,38 @@ public class NorthboundRestController {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
-            if (response == null) {
+            Object obj = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            if (obj == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
             }
-            
-            if(!disableSecurity){
-                try {
-                    String serResponse = securityHandler.generateServiceResponse();
-                    responseHeaders.set(SECURITY_RESPONSE_HEADER, serResponse);
-                } catch (SecurityHandlerException sce){
-                    log.error(sce.getMessage(), sce);
-                    throw sce;
+
+            String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+            // checking if plugin response is a valid json
+            try {
+                JsonNode jsonObj = mapper.readTree(resp.toString());
+                if(!jsonObj.has(jsonPropertyClassName)) {
+                    log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
+                    //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
                 }
-            
+                response = jsonObj;
+            } catch (Exception ex){
+                log.error("Response from plugin is not a valid json", ex);
+                throw new Exception("Response from plugin is not a valid json");
             }
-            sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
+            communicationHandler.sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
             
         } catch(EntityNotFoundException e) {
             log.error(e.getMessage(),e);           
-            sendFailAccessMessage(path, resourceId, e);
+            communicationHandler.sendFailAccessMessage(path, resourceId, e);
             return new ResponseEntity<>(e.getMessage(), responseHeaders, e.getHttpStatus());
         } catch (Exception e) {            
             log.error(e.getMessage(), e);
-            sendFailAccessMessage(path, resourceId, e);
+            communicationHandler.sendFailAccessMessage(path, resourceId, e);
             return new ResponseEntity<>(e.getMessage(), responseHeaders, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        
+        responseHeaders = communicationHandler.generateServiceResponse();
+
         return new ResponseEntity<>(response , responseHeaders, HttpStatus.OK);
     }
     
@@ -267,7 +271,8 @@ public class NorthboundRestController {
             log.info("Received write resource request for ID = " + resourceId + " with values " + body);
             
             // checking access policies
-            checkAccessPolicies(request, resourceId);
+            if(!communicationHandler.checkAccessPolicies(request, resourceId))
+                throw new Exception("Auhtorization refused");
             
             ResourceInfo info = getResourceInfo(resourceId);
             List<ResourceInfo> infoList = new ArrayList();
@@ -297,34 +302,35 @@ public class NorthboundRestController {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
-            if (response == null) {
-                log.error("No response from plugin");
-                throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
-            }
-            
-            if(!disableSecurity){
+            Object obj = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            if(obj != null) {
+                String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+                // checking if plugin response is a valid json
                 try {
-                    String serResponse = securityHandler.generateServiceResponse();
-                    responseHeaders.set(SECURITY_RESPONSE_HEADER, serResponse);
-                } catch (SecurityHandlerException sce){
-                    log.error(sce.getMessage(), sce);
-                    throw sce;
+                    JsonNode jsonObj = mapper.readTree(resp.toString());
+                    if (!jsonObj.has(jsonPropertyClassName)) {
+                        log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
+                        //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
+                    }
+                    response = jsonObj;
+                } catch (Exception ex) {
+                    log.error("Response from plugin is not a valid json", ex);
+                    throw new Exception("Response from plugin is not a valid json");
                 }
-            
             }
-            sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
+            communicationHandler.sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
             
         } catch(EntityNotFoundException e) {
             log.error(e.getMessage(),e);           
-            sendFailAccessMessage(path, resourceId, e);
+            communicationHandler.sendFailAccessMessage(path, resourceId, e);
             return new ResponseEntity<>(e.getMessage(), responseHeaders, e.getHttpStatus());
         } catch (Exception e) {            
             log.error(e.getMessage(), e);
-            sendFailAccessMessage(path, resourceId, e);
+            communicationHandler.sendFailAccessMessage(path, resourceId, e);
             return new ResponseEntity<>(e.getMessage(), responseHeaders, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        
+        responseHeaders = communicationHandler.generateServiceResponse();
+
         return new ResponseEntity<>(response , responseHeaders, HttpStatus.OK);
     }
     
@@ -336,106 +342,6 @@ public class NorthboundRestController {
         return resInfo.get();
     }
     
-    public boolean checkAccessPolicies(HttpServletRequest request, String resourceId) throws Exception {
-        Map<String, String> secHdrs = new HashMap();
-        Enumeration<String> headerNames = request.getHeaderNames();
 
-        if (headerNames != null) {
-            while (headerNames.hasMoreElements()) {
-                String header = headerNames.nextElement();
-                secHdrs.put(header, request.getHeader(header));
-            }
-        }
-        
-        log.info("secHeaders: " + secHdrs);
-        if(!disableSecurity) {
-            SecurityRequest securityReq = new SecurityRequest(secHdrs);
-            checkAuthorization(securityReq, resourceId);
-        }
-        return true;
-    }
-    
-    private void checkAuthorization(SecurityRequest request, String resourceId) throws Exception {
-        log.debug("RAP received a security request : " + request.toString());        
-         // building dummy access policy
-        Map<String, IAccessPolicy> accessPolicyMap = new HashMap<>();
-        // to get policies here
-        Optional<AccessPolicy> accPolicy = accessPolicyRepo.findById(resourceId);
-        if(accPolicy == null)
-            throw new Exception("No access policies for resource");
-        
-        accessPolicyMap.put(resourceId, accPolicy.get().getPolicy());
-
-        Set<String> ids = null;
-        try {
-            ids = securityHandler.getSatisfiedPoliciesIdentifiers(accessPolicyMap, request);
-        } catch (Exception e) {
-            log.error("Exception thrown during checking policies:", e);
-            throw new Exception(e.getMessage());
-        }
-        if(!ids.contains(resourceId))
-            throw new Exception("Security Policy is not valid");
-    }
-    
-    private String sendFailAccessMessage(String path, String symbioteId, Exception e) {
-        String message = null;
-        try{
-            String jsonNotificationMessage = null;
-            String appId = "";String issuer = ""; String validationStatus = "";
-            ObjectMapper mapper = new ObjectMapper();
-            message = e.getMessage();
-            if(message == null)
-                message = e.toString();
-
-            String code;
-            if(e.getClass().equals(EntityNotFoundException.class))
-                code = Integer.toString(((EntityNotFoundException) e).getHttpStatus().value());
-            else
-                code = Integer.toString(HttpStatus.FORBIDDEN.value());
-
-            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            List<Date> dateList = new ArrayList();
-            dateList.add(new Date());
-            ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
-            try {
-                notificationMessage.SetFailedAttempts(symbioteId, dateList,code, message, appId, issuer, validationStatus, path); 
-                jsonNotificationMessage = mapper.writeValueAsString(notificationMessage);
-            } catch (JsonProcessingException jsonEx) {
-                //log.error(jsonEx.getMessage());
-            }
-            notificationMessage.SendFailAttempts(jsonNotificationMessage);
-        }catch(Exception ex){
-            log.error("Error to send FailAccessMessage to CRAM");
-            log.error(ex.getMessage(),ex);
-        }
-        return message;    
-        
-    }
-    
-    private void sendSuccessfulAccessMessage(String symbioteId, String accessType){
-        try{
-            String jsonNotificationMessage = null;
-            if(accessType == null || accessType.isEmpty())
-                accessType = SuccessfulAccessInfoMessage.AccessType.NORMAL.name();
-            ObjectMapper map = new ObjectMapper();
-            map.configure(SerializationFeature.INDENT_OUTPUT, true);
-            map.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-
-            List<Date> dateList = new ArrayList();
-            dateList.add(new Date());
-            ResourceAccessCramNotification notificationMessage = new ResourceAccessCramNotification(securityHandler,notificationUrl);
-            try{
-                notificationMessage.SetSuccessfulAttempts(symbioteId, dateList, accessType);
-                jsonNotificationMessage = map.writeValueAsString(notificationMessage);
-            } catch (JsonProcessingException e) {
-                //log.error(e.getMessage());
-            }
-            notificationMessage.SendSuccessfulAttempts(jsonNotificationMessage);
-        }catch(Exception e){
-            log.error("Error to send SetSuccessfulAttempts to CRAM");
-            log.error(e.getMessage(),e);
-        }
-    }
 }
 
