@@ -12,6 +12,7 @@ import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
+import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
@@ -19,6 +20,7 @@ import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -117,7 +119,7 @@ public class InnkeeperRestController {
 		lwsp.setAllowedCipher("0x008c");
 		String outputMessage = lwsp.processMessage();
 		log.info(outputMessage);
-		
+		log.info("MTI:"+lwsp.get_mti());
 		
 		switch (lwsp.get_mti()) {
 		case LwspConstants.SDEV_Hello:
@@ -126,12 +128,36 @@ public class InnkeeperRestController {
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 			return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
 		case LwspConstants.SDEV_REGISTRY:
-			String decoded_message = outputMessage;			
-			InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(decoded_message, InkRegistrationInfo.class);
+			
+			// get SspResource
+			String decoded_message = lwsp.get_response();
+			//De-serialize registration Message
+			SspResource sspResource = new ObjectMapper().readValue(decoded_message, SspResource.class);
+			String symId=sspResource.getResource().getId();
+			
+			//generate response
+			JSONObject resp = new JSONObject();
+			// TODO: analyze symId from response if exist use it otherwise ask to the core...
+			resp.put("results", "OK"); // TODO: ok, rejected, already registered...
+			resp.put("symId","NEW SYM ID"); //TODO: add here from CORE
+			resp.put("registrationExpiration",60);
+			//send response			
+			
+			
+			
+            lwsp.send_data(resp.toString());
+            log.info("resp:"+resp.toString());
+            log.info("\n\n\n\n\n"+lwsp.get_response()+"\n-------------------------");
+            String encodedResponse=lwsp.get_response();
+            HttpHeaders responseHeaders1 = new HttpHeaders();
+            responseHeaders1.setContentType(MediaType.APPLICATION_JSON);
+            return new ResponseEntity<Object>(encodedResponse,responseHeaders1,HttpStatus.OK);
+						
+//			InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(decoded_message, InkRegistrationInfo.class);
 
-			log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
-			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo,lwsp.getSessionExpiration());	
-			log.info(new ObjectMapper().writeValueAsString(res));
+//			log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
+//			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo,lwsp.getSessionExpiration());	
+//			log.info(new ObjectMapper().writeValueAsString(res));
 		}
 		
 		

@@ -507,9 +507,13 @@ public class Lwsp {
 			}
 			currTime = new Timestamp(System.currentTimeMillis());
 			this.OutBuffer=out;			
-			sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime);
-			sessionRepository.save(sessionInfo);
+			
 			log.info("Sent back 0x20:\n"+OutBuffer);
+			if (!this.get_mti().contains("0xf")) 
+				{
+				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime);
+				sessionRepository.save(sessionInfo);
+				}
 			break;
 		case "0x30":
 			/*
@@ -588,6 +592,20 @@ public class Lwsp {
 			this.OutBuffer=out;
 			//System.out.println(Base64.getEncoder().encodeToString(aes128enc("{\"campo0\":\"topolino\",\"campo1\":\"pippo\",\"campo2\":\"pluto\",\"campo3\":\"paperino\",\"campo5\":\"qui\",\"campo6\":\"quo\",\"campo7\":\"qua\",\"campo8\":\"paperone\",\"campo9\":\"clarabella\"}".getBytes(),HexSS2BArray(dk.split(":")[2]),iv.getBytes())));
 			log.info("\n+--\n|\n+Sent back 0x40: "+OutBuffer+"\n|\n+--");
+			if (this.get_mti().contains("0xf")) 
+       			{
+
+ 				 log.info("\n+--------------------------------+\\"+
+				          "\n|                                | \\"+
+				          "\n+------------->DELETE<-----------+-->"+ 
+				          "\n|                                | /"+
+				          "\n+--------------------------------+/"						         
+					 	 );
+			
+				 SessionInfo ss = sessionRepository.findBySessionId(this.sessionId);
+		         sessionRepository.delete(ss);
+			    }
+
 			break;
 		case "0x50":
 			/*
@@ -617,7 +635,9 @@ public class Lwsp {
 					if (out.equals(""))
 					{
 						String decoded= new String(aes128dec(Base64.getDecoder().decode(jsonData.getString("data").getBytes()),HexSS2BArray(dk.split(":")[2]),iv.getBytes()));
-						this.OutBuffer=String.format(DecJson, decoded);
+						log.info("\n+++++++\n+++++++++\n+++++++++ ->"+decoded);
+						//this.OutBuffer=String.format(DecJson, decoded);
+						this.OutBuffer=decoded;
 					} 
 										
 					// KEEP ALIVE					
@@ -662,7 +682,7 @@ public class Lwsp {
 	public void setSessionExpiration() {
 		
 	}
-	public void send_data(String data, SessionRepository sessionRepository) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException 
+	public void send_data(String data) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException 
 	{
 		JSONObject jsonData;
 		SessionInfo s;
@@ -689,7 +709,7 @@ public class Lwsp {
 				this.dk2 =s.getdk2();
 				if (out.equals(""))
 				{
-					String decoded= new String(aes128enc(Base64.getDecoder().decode(data.getBytes()),HexSS2BArray(dk.split(":")[2]),iv.getBytes()));
+					String decoded= Base64.getEncoder().encodeToString(aes128enc(data.getBytes(),HexSS2BArray(dk.split(":")[2]),iv.getBytes()));
 					this.OutBuffer=String.format(EncJson, decoded, this.sessionId);
 				} 
 			}
@@ -705,4 +725,3 @@ public class Lwsp {
 		this.allowedCipher=allowedCipher;
 	}
 }
-
