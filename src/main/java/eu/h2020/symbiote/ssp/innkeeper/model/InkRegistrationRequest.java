@@ -5,6 +5,7 @@ import java.util.List;
 
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyFactory;
 import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
+import eu.h2020.symbiote.ssp.resources.SspResource;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,17 +14,11 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.h2020.symbiote.cloud.model.internal.CloudResource;
-import eu.h2020.symbiote.model.cim.MobileSensor;
-import eu.h2020.symbiote.model.cim.Resource;
-import eu.h2020.symbiote.model.cim.StationarySensor;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
-import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
-import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 
@@ -44,11 +39,11 @@ public class InkRegistrationRequest {
 	public InkRegistrationResponse registry(InkRegistrationInfo info, Date currTime) throws InvalidArgumentsException {
 		InkRegistrationResponse res= null;
 
-
-		List<CloudResource> msgs = info.getSemanticDescription();
+/*
+		List<SspResource> msgs = info.getSemanticDescription();
 		
 		info.getSymId();
-		for(CloudResource msg: msgs){
+		for(SspResource msg: msgs){
 			String internalId = msg.getInternalId(); 
 			Resource resource = msg.getResource();
 			String pluginId = msg.getPluginId();
@@ -68,18 +63,18 @@ public class InkRegistrationRequest {
 			}
 			addResource(symbioteId, internalId, props, pluginId,currTime);
 		}
-		addCloudResourceInfoForOData(msgs);
+		addSspResourceInfoForOData(msgs);
 		res = new InkRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
 
-
+*/
 		return res;
 	}
 
 
 
-	private void addCloudResourceInfoForOData(List<CloudResource> cloudResourceList) {
+	private void addSspResourceInfoForOData(List<SspResource> sspResourceList) {
 		try{
-			owlApiHelp.addCloudResourceList(cloudResourceList);
+			owlApiHelp.addSspResourceList(sspResourceList);
 		}
 		catch(Exception e){
 			log.error("Error add info registration for OData\n"+e.getMessage());

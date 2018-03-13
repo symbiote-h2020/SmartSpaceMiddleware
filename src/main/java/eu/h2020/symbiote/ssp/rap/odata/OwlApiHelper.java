@@ -6,7 +6,6 @@
 package eu.h2020.symbiote.ssp.rap.odata;
 
 import com.google.common.collect.Multimap;
-import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import eu.h2020.symbiote.model.cim.Actuator;
 import eu.h2020.symbiote.model.cim.Capability;
 import eu.h2020.symbiote.model.cim.ComplexDatatype;
@@ -16,6 +15,7 @@ import eu.h2020.symbiote.model.cim.Parameter;
 import eu.h2020.symbiote.model.cim.PrimitiveDatatype;
 import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.model.cim.Service;
+import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
@@ -130,12 +130,12 @@ public class OwlApiHelper {
     } 
     
     
-    public Boolean addCloudResourceList(List<CloudResource> cloudResourceList){
+    public Boolean addSspResourceList(List<SspResource> sspResourceList){
         Boolean result = false;
         try{
             List<RegistrationInfoOData> registrationInfoOdataList = new ArrayList();
-            for(CloudResource cloudResource: cloudResourceList){
-                RegistrationInfoOData registrationInfoOdata = saveCloudResourceInDb(cloudResource);
+            for(SspResource sspResource: sspResourceList){
+                RegistrationInfoOData registrationInfoOdata = saveCloudResourceInDb(sspResource);
                 if(registrationInfoOdata != null)
                     registrationInfoOdataList.add(registrationInfoOdata);
             }
@@ -168,9 +168,9 @@ public class OwlApiHelper {
         return infoODataNew;
     }
 
-    private RegistrationInfoOData saveCloudResourceInDb(CloudResource cloudResource) {
+    private RegistrationInfoOData saveCloudResourceInDb(SspResource sspResource) {
         RegistrationInfoOData result = null;
-        Resource r = cloudResource.getResource();
+        Resource r = sspResource.getResource();
         List<Parameter> parameters;
         if (r.getClass().equals(Actuator.class)) {
             Actuator actuator = (Actuator) r;
