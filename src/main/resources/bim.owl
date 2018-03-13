@@ -1,0 +1,73 @@
+@prefix : <http://www.symbiote-h2020.eu/ontology/bim#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix core: <http://www.symbiote-h2020.eu/ontology/core#> .
+@prefix bim-unit: <http://www.symbiote-h2020.eu/ontology/bim/unit#> .
+@prefix bim-property: <http://www.symbiote-h2020.eu/ontology/bim/property#> .
+@prefix bim-sm: <http://www.symbiote-h2020.eu/ontology/bim/smartmobility#> .
+@prefix bim-sr: <http://www.symbiote-h2020.eu/ontology/bim/smartresidence#> .
+@prefix bim-ss: <http://www.symbiote-h2020.eu/ontology/bim/smartstadium#> .
+@prefix bim-sy: <http://www.symbiote-h2020.eu/ontology/bim/smartyachting#> .
+@prefix bim-pv: <http://www.symbiote-h2020.eu/ontology/bim/parametervalues#> .
+
+<http://www.symbiote-h2020.eu/ontology/bim> rdf:type owl:Ontology ;
+                                            
+                                            rdfs:label "symbIoTe Best Practice Information Model"@en ;
+                                            
+                                            owl:versionInfo "v2.1.0 2017/11/13 12:00:00"^^xsd:string ;
+                                            
+                                            rdfs:comment "Best Practice Information Model of symbIoTe."@en ;
+                                            
+                                            owl:imports <https://www.symbiote-h2020.eu/ontology/core> ,
+                                                <https://www.symbiote-h2020.eu/ontology/bim/unit> ,
+						##<https://www.symbiote-h2020.eu/ontology/bim/property> ,
+						<https://www.symbiote-h2020.eu/ontology/bim/smartmobility> , 
+						<https://www.symbiote-h2020.eu/ontology/bim/smartresidence> ,
+						<https://www.symbiote-h2020.eu/ontology/bim/smartstadium> ,
+						<https://www.symbiote-h2020.eu/ontology/bim/smartyachting> ,
+						<https://www.symbiote-h2020.eu/ontology/bim/parametervalues> ;
+                                            
+                                            owl:versionIRI <http://www.symbiote-h2020.eu/ontology/bim/2.1.0> .
+
+
+
+
+#################################################################
+#
+#    Datatypes
+#
+#################################################################
+
+
+#################################################################
+#
+#    Object Properties
+#
+#################################################################
+
+
+#################################################################
+#
+#    Data properties
+#
+#################################################################   
+
+bim-sy:timestamp owl:equivalentProperty bim-ss:timestamp .
+
+bim-sy:hint owl:equivalentProperty bim-sm:hint .
+
+#################################################################
+#
+#    Classes
+#
+#################################################################
+
+bim-sy:Waypoint owl:equivalentClass bim-sm:Waypoint .
+
+#################################################################
+#
+#    Individuals
+#
+#################################################################

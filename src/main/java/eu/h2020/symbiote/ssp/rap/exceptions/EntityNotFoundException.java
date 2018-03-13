@@ -12,10 +12,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
  *
  * @author Matteo Pardi <m.pardi@nextworks.it>
  */
-@ResponseStatus(HttpStatus.BAD_REQUEST)
+@ResponseStatus(HttpStatus.NOT_FOUND)
 public class EntityNotFoundException extends RuntimeException {
     
-    private String symbioteId;
+    private final String symbioteId;
+    
     public EntityNotFoundException(String entityId) {
         super ("Could not find object with id " + entityId);
         this.symbioteId = entityId;
@@ -24,4 +25,9 @@ public class EntityNotFoundException extends RuntimeException {
     public String getSymbioteId(){
         return symbioteId;
     }
+    
+    public HttpStatus getHttpStatus() {
+        return HttpStatus.NOT_FOUND;
+    }
+    
 }

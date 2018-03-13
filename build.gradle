@@ -1,11 +1,10 @@
-// initial extensions to gradle
 if (!hasProperty('mainClass')) {
     ext.mainClass = 'eu.h2020.symbiote.ssp.SspApplication'
 }
-
+// initial extensions to gradle
 buildscript {
     ext {
-        springBootVersion = '1.5.4.RELEASE'
+        springBootVersion = '1.5.8.RELEASE'
     }
     repositories {
         mavenCentral()
@@ -35,7 +34,7 @@ apply plugin: 'idea'
 apply plugin: 'com.cinnober.gradle.semver-git'
 
 // XXX please change with your commits according to http://semver.org/
-project.version = '0.0.1'
+project.version = '0.0.2'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -58,6 +57,7 @@ Forces dependencies' cache invalidation for each build for dependencies marked w
     { changing = true }
     e.g.
     compile('com.github.symbiote-h2020:SymbIoTeLibraries:develop-SNAPSHOT'){ changing = true }
+    
  */
 configurations.all {
     // check for updates every build
@@ -77,34 +77,39 @@ dependencies {
             4) never commit build.gradle which has project dependencies active as it will break CI builds
     */
     //compile project(':SymbIoTeLibraries')
-    compile('com.github.symbiote-h2020:SymbIoTeLibraries:WP4_demo-SNAPSHOT') { changing = true }
-    // compile('com.github.symbiote-h2020:SymbIoTeLibraries:0.2.1')
-
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:5+') { changing = true }
     // Spring
+    compile('org.springframework.cloud:spring-cloud-starter')
+    compile('org.springframework.cloud:spring-cloud-starter-config')
+    compile('org.springframework.cloud:spring-cloud-starter-eureka')
+    compile('org.springframework.cloud:spring-cloud-starter-zipkin')
     compile('org.springframework.boot:spring-boot-starter-amqp')
+    compile("org.springframework.integration:spring-integration-mqtt:4+")
     compile('org.springframework.boot:spring-boot-starter-data-rest')
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.boot:spring-boot-starter-data-mongodb')
-    compile('org.springframework:spring-web')
 
     // OData
     compile("org.apache.olingo:odata-commons-api:${'4.3.0'}")
     compile("org.apache.olingo:odata-commons-core:${'4.3.0'}")
-
+    
     compile("org.apache.olingo:odata-server-api:${'4.3.0'}")
     compile("org.apache.olingo:odata-server-core:${'4.3.0'}")
-
+  
+    // Websocket
+    compile("org.springframework.boot:spring-boot-starter-websocket")
+    
+    // test only
+    compile("org.springframework.boot:spring-boot-starter-web")
+    testCompile("org.springframework.boot:spring-boot-starter-test")
+        
     //Owlapi
-    compile('net.sourceforge.owlapi:owlapi-distribution:5.1.0')
-    compile('net.sourceforge.owlapi:owlapi-contract:3.4')
-
-    // Other
-    compile('org.apache.commons:commons-lang3:3.0')
-
-    // tests only
-    testCompile('junit:junit:4.+')
-    testCompile('org.springframework.boot:spring-boot-starter-test')
-
+    //compile('net.sourceforge.owlapi:owlapi-distribution:5.1.1')
+    compile('net.sourceforge.owlapi:owlapi-contract:5.1.1')
+    compile('net.sourceforge.owlapi:owlapi-util:3.3')
+    
+    //json
+    compile('org.json:json:20171018')
 }
 
 // code quality below
