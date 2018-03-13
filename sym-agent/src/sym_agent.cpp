@@ -18,9 +18,6 @@
 
 volatile boolean keepAlive_triggered = false;
 volatile unsigned long keep_alive_interval = 0;
-//String listResources[RES_NUMBER];
-//String (* functions[RES_NUMBER])();
-//boolean (* actuatorsFunction[RES_NUMBER])(int);
 uint8_t ppsk[HMAC_DIGEST_SIZE] = {0x46, 0x72, 0x31, 0x73, 0x80, 0x52, 0x78, 0x92, 0x52, 0x81, 0xad, 0xd7, 0x57, 0x2c, 0x04, 0xa5, 0xdd, 0x84, 0x16, 0x68};
 
 void keepAliveISR(void){
@@ -36,13 +33,13 @@ void keepAliveISR(void){
 	interrupts();
 }
 
-String dummyFunctionSensor(){
-	return "NA";
-}
+//String dummyFunctionSensor(){
+//	return "NA";
+//}
 
-boolean dummyFunctionActuator(int value){
-	return true;
-}
+//boolean dummyFunctionActuator(int value){
+//	return true;
+//}
 
 symAgent::symAgent()
 {
@@ -100,8 +97,10 @@ String symAgent::getSymIdFromFlash() {
 	PI("Read this SYM-ID from flash: ");
 	P(tmpID);
 	EEPROM.end();
-	if (tmpID != "ffffffffffffffffffffffffffffffff") {
+				//ffffffffffffffffffffffff
+	if (tmpID != "ffffffffffffffffffffffff") {
 		//valid sym-id
+		P("Valid sym-id!");
 		return tmpID;
 	} else return "";
 }
@@ -269,7 +268,6 @@ boolean symAgent::elaborateQuery()
 boolean symAgent::TestelaborateQuery(String resp)
 {
 	P("TEST-RESOURCE-QUERY");
-	//String resp = _server->arg(0);
 	_jsonBuff.clear();
 		JsonObject& _root = _jsonBuff.parseObject(resp);
 		if (!_root.success()) {
@@ -373,7 +371,6 @@ boolean symAgent::TestelaborateQuery(String resp)
 
 void symAgent::setResource(String rapRequest) {
 	P("TEST-SET RESOURCE");
-	//String resp = _server->arg(0);
 	_jsonBuff.clear();
 		JsonObject& _root = _jsonBuff.parseObject(rapRequest);
 		if (!_root.success()) {
@@ -384,7 +381,7 @@ void symAgent::setResource(String rapRequest) {
 		_root.prettyPrintTo(Serial);
 		P(" ");
 #endif
-		if (_root["resourceInfo"][0]["symbioteId"] == _symId && _root["resourceInfo"][0]["internalId"] == _semantic->getInternalId()) {
+		if (_root["resourceInfo"][0]["symbioteId"] == _symId && _root["resourceInfo"][0]["internalId"] == _internalId) {
 			// check only the first if the array, because the other should be the same
 			for (uint8_t i = 0; i < _semantic->getCapabilityNum(); i++) {
 				//check if any of my resources should be changed
@@ -432,101 +429,11 @@ void symAgent::setResource(String rapRequest) {
 			PI("What I expect:\nSym-Id:\t");
 			P(_symId);
 			PI("InternalId:\t");
-			P(_semantic->getInternalId());
+			P(_internalId);
 			return;
 		}
 	return;
 }
-
-/////////////////////////////////////////////////////////////////////////////////
-/*
-void symAgent::setResource(String rapRequest) {
-	P("SET RESOURCE");
-	//String resp = _server->arg(0);
-	_jsonBuff.clear();
-		JsonObject& _root = _jsonBuff.parseObject(rapRequest);
-		if (!_root.success()) {
-    		P("parseObject() failed");
-    		return;
-		}
-#if DEBUG_SYM_CLASS == 1
-		_root.prettyPrintTo(Serial);
-		P(" ");
-#endif
-		if (_root["resourceInfo"][0]["symbioteId"] == _symId) {
-			// check only the first if the array, because the other should be the same
-			for (uint8_t i = 0; i< RES_NUMBER; i++) {
-				//check if any of my resources should be changed
-				for (uint8_t j = 0; j < RES_NUMBER; j++) {
-					if (_root["resourceInfo"][i]["internalId"] == listResources[j]) {
-						String field_value = "";
-						// search for something like this:
-						// _root["body"][1]["red"]["value"] = 200
-						/*
-							{
-							  	"resourceInfo" : [ {
-							    "symbioteId" : "12345",
-							    "internalId" : "red",
-							    "type" : "light"
-							  }, {
-							    "symbioteId" : "12345",
-							    "internalId" : "blue",
-							    "type" : "light"
-							  }],
-							  "body" : {
-							    "red": [
-							      { "{restriction}": "{value}" }
-							    ] 
-							  },
-							  "type" : "SET"
-							}
-						
-							//FIXME: wait a concrete example to prse the action
-						field_value = _root["body"][i][(char *)listResources[j].c_str()]["value"].as<String>();
-						actuatorsFunction[j](field_value.toInt());
-					}
-				}
-				
-			}
-		} else {
-			PI("Mismatch in symId.\nWhat I got: ");
-			P(_root["resourceInfo"][0]["symbioteId"].as<String>());
-			PI("What I expect: ");
-			P(_symId);
-			return;
-		}
-
-
-
-		String id = _root["id"].as<String>();
-		if (id == _symId){
-			String field = "";
-			String field_value = "";
-			for (int i = 0; i < RES_NUMBER; i++) {
-
-				//TODO CHECK "NA" field
-				field = listResources[i];
-				field_value = _root["action"][field].as<String>();
-				PI(field);
-				PI(" value[");
-				PI(i);
-				PI("]=");
-				P(field_value);
-				actuatorsFunction[i](field_value.toInt());
-			}
-
-			String tmpResp = "{ \"id\":\"" + _symId + "\", \"response\": \"OK\"}";
-			_server->send(200, "application/json", tmpResp);
-			return;
-		} else {
-			P("Wrong id");
-			String tmpResp = "{ \"id\":\"" + _symId + "\", \"value\":\"Error\"}";
-			_server->send(200, "application/json", tmpResp);
-			return;
-		}
-	return;
-}
-*/
 
 void symAgent::subscribe()
 {
@@ -549,8 +456,6 @@ void symAgent::getResource() {
 			while (res_index < _semantic->getObsPropertyNum()) {
 					// this return something like "33 °C"
 				String tmpString = _semantic->getObsPropertyValue(res_index);
-				//PI("This is the resource value: ");
-				//P(tmpString);
 					//create the nested object for each resource
 				JsonObject& root_internal = root.createNestedObject();
 					//this save only the value before the " ", so in this case "33"
@@ -603,7 +508,6 @@ boolean symAgent::begin()
 				_wifi_psw = wifi_psw;
 				_wifi_ssid = WiFi.SSID(i);
 					// get as ssp identifier the symbiotic code exposed by wifi ssid
-  					//_sspId = WiFi.SSID(i).substring(4);
 				_sspId = WiFi.SSID(i);
 				byte mac[6];
 				WiFi.macAddress(mac);
@@ -621,9 +525,6 @@ boolean symAgent::begin()
 				//create a new http client class 
 				_rest_client = new RestClient(JOIN_URL, SSP_PORT);
 				_rest_client->setContentType("application/json");
-
-				//_RapClient = new RestClient(RAP_URL, RAP_PORT);
-				//_RapClient->setContentType("application/json");
 				PI("Got this IDs:\n\tsspId: ");
 				P(_sspId);
 				PI("\tid: ");
@@ -675,7 +576,6 @@ boolean symAgent::begin()
 int symAgent::join()
 {
 	P("JOIN");
-	//struct join_resp;
 	_jsonBuff.clear();
 	JsonObject& _root = _jsonBuff.createObject();
 	/*
@@ -683,15 +583,17 @@ int symAgent::join()
 		{
 		   String sym-id,
 		   String pluginId,
-		   String pluginURL,
 		   String semanticDescription
 		   String dk1,
 		   String hashField
  		}
 	*/
-	_root["sym-id"] = _symId;
+ 		//read from flash if there is stored a valid symId
+	_symId = getSymIdFromFlash();
+	_root["internalId"] = _internalId;
+	_semantic->setSymId(_symId);
 	_root["pluginId"] = _mac;
-	_root["pluginURL"] = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) + ":80";
+	//_root["pluginURL"] = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) + ":80";
 	_root["dk1"] = _security->getDK1();
 		//Regarding the hashField could be (i) all 0 when the SDEV joins for the first time
 		// or (ii) hashField = H(sym-id || previous dk1)
@@ -837,6 +739,7 @@ unsigned long symAgent::getKeepAlive()
 int symAgent::sendKeepAlive(String& response)
 {
 	P("KEEPALIVE");
+	P("Remember to change if needed the meaning of id field");
 	KEEPALIVE_LED_ON
 	delay(50);
 	_jsonBuff.clear();
@@ -937,8 +840,6 @@ String symAgent::getResourceAsString()
 			while (res_index < _semantic->getObsPropertyNum()) {
 					// this return something like "33 °C"
 				String tmpString = _semantic->getObsPropertyValue(res_index);
-				//PI("This is the resource value: ");
-				//P(tmpString);
 					//create the nested object for each resource
 				JsonObject& root_internal = root.createNestedObject();
 					//this save only the value before the " ", so in this case "33"

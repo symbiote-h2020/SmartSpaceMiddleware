@@ -15,13 +15,13 @@
 *******************************************************************************/
 #include "semantic_resources.h"
 
-Semantic::Semantic( String internalId, String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property)
+Semantic::Semantic(String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property)
 {
 	_capabilityNumber = capNum;
 	_capability = cap;
 	_obsPropertyNumber = obsNumber;
 	_obsProperty = property;
-	_internalId = internalId;
+	_symId = "";
 	_name = name;
 	_url = url;
 }
@@ -30,12 +30,12 @@ String Semantic::returnSemanticString()
 {
 	String tmpString = "";
 	tmpString += "{\"@c\":\".SmartDevice\",\"connectedTo\":\"*tba*\",\"available\":\"True\",\"hasResource\":{\"@c\":\".Resource\",\"id\":\"";
-	tmpString += _internalId;
+	tmpString += _symId;
 	tmpString += "\",\"name\":\"";
 	tmpString += _name;
 	tmpString += "\",\"description\":\"NA\",\"labels\":\"NA\",\"interworkingServiceURL\":\"";
 	tmpString += _url;
-	tmpString += "\",\"locatedAt\":\"*tba*\",\"services\":null},\"capabilities\":[";
+	tmpString += "/rap/v1/request\",\"locatedAt\":\"*tba*\",\"services\":null},\"capabilities\":[";
 	for (uint8_t i = 0; i < _capabilityNumber-1; i++) {
 			tmpString += _capability[i].returnSemanticString();
 			tmpString += ",";
@@ -57,14 +57,19 @@ String Semantic::getName()
 	return _name;
 }
 
-String Semantic::getInternalId()
-{
-	return _internalId;
-}
+//String Semantic::getSymId()
+//{
+	//return _symId;
+//}
 
 String Semantic::getURL()
 {
 	return _url;
+}
+
+void Semantic::setSymId(String symId)
+{
+	_symId = symId;
 }
 
 String Semantic::getParamName(uint8_t capNum, uint8_t paramNum)

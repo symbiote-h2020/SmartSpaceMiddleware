@@ -46,19 +46,17 @@
 #define FLASH_LSP_END_PREV_DK1    47 
 
 #define FLASH_AGENT_START_SYMID 48
-  // 16 HEX bytes for sym-Id
-#define FLASH_AGENT_END_SYMID   63
+  // 12 HEX bytes for sym-Id
+#define FLASH_AGENT_END_SYMID   60
 
 #define MAX_JSON_SIZE 2500
-//#define MAX_JSON_RES_SIZE 300
-#define JOIN_URL "192.168.97.105"
+#define JOIN_URL "innkeeper.symbiote.org"
 //#define RAP_URL "192.168.97.105"
 #define JOIN_PATH "/innkeeper/registry"
 #define RAP_PATH "/rap/v1/request"
 #define KEEPALIVE_PATH "/innkeeper/keep_alive"
 
 #define SSP_PORT 8080
-//#define RAP_PORT 8080
 
   // This is the pin led definition to led on board
 #define JOIN_LED 0
@@ -86,8 +84,8 @@
 
 void keepAliveISR(void);
 
-String dummyFunctionSensor();
-boolean dummyFunctionActuator(int value);
+//String dummyFunctionSensor();
+//boolean dummyFunctionActuator(int value);
 
 
 

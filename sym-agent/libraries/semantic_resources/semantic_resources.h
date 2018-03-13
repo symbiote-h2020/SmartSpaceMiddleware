@@ -175,11 +175,12 @@ class Capability {
 
 class Semantic {
   public:
-    Semantic( String internalId, String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property);
+    Semantic(String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property);
     String returnSemanticString();
     String getName();
     String getInternalId();
     String getURL();
+    void setSymId(String symId);
 
     String getParamName(uint8_t capNum, uint8_t paramNum);
     uint8_t getParamNum(uint8_t capNum);
@@ -194,7 +195,7 @@ class Semantic {
     String getObsPropertyValue(uint8_t propertyNumber);
   private:
   	String _name;
-  	String _internalId;
+  	String _symId;
   	String _url;
     uint8_t _capabilityNumber;
     Capability* _capability;

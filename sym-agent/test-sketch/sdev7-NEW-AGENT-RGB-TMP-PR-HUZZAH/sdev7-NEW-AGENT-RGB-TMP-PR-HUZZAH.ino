@@ -76,9 +76,9 @@ Parameter paramPointer[3] = {Parameter("r", "xsd:unsignedByte", "0", "255", &set
 
 Capability c1("RGBCapability", 3, paramPointer);
   //    internalID, name, url, capability_number, Capability* Class, observesProperty_number, Property* Class
-Semantic s1("sym1", "aggeggio", "192.168.97.55", 1, &c1, 2, propertyPointer);
+Semantic s1("aggeggio", "192.168.97.55", 1, &c1, 2, propertyPointer);
 
-symAgent sdev1(10000, "sym-Agent on HUZZAH", "RGB Leds HAT", false, &s1);
+symAgent sdev1(10000, "sym1", "RGB Leds HAT", false, &s1);
 
 extern volatile boolean keepAlive_triggered;
 Metro registrationMetro = Metro();
