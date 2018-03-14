@@ -114,8 +114,8 @@ void setup() {
   Serial.print("Temperature:\t");
   Serial.println(readTemp());
   sdev1.TestelaborateQuery(tmpTestJson);
-  delay(3000);
-  sdev1.TestelaborateQuery(tmpTestJson2);
+  //delay(3000);
+  //sdev1.TestelaborateQuery(tmpTestJson2);
   if (join_success) Serial.println("\nJoin success!");
 }
 

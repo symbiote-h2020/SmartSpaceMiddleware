@@ -275,7 +275,9 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 				String sign = _root["sign"].as<String>();
 				String decrypted;
 				if (decryptAndVerify(authn, decrypted, sign)) {
-
+					P("decryptAndVerify OK");
+				} else {
+					P("decryptAndVerify KO");
 				}
 				_sn = _sn+1;
 				return COMMUNICATION_OK;
@@ -505,7 +507,13 @@ void lsp::createAuthNPacket(uint8_t* dataout) {
 		gwNonceString = '0' + gwNonceString;
 
 	}
-	String dataToHash = String(_SDEVNonce, HEX) + gwNonceString;
+	String SDEVNonceString = String(_SDEVNonce, HEX);
+	while (SDEVNonceString.length() < 8) {
+		// we need to add '0'
+		SDEVNonceString = '0' + SDEVNonceString;
+
+	}
+	String dataToHash = SDEVNonceString + gwNonceString;
 	PI("\n**********\nSHA1(");
 	PI(dataToHash);
 	PI(")");
@@ -791,9 +799,14 @@ void lsp::decrypt(unsigned char* crypted, uint8_t cryptedSize, String& output) {
   	AES aesDencryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_DECRYPT);
   	aesDencryptor.process((uint8_t*)crypted, deciphered, length);
   	printBuffer(deciphered, length, "DECRYPT(BINARY)");
-  	for (uint8_t i = 0; i< length; i++) output += String(deciphered[i], HEX);
-}
+  	for (uint8_t i = 0; i< length; i++) {
+  		output += String((char)deciphered[i]);
+  	} 
+  	output = output.substring(0,output.lastIndexOf("}")+1);
+  	PI("String decrypted: ");
+  	P(output);
 
+}
 
 
 /* base64_to_binary:

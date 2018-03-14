@@ -666,15 +666,19 @@ int symAgent::join()
 		_rootClearResp.prettyPrintTo(Serial);
 		P("");
 #endif
-		 if (!(_rootClearResp["result"].as<String>() == "REJECTED")) {
+		 if ((_rootClearResp["results"].as<String>() == "REJECTED")) {
 			//kick away fro the SSP
+			P("JOIN REJECTED");
 			return ERR_KICKED_OUT_FROM_JOIN;
-		} else if (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED") {
+		} else if (_rootClearResp["results"].as<String>() == "OK" || _rootClearResp["results"].as<String>() == "ALREADY_REGISTERED") {
+			P("JOIN OK");
 			_regExpiration = _rootClearResp["registrationExpiration"].as<unsigned int>();
-			if (_symId == "" || _symId == _rootClearResp["sym-id"].as<String>()) {
+			if (_symId == "" || _symId == _rootClearResp["symId"].as<String>()) {
 				// everything ok
-				_symId = _rootClearResp["sym-id"].as<String>();
+				P("JOIN SYMID OK");
+				_symId = _rootClearResp["symId"].as<String>();
 			} else {
+				P("JOIN MISMATCH");
 				return ERR_SYMID_MISMATCH_FROM_JOIN;
 			}
 		} else {
@@ -715,7 +719,6 @@ int symAgent::join()
 	}
 	return statusCode;
 }
-
 
 String symAgent::createSemanticDescription() {
 	return _semantic->returnSemanticString();

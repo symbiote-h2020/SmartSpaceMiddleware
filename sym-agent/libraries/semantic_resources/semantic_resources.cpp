@@ -29,7 +29,7 @@ Semantic::Semantic(String name, String url, uint8_t capNum, Capability* cap, uin
 String Semantic::returnSemanticString()
 {
 	String tmpString = "";
-	tmpString += "{\"@c\":\".SmartDevice\",\"connectedTo\":\"*tba*\",\"available\":\"True\",\"hasResource\":{\"@c\":\".Resource\",\"id\":\"";
+	tmpString += "{\"@c\":\".SmartDevice\",\"connectedTo\":\"*tba*\",\"available\":\"True\",\"hasResource\":{\"@c\":\".Resource\",\"symId\":\"";
 	tmpString += _symId;
 	tmpString += "\",\"name\":\"";
 	tmpString += _name;
