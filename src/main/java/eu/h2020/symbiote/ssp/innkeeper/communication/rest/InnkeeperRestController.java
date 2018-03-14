@@ -85,7 +85,7 @@ public class InnkeeperRestController {
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 
 		ResponseEntity<Object> responseEntity = null;
-		boolean isLwspEnabled = true;
+		boolean isLwspEnabled = false;
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
@@ -116,14 +116,20 @@ public class InnkeeperRestController {
 			}
 
 		}else{
+			HttpHeaders responseHeaders = new HttpHeaders();
+
 			// LWSP is disabled
 			//log.info("PAYLOAD:"+payload);
+			String decoded_message = payload;
+			
+			SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
 
+			InnkeeperSDEVRegistrationResponse respSDEV = innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
 
-
-
-
-
+			lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+			String encodedResponse = new ObjectMapper().writeValueAsString(respSDEV);
+			return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.OK);
 		}
 
 
