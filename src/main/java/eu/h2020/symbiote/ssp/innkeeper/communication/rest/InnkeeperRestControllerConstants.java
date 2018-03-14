@@ -19,4 +19,10 @@ public class InnkeeperRestControllerConstants {
     public static final List<String> SDEV_REGISTRY_PAYLOAD_VALS= Arrays.asList("id","pluginId","pluginURL","semanticDescription");
     public static final List<String> PLATFORM_REGISTRY_PAYLOAD_VALS= Arrays.asList("id","name","description","url","informationModel");
     public static final List<String> JOIN_RESOURCE_PAYLOAD_VALS= SDEV_REGISTRY_PAYLOAD_VALS;
+    
+    public static final String SDEV_REGISTRATION_OK = "OK";
+    public static final String SDEV_REGISTRATION_ALREADY_REGISTERED = "ALREADY_REGISTERED";
+    public static final String SDEV_REGISTRATION_CLOUD_REJECTED = "CLOUD_REJECTED";
+    public static final String SDEV_REGISTRATION_REJECTED = "REJECTED";
+    
 }

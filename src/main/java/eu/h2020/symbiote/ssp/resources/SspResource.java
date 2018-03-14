@@ -10,16 +10,8 @@ public class SspResource {
     @org.springframework.data.annotation.Id
     @JsonProperty("internalId")
     private String internalId;
-    @JsonProperty("pluginId")
-    private String pluginId;
-    @JsonProperty("pluginUrl")
-    private String pluginUrl;
-    @JsonProperty("dk1")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String derivedKey1;
-    @JsonProperty("hashField")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String hashField;
+    @JsonProperty("symIdSDEV")
+    private String symIdSDEV;        
     @JsonProperty("accessPolicy")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private IAccessPolicySpecifier accessPolicy;
@@ -41,25 +33,13 @@ public class SspResource {
         this.internalId = internalId;
     }
 
-    public String getPluginId() {
-        return this.pluginId;
+    public String getSymIdDEV() {
+        return this.symIdSDEV;
     }
 
-    public void setPluginId(String pluginId) {
-        this.pluginId = pluginId;
+    public void setSymIdDEV(String symIdSDEV) {
+        this.symIdSDEV = symIdSDEV;
     }
-
-    public String getPluginUrl() { return pluginUrl; }
-
-    public void setPluginUrl(String pluginUrl) { this.pluginUrl = pluginUrl; }
-
-    public String getDerivedKey1() { return derivedKey1; }
-
-    public void setDerivedKey1(String derivedKey1) { this.derivedKey1 = derivedKey1; }
-
-    public String getHashField() { return hashField; }
-
-    public void setHashField(String hashField) { this.hashField = hashField; }
 
     public IAccessPolicySpecifier getAccessPolicy() {
         return this.accessPolicy;

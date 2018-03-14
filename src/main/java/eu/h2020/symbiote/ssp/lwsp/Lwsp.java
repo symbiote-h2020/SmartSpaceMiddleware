@@ -36,6 +36,7 @@ import org.json.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
@@ -109,6 +110,9 @@ public class Lwsp {
 	private final String EncJson=         "{\"mti\": \"0x60\",\"data\": \"%s\",\"sessionId\": \"%s\"}";
 
 	private Timestamp sessionExpiration;
+	
+	private String symIdSDEV;
+	private String internalIdSDEV; 
 
 	/*
   _____      _            _         __  __      _   _               _
@@ -511,7 +515,7 @@ public class Lwsp {
 			log.info("Sent back 0x20:\n"+OutBuffer);
 			if (!this.get_mti().contains("0xf")) 
 				{
-				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime);
+				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime,symIdSDEV,internalIdSDEV);
 				sessionRepository.save(sessionInfo);
 				}
 			break;
@@ -574,7 +578,7 @@ public class Lwsp {
 							jsonData1.put("authn", Base64.getEncoder().encodeToString(aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk1)));
 							out=jsonData1.toString();
 							this.sessionExpiration = new Timestamp(System.currentTimeMillis());
-							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration);
+							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration,symIdSDEV,internalIdSDEV);
 							sessionRepository.save(sessionInfo);
 							out=jsonData1.toString();
 							log.info("\n+--------------------------------+"+
@@ -682,7 +686,7 @@ public class Lwsp {
 	public void setSessionExpiration() {
 		
 	}
-	public void send_data(String data) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException 
+	public String send_data(String data) throws IOException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException 
 	{
 		JSONObject jsonData;
 		SessionInfo s;
@@ -711,9 +715,11 @@ public class Lwsp {
 				{
 					String decoded= Base64.getEncoder().encodeToString(aes128enc(data.getBytes(),HexSS2BArray(dk.split(":")[2]),iv.getBytes()));
 					this.OutBuffer=String.format(EncJson, decoded, this.sessionId);
+					return this.OutBuffer;
 				} 
 			}
 		} 
+		return null;
 	}
 	public void setData(String data) {
 		this.data=data;
@@ -724,4 +730,32 @@ public class Lwsp {
 	public void setAllowedCipher(String allowedCipher) {
 		this.allowedCipher=allowedCipher;
 	}
+	
+	
+	public String getInternalIdSDEV() {
+        return this.internalIdSDEV;
+    }
+    
+    public void setInternalIdSDEV(String internalIdSDEV) {
+        this.internalIdSDEV = internalIdSDEV;
+    }
+    
+    public String getSymIdSDEV() {
+        return this.symIdSDEV;
+    }
+    
+    public void setSymIdSDEV(String symIdSDEV) {
+        this.symIdSDEV = symIdSDEV;
+    }
+    
+    public void updateSessionRepository(String sessionId, String internalIdSDEV, String symIdSDEV) {
+    		SessionInfo s = sessionRepository.findBySessionId(sessionId);
+    		s.setInternalIdSDEV(internalIdSDEV);
+    		s.setSymIdSDEV(symIdSDEV);
+    		sessionRepository.save(s);
+    }
+    
+    public String getSessionId() {
+    		return sessionId;
+    }
 }

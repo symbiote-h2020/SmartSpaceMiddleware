@@ -21,6 +21,7 @@ import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
+import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
@@ -28,9 +29,9 @@ import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 
 @Service
-public class InkRegistrationRequest {
+public class InnkeeperResourceRegistrationRequest {
 
-	private static Log log = LogFactory.getLog(InkRegistrationRequest.class);
+	private static Log log = LogFactory.getLog(InnkeeperResourceRegistrationRequest.class);
 
 	@Autowired
 	ResourcesRepository resourcesRepository;
@@ -41,8 +42,8 @@ public class InkRegistrationRequest {
 	@Autowired
 	OwlApiHelper owlApiHelp;
 
-	public InkRegistrationResponse registry(InkRegistrationInfo info, Date currTime) throws InvalidArgumentsException {
-		InkRegistrationResponse res= null;
+	public InnkeeperResourceRegistrationResponse registry(InkRegistrationInfo info, Date currTime) throws InvalidArgumentsException {
+		InnkeeperResourceRegistrationResponse res= null;
 
 
 		List<CloudResource> msgs = info.getSemanticDescription();
@@ -69,7 +70,7 @@ public class InkRegistrationRequest {
 			addResource(symbioteId, internalId, props, pluginId,currTime);
 		}
 		addCloudResourceInfoForOData(msgs);
-		res = new InkRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
+		res = new InnkeeperResourceRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
 
 
 		return res;

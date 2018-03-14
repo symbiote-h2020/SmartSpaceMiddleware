@@ -8,11 +8,15 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsExce
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationInfo;
-import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationRequest;
-import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationResponse;
+import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResourceRegistrationRequest;
+import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResourceRegistrationResponse;
+import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperSDEVRegistrationRequest;
+import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperSDEVRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.resources.SspResource;
+import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
+import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
@@ -36,8 +40,10 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -54,158 +60,82 @@ public class InnkeeperRestController {
 
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
 
-	//FIXME: still necessary?
-	@Value("${innkeeper.tag.connected_to}")
-	private String innk_connected_to;
-
-	//FIXME: still necessary?
-	@Value("${innkeeper.tag.service_url}")
-	private String innk_service_url;
-
-	//FIXME: still necessary?
-	@Value("${innkeeper.tag.located_at}")
-	private String innk_located_at;
 
 	@Autowired
 	ResourcesRepository resourcesRepository;
 
 	@Autowired
-	InkRegistrationRequest inkRegistrationRequest;
+	InnkeeperSDEVRegistrationRequest innkeeperSDEVRegistrationRequest;
 	@Autowired
 	Lwsp lwsp;
 
+
+	//REGISTARTION OF A RESOURCE
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
-		log.info("NOT USED");
-		return null;
-	}
-
-	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> registry(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
-
-		// EXAMPLE: CREATION of JSON CloudResource list, used on innkeeper side it to test mongodb interaction
-		/*
-		InkRegistrationInfo innksdevregInfoTest = new InkRegistrationInfo();
-		CloudResource r1 = new CloudResource();		
-		Sensor s1 = new Sensor();
-		List<Service> services_list = new ArrayList<Service>();
-		Service serv1 = new Service();
-		List <Parameter> parameters = new ArrayList <Parameter>();
-		Parameter param1 = new Parameter();
-		param1.setName("param1");				
-		parameters.add(param1);
-		serv1.setParameters(parameters);	
-		services_list.add(serv1);
-		s1.setServices(services_list);
-		r1.setResource(s1);
-
-		CloudResource r2 = new CloudResource();
-		Actuator a1 = new Actuator();
-		r2.setResource(a1);
-
-		List <CloudResource> semdescr = new ArrayList<CloudResource>();
-
-		semdescr.add(r1);
-		semdescr.add(r2);
-		innksdevregInfoTest.setSemanticDescription(semdescr);
-
-		log.info(new ObjectMapper().writeValueAsString(innksdevregInfoTest));
-		 */
 
 		ResponseEntity<Object> responseEntity = null;
 
-		
-		lwsp.setData(payload);
-		lwsp.setAllowedCipher("0x008c");
-		String outputMessage = lwsp.processMessage();
-		log.info(outputMessage);
-		log.info("MTI:"+lwsp.get_mti());
-		
-		switch (lwsp.get_mti()) {
-		case LwspConstants.SDEV_Hello:
-		case LwspConstants.SDEV_AuthN:
+		return responseEntity;
+	}
+
+
+	//REGISTRATION OF SDEV
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
+	public ResponseEntity<Object> registry(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
+
+		ResponseEntity<Object> responseEntity = null;
+		boolean isLwspEnabled = true;
+		if (isLwspEnabled) {
+			lwsp.setData(payload);
+			lwsp.setAllowedCipher("0x008c");
+			String outputMessage = lwsp.processMessage();
+			log.info(outputMessage);
+			log.info("MTI:"+lwsp.get_mti());
+			
+			
 			HttpHeaders responseHeaders = new HttpHeaders();
-			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-			return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
-		case LwspConstants.SDEV_REGISTRY:
-			
-			// get SspResource
-			String decoded_message = lwsp.get_response();
-			//De-serialize registration Message
-			SspResource sspResource = new ObjectMapper().readValue(decoded_message, SspResource.class);
-			String symId=sspResource.getResource().getId();
-			
-			//generate response
-			JSONObject resp = new JSONObject();
-			// TODO: analyze symId from response if exist use it otherwise ask to the core...
-			resp.put("results", "OK"); // TODO: ok, rejected, already registered...
-			resp.put("symId","NEW SYM ID"); //TODO: add here from CORE
-			resp.put("registrationExpiration",60);
-			//send response			
-			
-			
-			
-            lwsp.send_data(resp.toString());
-            log.info("resp:"+resp.toString());
-            log.info("\n\n\n\n\n"+lwsp.get_response()+"\n-------------------------");
-            String encodedResponse=lwsp.get_response();
-            HttpHeaders responseHeaders1 = new HttpHeaders();
-            responseHeaders1.setContentType(MediaType.APPLICATION_JSON);
-            return new ResponseEntity<Object>(encodedResponse,responseHeaders1,HttpStatus.OK);
-						
-//			InkRegistrationInfo innksdevregInfo = new ObjectMapper().readValue(decoded_message, InkRegistrationInfo.class);
+			switch (lwsp.get_mti()) {
+			case LwspConstants.SDEV_Hello:
+			case LwspConstants.SDEV_AuthN:
 
-//			log.info(new ObjectMapper().writeValueAsString(innksdevregInfo));
-//			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo,lwsp.getSessionExpiration());	
-//			log.info(new ObjectMapper().writeValueAsString(res));
-		}
-		
-		
-		
-/*
-		if (session_result != null) {
-			
-		}
-*/
+				responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+				return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
+			case LwspConstants.SDEV_REGISTRY:
+				String decoded_message = lwsp.get_response();
+				
+				SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
 
+				InnkeeperSDEVRegistrationResponse respSDEV = innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
 
-		//save session in mongoDB
-		// check MTI: if exists -> negotiation else DATA
+				lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+				responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(respSDEV));
+				return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.OK);
 
-
-		/*
-		InkRegistrationInfo info = new InkRegistrationInfo();
-
-
-
-
-		switch (lwsp.getMti()) {
-		case LwspConstants.GW_INK_AuthN:
-			ObjectMapper sdevm = new ObjectMapper();
-
-			InkRegistrationInfo innksdevregInfo = sdevm.readValue(lwsp.decode(), InkRegistrationInfo.class);
-
-			if (innksdevregInfo.getSymId() == "") {
-				log.info("New SDEV Registartion Request");
-				// TODO: PERFORM OPERATIONS TO GET NEW SYMBIOTE ID FROM CORE
-			}else {
-				// TODO: UPDATE REGISTRATION
-				lwspService.saveSession(lwsp);
 			}
-			innksdevregInfo.setConnectedTo(innk_connected_to);
 
-			//registry on RAP mongoDB
-			InkRegistrationResponse res = inkRegistrationRequest.registry(innksdevregInfo);	
-			log.info(sdevm.writeValueAsString(res));
-			break;
-		default:
-			break;
+		}else{
+			// LWSP is disabled
+			//log.info("PAYLOAD:"+payload);
+
+
+
+
+
+
 		}
-		 */
+
+
+
 
 		return responseEntity;
 
 	}
+
+
+
+
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> unregistry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
@@ -213,7 +143,7 @@ public class InnkeeperRestController {
 
 		//Lwsp lwsp = new Lwsp(payload);
 		//String sessionId = lwspService.unregistry(lwsp);
-		
+
 		/*
 		if (sessionId!=null) {
 
@@ -233,9 +163,9 @@ public class InnkeeperRestController {
 
 			}
 		}
-		*/
+		 */
 		return responseEntity;
-		 
+
 	}
 
 
@@ -243,7 +173,7 @@ public class InnkeeperRestController {
 	public ResponseEntity<Object> keep_alive(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
 
 		ResponseEntity<Object> responseEntity = null;
-/*
+		/*
 		Lwsp lwsp = new Lwsp(payload);
 		Date currTime = lwspService.keepAliveSession(lwsp);
 		if (currTime!=null) {
@@ -266,7 +196,7 @@ public class InnkeeperRestController {
 			}
 
 		}
-*/
+		 */
 		return responseEntity;
 	}
 

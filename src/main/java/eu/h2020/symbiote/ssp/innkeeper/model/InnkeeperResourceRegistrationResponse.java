@@ -10,9 +10,9 @@ import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 
-public class InkRegistrationResponse {
+public class InnkeeperResourceRegistrationResponse {
 
-	private static Log log = LogFactory.getLog(InkRegistrationResponse.class);
+	private static Log log = LogFactory.getLog(InnkeeperResourceRegistrationResponse.class);
     @Autowired
     ResourcesRepository resourcesRepository;
 
@@ -26,13 +26,13 @@ public class InkRegistrationResponse {
 	@JsonProperty("result") 					private String result;
 	@JsonProperty("registration_expiration") private int registration_expiration;
 	
-	public InkRegistrationResponse() {}
+	public InnkeeperResourceRegistrationResponse() {}
 	
-	public InkRegistrationResponse(String symId, String result) {
+	public InnkeeperResourceRegistrationResponse(String symId, String result) {
 		this.symId=symId;
 		this.result=result;
 	}
-	public InkRegistrationResponse(String symId, String result, int registration_expiration) {
+	public InnkeeperResourceRegistrationResponse(String symId, String result, int registration_expiration) {
 		this.symId=symId;
 		this.result=result;
 		this.registration_expiration=registration_expiration;
