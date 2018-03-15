@@ -20,6 +20,7 @@ import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
+import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -69,6 +70,9 @@ public class InnkeeperRestController {
 	@Autowired
 	Lwsp lwsp;
 
+	@Autowired
+	SessionRepository sessionRepository;
+
 
 	//REGISTARTION OF A RESOURCE
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
@@ -92,8 +96,8 @@ public class InnkeeperRestController {
 			String outputMessage = lwsp.processMessage();
 			log.info(outputMessage);
 			log.info("MTI:"+lwsp.get_mti());
-			
-			
+
+
 			HttpHeaders responseHeaders = new HttpHeaders();
 			switch (lwsp.get_mti()) {
 			case LwspConstants.SDEV_Hello:
@@ -103,30 +107,59 @@ public class InnkeeperRestController {
 				return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
 			case LwspConstants.SDEV_REGISTRY:
 				String decoded_message = lwsp.get_response();
-				
+
 				SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
 
 				InnkeeperSDEVRegistrationResponse respSDEV = innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
 
-				lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
-				responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(respSDEV));
-				return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.OK);
+				//DEBUG: MOCK
+				switch (respSDEV.getResult()) {
+				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_CLOUD_REJECTED: //OFFLINE
+					lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+					break;
+				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED:
+				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_ALREADY_REGISTERED:
+					sessionRepository.delete(sessionRepository.findBySessionId(lwsp.getSessionId()));
+					break;
+				default:
+					lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+					break;
+				}
 
+				responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+				String encodedResponse = new ObjectMapper().writeValueAsString(respSDEV);
+				return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.OK);
 			}
 
 		}else{
 			HttpHeaders responseHeaders = new HttpHeaders();
+			Date currTime = new Timestamp(System.currentTimeMillis());
+			lwsp.generateSessionId();
+			SessionInfo sessionInfo = new SessionInfo(lwsp.getSessionId(),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,currTime,null,"0");
+			sessionRepository.save(sessionInfo);			
 
 			// LWSP is disabled
 			//log.info("PAYLOAD:"+payload);
 			String decoded_message = payload;
-			
+
 			SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
 
 			InnkeeperSDEVRegistrationResponse respSDEV = innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
 
-			lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+			//DEBUG: MOCK
+			switch (respSDEV.getResult()) {
+			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_CLOUD_REJECTED: //OFFLINE
+				lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+				break;
+			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED:
+			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_ALREADY_REGISTERED:
+				sessionRepository.delete(sessionRepository.findBySessionId(lwsp.getSessionId()));
+				break;
+			default:
+				lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+				break;
+			}
+
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 			String encodedResponse = new ObjectMapper().writeValueAsString(respSDEV);
 			return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.OK);

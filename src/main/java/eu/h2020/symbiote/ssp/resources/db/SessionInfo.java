@@ -119,10 +119,11 @@ public class SessionInfo {
 			@JsonProperty("gnonce2") String gnonce2,
 			@JsonProperty("kdf") String kdf,
 			@JsonProperty("session_expiration") Date session_expiration,
-			@JsonProperty("kdf") String symIdSDEV,
-			@JsonProperty("kdf") String internalIdSDEV
+			@JsonProperty("symIdSDEV") String symIdSDEV,
+			@JsonProperty("internalIdSDEV") String internalIdSDEV
 
 			) {
+		System.out.println("sessionId="+sessionId);
 		this.sessionId = sessionId;
 		this.session_expiration = session_expiration;
 		this.iv = iv;
@@ -143,6 +144,7 @@ public class SessionInfo {
 		this.gnonce2 = gnonce2;
 		this.kdf = kdf;        
 		this.symIdSDEV=symIdSDEV;
+		this.internalIdSDEV=internalIdSDEV;
 	}
 
 	@JsonProperty("session_expiration")
@@ -350,7 +352,7 @@ public class SessionInfo {
 	@JsonProperty("internalIdSDEV")
 	public void setInternalIdSDEV(String internalIdSDEV) 
 	{
-		this.symIdSDEV = internalIdSDEV;
+		this.internalIdSDEV = internalIdSDEV;
 	}
 	public String getInternalIdSDEV() 
 	{

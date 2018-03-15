@@ -43,7 +43,7 @@ public class InnkeeperSDEVRegistrationResponse {
 		return this.symIdSDEV;
 	}
 	public String getInternalIdSDEV() {
-		return this.symIdSDEV;
+		return this.internalIdSDEV;
 	}
 	public String getResult() {
 		return this.result;
