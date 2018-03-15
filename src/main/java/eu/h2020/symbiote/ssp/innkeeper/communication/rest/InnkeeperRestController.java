@@ -104,15 +104,17 @@ public class InnkeeperRestController {
 			switch (lwsp.get_mti()) {
 			case LwspConstants.SDEV_Hello:
 			case LwspConstants.SDEV_AuthN:
-
-				responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 				return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
+
 			case LwspConstants.SDEV_REGISTRY:
 				String decoded_message = lwsp.get_response();
 
-				SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
-				
-				InnkeeperSDEVRegistrationResponse respSDEV = innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
+
+
+				InnkeeperSDEVRegistrationResponse respSDEV = 
+						innkeeperSDEVRegistrationRequest.registry(
+								new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class)
+								);
 
 				switch (respSDEV.getResult()) {
 				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_OFFLINE: //OFFLINE
@@ -162,51 +164,80 @@ public class InnkeeperRestController {
 				lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
 				break;
 			}
-			
+
 			String encodedResponse = new ObjectMapper().writeValueAsString(respSDEV);
 			return new ResponseEntity<Object>(encodedResponse,responseHeaders,httpStatus);
 		}
-
-
-
 
 		return responseEntity;
 
 	}
 
-
-
-
-
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> unregistry(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
-		ResponseEntity<Object> responseEntity = null;
+	public ResponseEntity<Object> unregistry(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 
-		//Lwsp lwsp = new Lwsp(payload);
-		//String sessionId = lwspService.unregistry(lwsp);
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+		HttpStatus httpStatus = HttpStatus.OK;
+		boolean isLwspEnabled = false;
+		if (isLwspEnabled) {
+			lwsp.setData(payload);
+			lwsp.setAllowedCipher("0x008c");
+			String outputMessage = lwsp.processMessage();
+			String encodedResponse=null;
+			switch (lwsp.get_mti()) {
+			case LwspConstants.SDEV_REGISTRY:
+				String decoded_message = lwsp.get_response();
+				SspSDEVInfo sspSdevInfo = new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
 
-		/*
-		if (sessionId!=null) {
+				//Delete Session
+				SessionInfo s = sessionRepository.findBySymIdSDEV(sspSdevInfo.getSymIdSDEV());
+				InnkeeperSDEVRegistrationResponse response =new InnkeeperSDEVRegistrationResponse();
+				if (s!=null) { //if I found my SymIdDEv in the MongoDb session:
+					sessionRepository.delete(s);					
+					response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_OK);					
+					httpStatus=HttpStatus.OK;
+				}else {					
+					response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_ERROR);		
+					httpStatus=HttpStatus.BAD_REQUEST;
 
-			ObjectMapper m = new ObjectMapper();
-
-			JsonNode node = m.readTree(lwsp.getRawData());
-			InkRegistrationInfo innkInfo = new ObjectMapper().readValue(node.get("payload").toString(), InkRegistrationInfo.class);
-			log.info("UNREGISTRY DELETE SymId:"+innkInfo.getSymId());
-
-			List<ResourceInfo> resInfos = resourcesRepository.findByIdLike(innkInfo.getSymId());
-			if (resInfos !=null) {
-				if (resInfos.size() > 0){
-					for (ResourceInfo r: resInfos) {
-						resourcesRepository.delete(r);
-					}
 				}
+				return new ResponseEntity<Object>(
+						lwsp.send_data(new ObjectMapper().writeValueAsString(response)), //encode the message with LWSP
+						responseHeaders,httpStatus);
+
+				//TODO: Delete Resources
+			default:
+				InnkeeperSDEVRegistrationResponse errorResponse =new InnkeeperSDEVRegistrationResponse();
+				errorResponse.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_ERROR);				
+				encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(errorResponse));
+				return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.BAD_REQUEST);
 
 			}
-		}
-		 */
-		return responseEntity;
 
+		} else { 
+			String decoded_message = payload;
+			SspSDEVInfo sspSdevInfo = new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
+
+			//Delete Session
+			SessionInfo s = sessionRepository.findBySymIdSDEV(sspSdevInfo.getSymIdSDEV());
+			InnkeeperSDEVRegistrationResponse response =new InnkeeperSDEVRegistrationResponse();
+			if (s!=null) { //if I found my SymIdDEv in the MongoDb session:
+				sessionRepository.delete(s);					
+				response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_OK);					
+				httpStatus=HttpStatus.OK;
+			} else {					
+				response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_ERROR);		
+				httpStatus=HttpStatus.BAD_REQUEST;
+
+			}
+			return new ResponseEntity<Object>(
+					new ObjectMapper().writeValueAsString(response), //encode the message with LWSP
+					responseHeaders,httpStatus);
+
+			//TODO: Delete Resources
+
+		}
 	}
 
 
@@ -242,167 +273,4 @@ public class InnkeeperRestController {
 	}
 
 
-	/*
-	 * ResponseEntity<JoinResponse> join(@RequestBody JoinRequest joinRequest)
-	 * throws Exception { System.out.println("test"); boolean alreadyRegistered =
-	 * false; JoinResponse joinResponse;
-	 * 
-	 * log.info("New join request was received for resource id = " +
-	 * joinRequest.getId());
-	 * 
-	 * if(joinRequest.getDeviceDescriptor() == null ||
-	 * joinRequest.getDeviceDescriptor().getUrl() == null ||
-	 * joinRequest.getObservesProperty() == null ||
-	 * joinRequest.getObservesProperty().isEmpty()) throw new
-	 * Exception("Url of deviceDescriptor in body cannot be empty");
-	 * 
-	 * if (joinRequest.getId() == null || joinRequest.getId().isEmpty()) { ObjectId
-	 * objectId = new ObjectId(); joinRequest.setId(objectId.toString()); } else {
-	 * // Check if the resource is already registered InnkeeperResource resource =
-	 * resourceRepository.findOne(joinRequest.getId());
-	 * 
-	 * if (resource != null) alreadyRegistered = true; }
-	 * 
-	 * // Create UnregistrationTimerTask ScheduledUnregisterTimerTask
-	 * unregisterTimerTask = createUnregisterTimerTask(joinRequest.getId());
-	 * 
-	 * // Create OfflineTimerTask ScheduledResourceOfflineTimerTask offlineTimerTask
-	 * = createOfflineTimerTask(joinRequest.getId());
-	 * 
-	 * InnkeeperResource newResource = resourceRepository.save(new
-	 * InnkeeperResource(joinRequest, unregisterTimerTask, offlineTimerTask));
-	 * log.info("newResource.getId() = " + newResource.getId());
-	 * 
-	 * // Inform RAP about the new resource SSPRecourceCreatedOrUpdated
-	 * sspRecourceCreatedOrUpdated = new
-	 * SSPRecourceCreatedOrUpdated(newResource.getId(),
-	 * newResource.getDeviceDescriptor().getUrl());
-	 * rabbitTemplate.convertAndSend(rapExchange, rapSSPResourceCreatedRoutingKey,
-	 * sspRecourceCreatedOrUpdated);
-	 * 
-	 * if (alreadyRegistered) joinResponse = new
-	 * JoinResponse(JoinResponseResult.ALREADY_REGISTERED, newResource.getId(), "",
-	 * registrationExpiration); else joinResponse = new
-	 * JoinResponse(JoinResponseResult.OK, newResource.getId(), "",
-	 * registrationExpiration);
-	 * 
-	 * return ResponseEntity.ok(joinResponse); }
-	 */
-	/*
-	@PostMapping(InnkeeperRestControllerConstants.INNKEEPER_LIST_RESOURCES_REQUEST_PATH)
-	ResponseEntity<ListResourcesResponse> listResources(@RequestBody ListResourcesRequest request) {
-
-		log.info("New list_resource request was received from symbIoTe device with id = " + request.getId());
-
-		ListResourcesResponse listResourcesResponse = new ListResourcesResponse();
-		List<InnkeeperListResourceInfo> innkeeperListResourceInfoList = new ArrayList<>();
-		List<InnkeeperResource> innkeeperResourceList = resourceRepository.findAll();
-
-		for (InnkeeperResource resource : innkeeperResourceList) {
-			InnkeeperListResourceInfo innkeeperListResourceInfo = new InnkeeperListResourceInfo(resource.getId(),
-					resource.getDeviceDescriptor().getName(), resource.getDeviceDescriptor().getDescription(),
-					resource.getDeviceDescriptor().getUrl(), resource.getStatus(), resource.getObservesProperty());
-			innkeeperListResourceInfoList.add(innkeeperListResourceInfo);
-		}
-
-		listResourcesResponse.setInnkeeperListResourceInfoList(innkeeperListResourceInfoList);
-		return ResponseEntity.ok(listResourcesResponse);
-	}
-
-	@PostMapping(InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH)
-	ResponseEntity<KeepAliveResponse> keepAlive(@RequestBody KeepAliveRequest req) {
-
-		log.info("New keep_alive request was received from symbIoTe device with id = " + req.getId());
-
-		InnkeeperResource innkeeperResource = resourceRepository.findOne(req.getId());
-
-		if (innkeeperResource == null) {
-			KeepAliveResponse response = new KeepAliveResponse(
-					"The request with id = " + req.getId() + " was not registered.");
-			return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-		} else {
-			ScheduledResourceOfflineTimerTask offlineTimerTask = createOfflineTimerTask(innkeeperResource.getId());
-			innkeeperResource.setOfflineEventTime(offlineTimerTask.scheduledExecutionTime());
-			innkeeperResource.setStatus(InnkeeperResourceStatus.ONLINE);
-			resourceRepository.save(innkeeperResource);
-
-			KeepAliveResponse response = new KeepAliveResponse(
-					"The keep_alive request from resource with id = " + req.getId() + " was received successfully!");
-			return ResponseEntity.ok(response);
-		}
-	}
-
-	@ExceptionHandler(HttpMessageNotReadableException.class)
-	public ResponseEntity<JoinResponse> httpMessageNotReadableExceptionHandler(HttpServletRequest req) {
-		ObjectMapper mapper = new ObjectMapper();
-		HttpHeaders responseHeaders = new HttpHeaders();
-		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-
-		try {
-			String requestInString = req.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-			if (req.getMethod().equals(HttpMethod.POST.toString())
-					&& req.getPathInfo().equals(InnkeeperRestControllerConstants.INNKEEPER_BASE_PATH
-							+ InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH)) {
-				JoinRequest joinRequest = mapper.readValue(requestInString, JoinRequest.class);
-			}
-		} catch (JsonMappingException e) {
-			e.printStackTrace();
-			StringWriter sw = new StringWriter();
-			e.printStackTrace(new PrintWriter(sw));
-
-			if (sw.toString().contains(InvalidMacAddressException.class.getName())) {
-				JoinResponse joinResponse = new JoinResponse(JoinResponseResult.INVALID_MAC_ADDRESS_FORMAT, null, null,
-						null);
-				return new ResponseEntity<>(joinResponse, responseHeaders, HttpStatus.BAD_REQUEST);
-			} else {
-				JoinResponse joinResponse = new JoinResponse(JoinResponseResult.REJECT, null, null, null);
-				return new ResponseEntity<>(joinResponse, responseHeaders, HttpStatus.BAD_REQUEST);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			JoinResponse joinResponse = new JoinResponse(JoinResponseResult.REJECT, null, null, null);
-			return new ResponseEntity<>(joinResponse, responseHeaders, HttpStatus.BAD_REQUEST);
-		}
-
-		JoinResponse joinResponse = new JoinResponse(JoinResponseResult.REJECT, null, null, null);
-		return new ResponseEntity<>(joinResponse, responseHeaders, HttpStatus.BAD_REQUEST);
-	}
-
-	private void cancelUnregisterTimerTask(String resourceId) {
-		ScheduledUnregisterTimerTask timerTask = unregisteringTimerTaskMap.get(resourceId);
-
-		if (timerTask != null)
-			timerTask.cancel();
-	}
-
-	private void cancelOfflineTimerTask(String resourceId) {
-		ScheduledResourceOfflineTimerTask timerTask = offlineTimerTaskMap.get(resourceId);
-
-		if (timerTask != null)
-			timerTask.cancel();
-	}
-
-	private ScheduledUnregisterTimerTask createUnregisterTimerTask(String resourceId) {
-		cancelUnregisterTimerTask(resourceId);
-
-		ScheduledUnregisterTimerTask timerTask = new ScheduledUnregisterTimerTask(resourceRepository, rabbitTemplate,
-				resourceId, rapExchange, rapSSPResourceDeletedRoutingKey, unregisteringTimerTaskMap,
-				offlineTimerTaskMap);
-		timer.schedule(timerTask, registrationExpiration);
-		unregisteringTimerTaskMap.put(resourceId, timerTask);
-
-		return timerTask;
-	}
-
-	private ScheduledResourceOfflineTimerTask createOfflineTimerTask(String resourceId) {
-		cancelOfflineTimerTask(resourceId);
-
-		ScheduledResourceOfflineTimerTask timerTask = new ScheduledResourceOfflineTimerTask(resourceRepository,
-				resourceId, offlineTimerTaskMap);
-		timer.schedule(timerTask, makeResourceOffine);
-		offlineTimerTaskMap.put(resourceId, timerTask);
-
-		return timerTask;
-	}
-	 */
 }
