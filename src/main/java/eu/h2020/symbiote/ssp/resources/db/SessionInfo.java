@@ -123,7 +123,6 @@ public class SessionInfo {
 			@JsonProperty("internalIdSDEV") String internalIdSDEV
 
 			) {
-		System.out.println("sessionId="+sessionId);
 		this.sessionId = sessionId;
 		this.session_expiration = session_expiration;
 		this.iv = iv;

@@ -31,11 +31,10 @@ public class InnkeeperSDEVRegistrationRequest {
 
 		//TODO: implement checkCoreSymbioteIdRegistration with REAL Core interaction :-(
 		String symIdFromCore = this.checkCoreSymbioteIdRegistration(sspSDEVInfo.getSymIdSDEV());
-		System.out.println("symIdFromCore="+symIdFromCore);
 		switch (symIdFromCore) {
 		case InnkeeperRestControllerConstants.OFFLINE_SYMID:
 			regResponse= new InnkeeperSDEVRegistrationResponse(
-					sspSDEVInfo.getSymIdSDEV(),this.createInternalId(),InnkeeperRestControllerConstants.SDEV_REGISTRATION_CLOUD_REJECTED,DbConstants.EXPIRATION_TIME);
+					sspSDEVInfo.getSymIdSDEV(),this.createInternalId(),InnkeeperRestControllerConstants.SDEV_REGISTRATION_OFFLINE,DbConstants.EXPIRATION_TIME);
 			break;
 		case InnkeeperRestControllerConstants.REJECTED_SYMID:	
 

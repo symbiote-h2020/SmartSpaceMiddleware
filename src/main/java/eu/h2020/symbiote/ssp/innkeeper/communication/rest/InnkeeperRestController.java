@@ -89,6 +89,9 @@ public class InnkeeperRestController {
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 
 		ResponseEntity<Object> responseEntity = null;
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+		HttpStatus httpStatus = HttpStatus.OK;
 		boolean isLwspEnabled = false;
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
@@ -98,7 +101,6 @@ public class InnkeeperRestController {
 			log.info("MTI:"+lwsp.get_mti());
 
 
-			HttpHeaders responseHeaders = new HttpHeaders();
 			switch (lwsp.get_mti()) {
 			case LwspConstants.SDEV_Hello:
 			case LwspConstants.SDEV_AuthN:
@@ -109,16 +111,18 @@ public class InnkeeperRestController {
 				String decoded_message = lwsp.get_response();
 
 				SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
-
+				
 				InnkeeperSDEVRegistrationResponse respSDEV = innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
 
-				//DEBUG: MOCK
 				switch (respSDEV.getResult()) {
-				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_CLOUD_REJECTED: //OFFLINE
+				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_OFFLINE: //OFFLINE
+					httpStatus=HttpStatus.OK;
 					lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
 					break;
 				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED:
+					httpStatus=HttpStatus.BAD_REQUEST;
 				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_ALREADY_REGISTERED:
+					httpStatus=HttpStatus.OK;
 					sessionRepository.delete(sessionRepository.findBySessionId(lwsp.getSessionId()));
 					break;
 				default:
@@ -126,20 +130,16 @@ public class InnkeeperRestController {
 					break;
 				}
 
-				responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-				String encodedResponse = new ObjectMapper().writeValueAsString(respSDEV);
-				return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.OK);
+				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(respSDEV));
+				return new ResponseEntity<Object>(encodedResponse,responseHeaders,httpStatus);
 			}
 
 		}else{
-			HttpHeaders responseHeaders = new HttpHeaders();
 			Date currTime = new Timestamp(System.currentTimeMillis());
 			lwsp.generateSessionId();
 			SessionInfo sessionInfo = new SessionInfo(lwsp.getSessionId(),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,currTime,null,"0");
 			sessionRepository.save(sessionInfo);			
 
-			// LWSP is disabled
-			//log.info("PAYLOAD:"+payload);
 			String decoded_message = payload;
 
 			SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
@@ -148,21 +148,23 @@ public class InnkeeperRestController {
 
 			//DEBUG: MOCK
 			switch (respSDEV.getResult()) {
-			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_CLOUD_REJECTED: //OFFLINE
+			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_OFFLINE: //OFFLINE
+				httpStatus=HttpStatus.OK;
 				lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
 				break;
 			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED:
+				httpStatus=HttpStatus.BAD_REQUEST;
 			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_ALREADY_REGISTERED:
+				httpStatus=HttpStatus.OK;
 				sessionRepository.delete(sessionRepository.findBySessionId(lwsp.getSessionId()));
 				break;
 			default:
 				lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
 				break;
 			}
-
-			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+			
 			String encodedResponse = new ObjectMapper().writeValueAsString(respSDEV);
-			return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.OK);
+			return new ResponseEntity<Object>(encodedResponse,responseHeaders,httpStatus);
 		}
 
 

@@ -22,7 +22,7 @@ public class InnkeeperRestControllerConstants {
     
     public static final String SDEV_REGISTRATION_OK = "OK";
     public static final String SDEV_REGISTRATION_ALREADY_REGISTERED = "ALREADY_REGISTERED";
-    public static final String SDEV_REGISTRATION_CLOUD_REJECTED = "CLOUD_REJECTED";
+    public static final String SDEV_REGISTRATION_OFFLINE = "OFFLINE";
     public static final String SDEV_REGISTRATION_REJECTED = "REJECTED";
 	public static final String REJECTED_SYMID = "REJECTED";
 	public static final String OFFLINE_SYMID = "OFFLINE";
