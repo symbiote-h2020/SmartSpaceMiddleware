@@ -8,10 +8,16 @@ import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 
 public class SspResource {
     @org.springframework.data.annotation.Id
+    
     @JsonProperty("internalId")
-    private String internalId;
-    @JsonProperty("symIdSDEV")
-    private String symIdSDEV;        
+    private String internalId; //resource Internal Id
+    
+    @JsonProperty("symIdSDEV") 
+    private String symIdSDEV;
+    
+    @JsonProperty("symIdResource")
+    private String symIdResource;
+    
     @JsonProperty("accessPolicy")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private IAccessPolicySpecifier accessPolicy;
@@ -41,6 +47,16 @@ public class SspResource {
         this.symIdSDEV = symIdSDEV;
     }
 
+    public String getSymIdResource() {
+        return this.symIdResource;
+    }
+
+    public void setSymIdResource(String symIdResource) {
+        this.symIdResource = symIdResource;
+    }
+
+    
+    
     public IAccessPolicySpecifier getAccessPolicy() {
         return this.accessPolicy;
     }
