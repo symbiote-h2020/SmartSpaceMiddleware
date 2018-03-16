@@ -186,7 +186,7 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
             try {
                 resourceInfoList = storageHelper.getResourceInfoList(typeNameList,keyPredicates);
                 for(ResourceInfo resourceInfo: resourceInfoList){
-                    String symbioteIdTemp = resourceInfo.getSymbioteId();
+                    String symbioteIdTemp = resourceInfo.getSymIdResource();
                     if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
                         symbioteId = symbioteIdTemp;
                         break;

@@ -42,7 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
 import eu.h2020.symbiote.ssp.innkeeper.model.InkRegistrationInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
-import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 
 @Service
 public class Lwsp {
@@ -60,7 +60,7 @@ public class Lwsp {
                                                    |_|
 	 */
 	@Autowired
-	SessionRepository sessionRepository;
+	SessionsRepository sessionsRepository;
 
 	private String data;
 	private String allowedCipher;
@@ -111,8 +111,8 @@ public class Lwsp {
 
 	private Timestamp sessionExpiration;
 
-	private String symIdSDEV;
-	private String internalIdSDEV; 
+	private String symId;
+	private String internalId; 
 
 	/*
   _____      _            _         __  __      _   _               _
@@ -515,8 +515,8 @@ public class Lwsp {
 			log.info("Sent back 0x20:\n"+OutBuffer);
 			if (!this.get_mti().contains("0xf")) 
 			{
-				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime,symIdSDEV,internalIdSDEV);
-				sessionRepository.save(sessionInfo);
+				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime,symId,internalId);
+				sessionsRepository.save(sessionInfo);
 			}
 			break;
 		case "0x30":
@@ -533,7 +533,7 @@ public class Lwsp {
 				log.info("sessionId found into the db.");
 				if (! regexvalidator(this.sessionId=jsonData.getString("sessionId"),sessionIdREGEX)){out=this.error_fb;}
 				else {
-					s = sessionRepository.findBySessionId(sessionId);
+					s = sessionsRepository.findBySessionId(sessionId);
 					log.info("\n-------------------------------------------Recover data from DB\n"+
 							new ObjectMapper().writeValueAsString(s)
 							+"\n-------------------------------------------\n");
@@ -578,8 +578,8 @@ public class Lwsp {
 							jsonData1.put("authn", Base64.getEncoder().encodeToString(aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk1)));
 							out=jsonData1.toString();
 							this.sessionExpiration = new Timestamp(System.currentTimeMillis());
-							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration,symIdSDEV,internalIdSDEV);
-							sessionRepository.save(sessionInfo);
+							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration,symId,internalId);
+							sessionsRepository.save(sessionInfo);
 							out=jsonData1.toString();
 							log.info("\n+--------------------------------+"+
 									"\n|"+
@@ -606,8 +606,8 @@ public class Lwsp {
 						"\n+--------------------------------+/"						         
 						);
 
-				SessionInfo ss = sessionRepository.findBySessionId(this.sessionId);
-				sessionRepository.delete(ss);
+				SessionInfo ss = sessionsRepository.findBySessionId(this.sessionId);
+				sessionsRepository.delete(ss);
 			}
 
 			break;
@@ -624,7 +624,7 @@ public class Lwsp {
 			{
 				if (! regexvalidator(this.sessionId=jsonData.getString("sessionId"),sessionIdREGEX)){out=this.error_fb;}
 				else {
-					s = sessionRepository.findBySessionId(sessionId);
+					s = sessionsRepository.findBySessionId(sessionId);
 					if (! regexvalidator(this.iv         = s.getiv(),ivREGEX))                 {out=this.error_f9;}
 					if (! regexvalidator(this.gnonce     = s.getgnonce(),nonceREGEX))          {out=this.error_fd;}
 					if (! regexvalidator(this.snonce     = s.getsnonce(),nonceREGEX))          {out=this.error_fd;}
@@ -647,7 +647,7 @@ public class Lwsp {
 					// KEEP ALIVE					
 					this.sessionExpiration = new Timestamp(System.currentTimeMillis());
 					s.setSessionExpiration(this.sessionExpiration);
-					sessionRepository.save(s);
+					sessionsRepository.save(s);
 				}
 			}
 			log.info("Sent back 0x60:\n"+OutBuffer);
@@ -676,7 +676,7 @@ public class Lwsp {
 		/*		Date currTime=new Date(new Date().getTime());
 		String cookie = sessionID;
 		SessionInfo sessionInfo = new SessionInfo(cookie,currTime);
-		sessionRepository.save(sessionInfo);
+		sessionsRepository.save(sessionInfo);
 		 */		
 		return this.OutBuffer;
 	}
@@ -699,7 +699,7 @@ public class Lwsp {
 		{
 			if (! regexvalidator(this.sessionId=jsonData.getString("sessionId"),sessionIdREGEX)){out=this.error_fb;}
 			else {
-				s = sessionRepository.findBySessionId(sessionId);
+				s = sessionsRepository.findBySessionId(sessionId);
 				if (! regexvalidator(this.iv         = s.getiv(),ivREGEX))                 {out=this.error_f9;}
 				if (! regexvalidator(this.gnonce     = s.getgnonce(),nonceREGEX))          {out=this.error_fd;}
 				if (! regexvalidator(this.snonce     = s.getsnonce(),nonceREGEX))          {out=this.error_fd;}
@@ -732,27 +732,27 @@ public class Lwsp {
 	}
 
 
-	public String getInternalIdSDEV() {
-		return this.internalIdSDEV;
+	public String getInternalId() {
+		return this.internalId;
 	}
 
-	public void setInternalIdSDEV(String internalIdSDEV) {
-		this.internalIdSDEV = internalIdSDEV;
+	public void setInternalId(String internalId) {
+		this.internalId = internalId;
 	}
 
-	public String getSymIdSDEV() {
-		return this.symIdSDEV;
+	public String getSymId() {
+		return this.symId;
 	}
 
-	public void setSymIdSDEV(String symIdSDEV) {
-		this.symIdSDEV = symIdSDEV;
+	public void setSymId(String symId) {
+		this.symId = symId;
 	}
 
-	public void updateSessionRepository(String sessionId, String symIdSDEV, String internalIdSDEV) {
-		SessionInfo s = sessionRepository.findBySessionId(sessionId);
-		s.setInternalIdSDEV(internalIdSDEV);
-		s.setSymIdSDEV(symIdSDEV);
-		sessionRepository.save(s);
+	public void updateSessionsRepository(String sessionId, String symId, String internalId) {
+		SessionInfo s = sessionsRepository.findBySessionId(sessionId);
+		s.setInternalId(internalId);
+		s.setSymId(symId);
+		sessionsRepository.save(s);
 	}
 
 	public String getSessionId() {

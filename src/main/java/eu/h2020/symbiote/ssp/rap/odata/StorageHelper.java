@@ -127,7 +127,7 @@ public class StorageHelper {
             
             String pluginId = null;
             for(ResourceInfo resourceInfo: resourceInfoList) {
-                String symbioteIdTemp = resourceInfo.getSymbioteId();
+                String symbioteIdTemp = resourceInfo.getSymIdResource();
                 if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
                     symbioteId = symbioteIdTemp;
                 String pluginIdTemp = resourceInfo.getPluginId();
@@ -373,11 +373,11 @@ public class StorageHelper {
 
                 try {
                     if (keyName.equalsIgnoreCase("id")) {
-                        resInfo.setSymbioteId(keyText);
+                        resInfo.setSymIdResource(keyText);
                         Optional<ResourceInfo> resInfoOptional = resourcesRepo.findById(keyText);
                         if (resInfoOptional.isPresent()) {
                             noResourceFound = false;
-                            resInfo.setInternalId(resInfoOptional.get().getInternalId());
+                            resInfo.setInternalIdResource(resInfoOptional.get().getInternalIdResource());
                         }
                     }
                 } catch (Exception e) {

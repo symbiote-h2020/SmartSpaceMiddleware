@@ -13,12 +13,12 @@ import org.springframework.data.mongodb.repository.MongoRepository;
  * @author Fabrizio Giuliano <fabrizio.giuliano@cnit.it>
  */
 @Repository
-public interface SessionRepository extends MongoRepository<SessionInfo, String> {
+public interface SessionsRepository extends MongoRepository<SessionInfo, String> {
     
     
     //public Optional<SessionInfo> findById(String cookie);
 	public SessionInfo findBySessionId(String sessionId);
-	public SessionInfo findBySymIdSDEV(String symIdSDEV);
+	public SessionInfo findBySymId(String symId);
 	//public SessionInfo findBySymbioteId(String symbioteId);
     
 }

@@ -8,10 +8,10 @@ import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 
 public class SspSDEVInfo {
     @org.springframework.data.annotation.Id
-    @JsonProperty("symIdSDEV")
-    private String symIdSDEV;
-    @JsonProperty("internalIdSDEV")
-    private String internalIdSDEV;
+    @JsonProperty("symId")
+    private String symId;
+    @JsonProperty("internalId")
+    private String internalId;
     @JsonProperty("pluginId")
     private String pluginId;
     @JsonProperty("pluginURL")
@@ -27,20 +27,20 @@ public class SspSDEVInfo {
     public SspSDEVInfo() {
     }
 
-    public String getInternalIdSDEV() {
-        return this.internalIdSDEV;
+    public String getInternalId() {
+        return this.internalId;
     }
     
-    public void setInternalIdSDEV(String internalIdSDEV) {
-        this.internalIdSDEV = internalIdSDEV;
+    public void setInternalId(String internalId) {
+        this.internalId = internalId;
     }
     
-    public String getSymIdSDEV() {
-        return this.symIdSDEV;
+    public String getSymId() {
+        return this.symId;
     }
     
-    public void setSymIdSDEV(String symIdSDEV) {
-        this.symIdSDEV = symIdSDEV;
+    public void setSymId(String symId) {
+        this.symId = symId;
     }
 
     public String getPluginId() {

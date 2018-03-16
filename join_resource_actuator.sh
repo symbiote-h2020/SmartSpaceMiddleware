@@ -1,11 +1,6 @@
 curl -H 'Content-Type: application/json' -d '
 {
-  "sessionId":"",
-  "payload":{
-    "symId":"sym001",
-    "dk1":null,
-    "hashField":null,
-    "semanticDescription":[
+    "semanticDescription":
       {
         "internalId":"intern001",
         "pluginId":"5001plgIDPippo",

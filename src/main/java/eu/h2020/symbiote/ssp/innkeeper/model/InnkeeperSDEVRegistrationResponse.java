@@ -22,9 +22,9 @@ public class InnkeeperSDEVRegistrationResponse {
     @Autowired
     OwlApiHelper owlApiHelp;
     @JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonProperty("symIdSDEV") 				private String symIdSDEV;
+	@JsonProperty("symId") 				private String symId;
     @JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonProperty("internalIdSDEV") 			private String internalIdSDEV;
+	@JsonProperty("internalId") 			private String internalId;
     @JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonProperty("result") 					private String result;
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -33,22 +33,22 @@ public class InnkeeperSDEVRegistrationResponse {
 	public InnkeeperSDEVRegistrationResponse() {		
 	}
 	
-	public InnkeeperSDEVRegistrationResponse(String symId, String internalIdSDEV, String result) {
-		this.symIdSDEV=symId;
-		this.internalIdSDEV=internalIdSDEV;
+	public InnkeeperSDEVRegistrationResponse(String symId, String internalId, String result) {
+		this.symId=symId;
+		this.internalId=internalId;
 		this.result=result;
 	}
-	public InnkeeperSDEVRegistrationResponse(String symId, String internalIdSDEV, String result, Integer registration_expiration) {
-		this.symIdSDEV=symId;
-		this.internalIdSDEV=internalIdSDEV;		
+	public InnkeeperSDEVRegistrationResponse(String symId, String internalId, String result, Integer registration_expiration) {
+		this.symId=symId;
+		this.internalId=internalId;		
 		this.result=result;
 		this.registrationExpiration=registration_expiration;
 	}
-	public String getSymIdSDEV() {
-		return this.symIdSDEV;
+	public String getSymId() {
+		return this.symId;
 	}
-	public String getInternalIdSDEV() {
-		return this.internalIdSDEV;
+	public String getInternalId() {
+		return this.internalId;
 	}
 	public String getResult() {
 		return this.result;

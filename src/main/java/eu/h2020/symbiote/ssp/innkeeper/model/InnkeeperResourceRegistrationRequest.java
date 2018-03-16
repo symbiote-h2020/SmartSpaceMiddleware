@@ -19,14 +19,19 @@ import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.model.cim.StationarySensor;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
+import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
-import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
+import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
+import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
+import eu.h2020.symbiote.ssp.utils.CheckCoreUtility;
+import eu.h2020.symbiote.ssp.utils.InternalIdUtils;
 
 @Service
 public class InnkeeperResourceRegistrationRequest {
@@ -35,6 +40,9 @@ public class InnkeeperResourceRegistrationRequest {
 
 	@Autowired
 	ResourcesRepository resourcesRepository;
+	
+	@Autowired
+	SessionsRepository sessionsRepository;
 
 	@Autowired
 	AccessPolicyRepository accessPolicyRepository;
@@ -42,38 +50,62 @@ public class InnkeeperResourceRegistrationRequest {
 	@Autowired
 	OwlApiHelper owlApiHelp;
 
-	public InnkeeperResourceRegistrationResponse registry(InkRegistrationInfo info, Date currTime) throws InvalidArgumentsException {
+	public InnkeeperResourceRegistrationResponse registry(SspResource msg, Date currTime) throws InvalidArgumentsException {
 		InnkeeperResourceRegistrationResponse res= null;
-
-
-		List<CloudResource> msgs = info.getSemanticDescription();
 		
-		info.getSymId();
-		for(CloudResource msg: msgs){
-			String internalId = msg.getInternalId(); 
-			Resource resource = msg.getResource();
-			String pluginId = msg.getPluginId();
-			String symbioteId = resource.getId(); //each resource has an unique symbioteId
-			List<String> props = null;
-			if(resource instanceof StationarySensor) {
-				props = ((StationarySensor)resource).getObservesProperty();
-			} else if(resource instanceof MobileSensor) {
-				props = ((MobileSensor)resource).getObservesProperty();
-			}
-			log.debug("Updating resource with symbioteId: " + symbioteId + ", internalId: " + internalId);
-			//FIXME: if msg.getSingleTokenAccessPolicy()== null do not addPolicy
-			try {
-				addPolicy(symbioteId, internalId, msg.getAccessPolicy());
-			}catch (NullPointerException e) {
-				log.error("error during addPolicy process, AccessPolicy is null\n");
-			}
-			addResource(symbioteId, internalId, props, pluginId,currTime);
+		
+		//check The core and assign symId to the Resource (R5 optional)
+		
+		String symIdResource = new CheckCoreUtility(resourcesRepository).checkCoreSymbioteIdRegistration(msg.getSymIdResource());
+		
+		//assign internal a new Id to the resource (R4)
+		String internalIdResource=new InternalIdUtils(resourcesRepository).createInternalId();
+		
+		//get internalId
+		log.info("msg.getSymId()="+msg.getSymId());
+		SessionInfo s = sessionsRepository.findBySymId(msg.getSymId());
+		String internalId = null;
+		if (s!=null) {
+			internalId = s.getInternalId(); //of SDEV/PLAT
+		}else {
+			log.warn("Symbiote ID for SDEV/PLat "+msg.getSymId()+" not exists");
+			res = new InnkeeperResourceRegistrationResponse(
+					symIdResource, 
+					internalIdResource,
+					msg.getSymId(),
+					internalId,
+					InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED,
+					0);
+			return res;
 		}
-		addCloudResourceInfoForOData(msgs);
-		res = new InnkeeperResourceRegistrationResponse(info.getSymId(),LwspConstants.REGISTARTION_OK,DbConstants.EXPIRATION_TIME);
+		//Save Resource in MongoDB
+		
+		Resource resource = msg.getSemanticDescription();
+		String pluginId = msg.getPluginId();
+		String symbioteId = resource.getId(); 
+		List<String> props = null;
+		if(resource instanceof StationarySensor) {
+			props = ((StationarySensor)resource).getObservesProperty();
+		} else if(resource instanceof MobileSensor) {
+			props = ((MobileSensor)resource).getObservesProperty();
+		}
+		try {
+			addPolicy(symbioteId, internalId, msg.getAccessPolicy());
+		}catch (NullPointerException e) {
+			log.warn("AccessPolicy is null\n");
+		}
+		
+		addResource(symIdResource, internalIdResource,msg.getSymId(),internalId, props, pluginId,currTime);
 
-
-		return res;
+		//addCloudResourceInfoForOData(msgs);
+		res = new InnkeeperResourceRegistrationResponse(
+				symIdResource, 
+				internalIdResource,
+				msg.getSymId(),
+				internalId,
+				InnkeeperRestControllerConstants.SDEV_REGISTRATION_OK,
+				DbConstants.EXPIRATION_TIME);
+		return res;		
 	}
 
 
@@ -86,13 +118,19 @@ public class InnkeeperResourceRegistrationRequest {
 			log.error("Error add info registration for OData\n"+e.getMessage());
 		}
 	}
-	private void addResource(String resourceId, String platformResourceId, List<String> obsProperties, String pluginId, Date currTime) {
-		ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId, currTime);
+	private void addResource(
+			String symIdResource,
+			String internalIdResource,
+			String symId, // of SDEV/Plat
+			String internalId,
+			List<String> obsProperties, 
+			String pluginId, 
+			Date currTime) {
+		ResourceInfo resourceInfo = new ResourceInfo(symIdResource, internalIdResource,symId,internalId, currTime);
 		if(obsProperties != null)
 			resourceInfo.setObservedProperties(obsProperties);
 		if(pluginId != null && pluginId.length()>0)
 			resourceInfo.setPluginId(pluginId);
-		log.info("::::::::::::::::: ADD RESOURCE :::::::::::::::::::");
 		resourcesRepository.save(resourceInfo);
 
 		try {
@@ -115,7 +153,7 @@ public class InnkeeperResourceRegistrationRequest {
 			log.error("Invalid Policy definition for resource with id " + resourceId);
 		}
 	}
-/*
+	/*
 	private void deletePolicy(String internalId) {
 		try {
 			Optional<AccessPolicy> accessPolicy = accessPolicyRepository.findByInternalId(internalId);
@@ -131,7 +169,7 @@ public class InnkeeperResourceRegistrationRequest {
 			log.error("Resource with internalId " + internalId + " not found - Exception: " + e.getMessage());
 		}
 	}
-*/
+	 */
 
 
 }

@@ -120,9 +120,9 @@ public class RapEntityProcessor implements EntityProcessor{
                 RapEntityCollectionProcessor.setErrorResponse(response, customOdataException, responseFormat);
                 return;
             }
-            if(!storageHelper.checkAccessPolicies(request, resource.getSymbioteId())) {
+            if(!storageHelper.checkAccessPolicies(request, resource.getSymIdResource())) {
                 log.error("Access policy check error" );
-                customOdataException = new CustomODataApplicationException(resource.getSymbioteId(), "Access policy check error",
+                customOdataException = new CustomODataApplicationException(resource.getSymIdResource(), "Access policy check error",
                         HttpStatusCode.UNAUTHORIZED.getStatusCode(), Locale.ROOT);
                 setErrorResponse(response, customOdataException, responseFormat);
                 return;
@@ -139,7 +139,7 @@ public class RapEntityProcessor implements EntityProcessor{
             }
 
             if(customOdataException == null && stream != null)
-                communicationHandler.sendSuccessfulAccessMessage(resource.getSymbioteId(),SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
+                communicationHandler.sendSuccessfulAccessMessage(resource.getSymIdResource(),SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
 
             // 4th: configure the response object: set the body, headers and status code
             response.setContent(stream);
@@ -213,7 +213,7 @@ public class RapEntityProcessor implements EntityProcessor{
             try {
                 resourceInfoList = storageHelper.getResourceInfoList(typeNameList,keyPredicates);
                 for(ResourceInfo resourceInfo: resourceInfoList){
-                    String symbioteIdTemp = resourceInfo.getSymbioteId();
+                    String symbioteIdTemp = resourceInfo.getSymIdResource();
                     if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
                         symbioteId = symbioteIdTemp;
                 }

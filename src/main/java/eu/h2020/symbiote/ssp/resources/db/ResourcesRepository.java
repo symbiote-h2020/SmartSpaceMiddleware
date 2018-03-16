@@ -24,7 +24,8 @@ public interface ResourcesRepository extends MongoRepository<ResourceInfo, Strin
      * @param resourceId    the id of the resource
      * @return              the Resource instance
      */
-    public Optional<ResourceInfo> findById(String resourceId);
+    public Optional<ResourceInfo> findById(String symIdResource);
+    public Optional<ResourceInfo> findBySymId(String symId);
     
     /**
      * This method will find (a) Resource instance(s) in the database by 
@@ -34,11 +35,12 @@ public interface ResourcesRepository extends MongoRepository<ResourceInfo, Strin
      * @return                      the Resource instance(s)
      */
     public List<ResourceInfo> findByInternalId(String internalId);
+    public List<ResourceInfo> findByInternalIdResource(String internalIdResource);
     
     @Override
     public List<ResourceInfo> findAll();
     
-    public List<ResourceInfo> findByIdLike(String id);
+    public List<ResourceInfo> findBySymIdLike(String id);
     
     
     

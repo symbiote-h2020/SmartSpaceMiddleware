@@ -20,7 +20,7 @@ import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
-import eu.h2020.symbiote.ssp.resources.db.SessionRepository;
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -67,19 +67,36 @@ public class InnkeeperRestController {
 
 	@Autowired
 	InnkeeperSDEVRegistrationRequest innkeeperSDEVRegistrationRequest;
+	
+	@Autowired
+	InnkeeperResourceRegistrationRequest innkeeperResourceRegistrationRequest;
+	
 	@Autowired
 	Lwsp lwsp;
 
 	@Autowired
-	SessionRepository sessionRepository;
+	SessionsRepository sessionsRepository;
 
 
-	//REGISTARTION OF A RESOURCE
+	//TODO: REGISTARTION OF A RESOURCE
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, JsonProcessingException {
+	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException, InvalidArgumentsException {
 
 		ResponseEntity<Object> responseEntity = null;
+		/*
+		boolean isLwspEnabled = false;
+		if (isLwspEnabled) {
+			//LWSP
+		}else{	
+			// NO encryption
+			String decoded_message = payload;
+			SspResource sspResource =  new ObjectMapper().readValue(decoded_message, SspResource.class);
+			Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymId()).getSessionExpiration();		
+			
+			InnkeeperResourceRegistrationResponse respSspResource = innkeeperResourceRegistrationRequest.registry(sspResource,sessionExpiration);
 
+		}
+		*/
 		return responseEntity;
 	}
 
@@ -119,16 +136,16 @@ public class InnkeeperRestController {
 				switch (respSDEV.getResult()) {
 				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_OFFLINE: //OFFLINE
 					httpStatus=HttpStatus.OK;
-					lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+					lwsp.updateSessionsRepository(lwsp.getSessionId(), respSDEV.getSymId(), respSDEV.getInternalId());
 					break;
 				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED:
 					httpStatus=HttpStatus.BAD_REQUEST;
 				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_ALREADY_REGISTERED:
 					httpStatus=HttpStatus.OK;
-					sessionRepository.delete(sessionRepository.findBySessionId(lwsp.getSessionId()));
+					sessionsRepository.delete(sessionsRepository.findBySessionId(lwsp.getSessionId()));
 					break;
 				default:
-					lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+					lwsp.updateSessionsRepository(lwsp.getSessionId(), respSDEV.getSymId(), respSDEV.getInternalId());
 					break;
 				}
 
@@ -140,7 +157,7 @@ public class InnkeeperRestController {
 			Date currTime = new Timestamp(System.currentTimeMillis());
 			lwsp.generateSessionId();
 			SessionInfo sessionInfo = new SessionInfo(lwsp.getSessionId(),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,currTime,null,"0");
-			sessionRepository.save(sessionInfo);			
+			sessionsRepository.save(sessionInfo);			
 
 			String decoded_message = payload;
 
@@ -152,16 +169,16 @@ public class InnkeeperRestController {
 			switch (respSDEV.getResult()) {
 			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_OFFLINE: //OFFLINE
 				httpStatus=HttpStatus.OK;
-				lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+				lwsp.updateSessionsRepository(lwsp.getSessionId(), respSDEV.getSymId(), respSDEV.getInternalId());
 				break;
 			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED:
 				httpStatus=HttpStatus.BAD_REQUEST;
 			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_ALREADY_REGISTERED:
 				httpStatus=HttpStatus.OK;
-				sessionRepository.delete(sessionRepository.findBySessionId(lwsp.getSessionId()));
+				sessionsRepository.delete(sessionsRepository.findBySessionId(lwsp.getSessionId()));
 				break;
 			default:
-				lwsp.updateSessionRepository(lwsp.getSessionId(), respSDEV.getSymIdSDEV(), respSDEV.getInternalIdSDEV());
+				lwsp.updateSessionsRepository(lwsp.getSessionId(), respSDEV.getSymId(), respSDEV.getInternalId());
 				break;
 			}
 
@@ -191,10 +208,10 @@ public class InnkeeperRestController {
 				SspSDEVInfo sspSdevInfo = new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
 
 				//Delete Session
-				SessionInfo s = sessionRepository.findBySymIdSDEV(sspSdevInfo.getSymIdSDEV());
+				SessionInfo s = sessionsRepository.findBySymId(sspSdevInfo.getSymId());
 				InnkeeperSDEVRegistrationResponse response =new InnkeeperSDEVRegistrationResponse();
 				if (s!=null) { //if I found my SymIdDEv in the MongoDb session:
-					sessionRepository.delete(s);					
+					sessionsRepository.delete(s);					
 					response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_OK);					
 					httpStatus=HttpStatus.OK;
 				}else {					
@@ -220,10 +237,10 @@ public class InnkeeperRestController {
 			SspSDEVInfo sspSdevInfo = new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
 
 			//Delete Session
-			SessionInfo s = sessionRepository.findBySymIdSDEV(sspSdevInfo.getSymIdSDEV());
+			SessionInfo s = sessionsRepository.findBySymId(sspSdevInfo.getSymId());
 			InnkeeperSDEVRegistrationResponse response =new InnkeeperSDEVRegistrationResponse();
 			if (s!=null) { //if I found my SymIdDEv in the MongoDb session:
-				sessionRepository.delete(s);					
+				sessionsRepository.delete(s);					
 				response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_OK);					
 				httpStatus=HttpStatus.OK;
 			} else {					

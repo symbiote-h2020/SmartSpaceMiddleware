@@ -257,7 +257,7 @@ public class WebSocketController extends TextWebSocketHandler {
                 
                 log.debug("Resource removed from session for plugin with id " + pluginId);
             } else {
-                log.debug("Resource with id " + resInfo.getSymbioteId() + " not found ");
+                log.debug("Resource with id " + resInfo.getSymIdResource() + " not found ");
             }
             
         }

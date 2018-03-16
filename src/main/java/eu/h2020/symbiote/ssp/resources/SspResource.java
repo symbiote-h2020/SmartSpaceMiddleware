@@ -9,11 +9,15 @@ import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 public class SspResource {
     @org.springframework.data.annotation.Id
     
-    @JsonProperty("internalId")
-    private String internalId; //resource Internal Id
+    @JsonProperty("internalIdResource")
+    private String internalIdResource; //resource Internal Id
     
-    @JsonProperty("symIdSDEV") 
-    private String symIdSDEV;
+    @JsonProperty("internalId")
+    private String internalId; // Internal Id
+    
+    @JsonProperty("symId") 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String symId;
     
     @JsonProperty("symIdResource")
     private String symIdResource;
@@ -24,13 +28,22 @@ public class SspResource {
     @JsonProperty("filteringPolicy")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private IAccessPolicySpecifier filteringPolicy;
-    @JsonProperty("resource")
-    Resource resource;
+    @JsonProperty("semanticDescription")
+    private Resource resource;
 
 
     public SspResource() {
     }
 
+    public String getInternalIdResource() {
+        return this.internalIdResource;
+    }
+
+    public void setInternalIdResource(String internalIdResource) {
+        this.internalIdResource = internalIdResource;
+    }
+    
+    
     public String getInternalId() {
         return this.internalId;
     }
@@ -39,12 +52,12 @@ public class SspResource {
         this.internalId = internalId;
     }
 
-    public String getSymIdDEV() {
-        return this.symIdSDEV;
+    public String getSymId() {
+        return this.symId;
     }
 
-    public void setSymIdDEV(String symIdSDEV) {
-        this.symIdSDEV = symIdSDEV;
+    public void setSymIdDEV(String symId) {
+        this.symId = symId;
     }
 
     public String getSymIdResource() {
@@ -55,8 +68,6 @@ public class SspResource {
         this.symIdResource = symIdResource;
     }
 
-    
-    
     public IAccessPolicySpecifier getAccessPolicy() {
         return this.accessPolicy;
     }
@@ -73,11 +84,16 @@ public class SspResource {
         this.filteringPolicy = filteringPolicySpecifier;
     }
 
-    public Resource getResource() {
+    public Resource getSemanticDescription() {
         return this.resource;
     }
 
-    public void setResource(Resource resource) {
+    public void setSemanticDesciption(Resource resource) {
         this.resource = resource;
     }
+
+	public String getPluginId() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

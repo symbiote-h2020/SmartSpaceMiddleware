@@ -81,11 +81,11 @@ public class SessionInfo {
 	@JsonProperty("psk")
 	private byte[] psk;
 	
-	@JsonProperty("symIdSDEV")
-	private String symIdSDEV;
+	@JsonProperty("symId")
+	private String symId;
 
-	@JsonProperty("internalIdSDEV")
-	private String internalIdSDEV;
+	@JsonProperty("internalId")
+	private String internalId;
 
 	/* HOWTO read expiration time directly via mongoDB client
       db.sessions.aggregate(     
@@ -119,8 +119,8 @@ public class SessionInfo {
 			@JsonProperty("gnonce2") String gnonce2,
 			@JsonProperty("kdf") String kdf,
 			@JsonProperty("session_expiration") Date session_expiration,
-			@JsonProperty("symIdSDEV") String symIdSDEV,
-			@JsonProperty("internalIdSDEV") String internalIdSDEV
+			@JsonProperty("symId") String symId,
+			@JsonProperty("internalId") String internalId
 
 			) {
 		this.sessionId = sessionId;
@@ -142,8 +142,8 @@ public class SessionInfo {
 		this.gnonce = gnonce;
 		this.gnonce2 = gnonce2;
 		this.kdf = kdf;        
-		this.symIdSDEV=symIdSDEV;
-		this.internalIdSDEV=internalIdSDEV;
+		this.symId=symId;
+		this.internalId=internalId;
 	}
 
 	@JsonProperty("session_expiration")
@@ -338,24 +338,24 @@ public class SessionInfo {
 
 
 
-	@JsonProperty("symIdSDEV")
-	public void setSymIdSDEV(String symIdSDEV) 
+	@JsonProperty("symId")
+	public void setSymId(String symId) 
 	{
-		this.symIdSDEV = symIdSDEV;
+		this.symId = symId;
 	}
-	public String getSymIdSDEV() 
+	public String getSymId() 
 	{
-		return this.symIdSDEV;
+		return this.symId;
 	}
 	
-	@JsonProperty("internalIdSDEV")
-	public void setInternalIdSDEV(String internalIdSDEV) 
+	@JsonProperty("internalId")
+	public void setInternalId(String internalId) 
 	{
-		this.internalIdSDEV = internalIdSDEV;
+		this.internalId = internalId;
 	}
-	public String getInternalIdSDEV() 
+	public String getInternalId() 
 	{
-		return this.internalIdSDEV;
+		return this.internalId;
 	}
 	
 }

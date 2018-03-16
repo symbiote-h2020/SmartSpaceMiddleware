@@ -22,24 +22,78 @@ public class InnkeeperResourceRegistrationResponse {
     @Autowired
     OwlApiHelper owlApiHelp;
 	
-	@JsonProperty("symId") 					private String symId;
-	@JsonProperty("result") 					private String result;
-	@JsonProperty("registration_expiration") private int registration_expiration;
+	@JsonProperty("symIdResource")				
+	private String symIdResource;
+	
+	@JsonProperty("internalIdResource")			
+	private String internalIdResource;
+	
+	@JsonProperty("symId")				
+	private String symId;
+	
+	@JsonProperty("internalId")			
+	private String internalId;
+	
+	@JsonProperty("result") 					
+	private String result;
+	
+	@JsonProperty("registration_expiration") 
+	private Integer registration_expiration;
 	
 	public InnkeeperResourceRegistrationResponse() {}
 	
-	public InnkeeperResourceRegistrationResponse(String symId, String result) {
+	public InnkeeperResourceRegistrationResponse(String symIdResource, String internalIdResource,String symId, String internalId, String result) {
+		this.symIdResource=symIdResource;
+		this.internalIdResource=internalIdResource;
+		
 		this.symId=symId;
+		this.internalId=internalId;
+		
 		this.result=result;
 	}
-	public InnkeeperResourceRegistrationResponse(String symId, String result, int registration_expiration) {
+	public InnkeeperResourceRegistrationResponse(String symIdResource, String internalIdResource,String symId, String internalId, String result, Integer registration_expiration) {
+		this.symIdResource=symIdResource;
+		this.internalIdResource=internalIdResource;
+		
 		this.symId=symId;
+		this.internalId=internalId;
+		
 		this.result=result;
 		this.registration_expiration=registration_expiration;
 	}
+	
+	public String getSymIdResource() {
+		return this.symIdResource;
+	}
+	
+	public void setSymIdResource(String symIdResource) {
+		this.symIdResource=symIdResource;
+	}
+	
+	public String getInternalIdResource() {
+		return this.internalIdResource;
+	}
+	
+	public void setInternalIdResource(String internalIdResource) {
+		this.internalIdResource=internalIdResource;
+	}
+	
 	public String getSymId() {
 		return this.symId;
 	}
+	
+	public void setSymIdDEV(String symId) {
+		this.symId=symId;
+	}
+	
+	public String getInternalId() {
+		return this.internalId;
+	}
+	
+	public void setInternalId(String internalId) {
+		this.internalId=internalId;
+	}
+	
 	public String getResult() {
 		return this.result;
 	}
