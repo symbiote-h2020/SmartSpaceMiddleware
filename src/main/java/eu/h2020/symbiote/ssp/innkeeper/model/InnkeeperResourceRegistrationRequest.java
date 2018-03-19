@@ -55,8 +55,7 @@ public class InnkeeperResourceRegistrationRequest {
 		
 		
 		//check The core and assign symId to the Resource (R5 optional)
-		
-		String symIdResource = new CheckCoreUtility(resourcesRepository).checkCoreSymbioteIdRegistration(msg.getSymIdResource());
+		String symIdResource = new CheckCoreUtility(resourcesRepository).checkCoreSymbioteIdRegistration(msg.getSemanticDescription().getId());
 		
 		//assign internal a new Id to the resource (R4)
 		String internalIdResource=new InternalIdUtils(resourcesRepository).createInternalId();

@@ -13,14 +13,11 @@ public class SspResource {
     private String internalIdResource; //resource Internal Id
     
     @JsonProperty("internalId")
-    private String internalId; // Internal Id
+    private String internalId; // SDEV Internal Id
     
     @JsonProperty("symId") 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String symId;
-    
-    @JsonProperty("symIdResource")
-    private String symIdResource;
+    private String symId;  // SDEV Symbiote ID  
     
     @JsonProperty("accessPolicy")
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -29,7 +26,7 @@ public class SspResource {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private IAccessPolicySpecifier filteringPolicy;
     @JsonProperty("semanticDescription")
-    private Resource resource;
+    private Resource resource; //Sensor, Actuator...
 
 
     public SspResource() {
@@ -59,15 +56,7 @@ public class SspResource {
     public void setSymIdDEV(String symId) {
         this.symId = symId;
     }
-
-    public String getSymIdResource() {
-        return this.symIdResource;
-    }
-
-    public void setSymIdResource(String symIdResource) {
-        this.symIdResource = symIdResource;
-    }
-
+   
     public IAccessPolicySpecifier getAccessPolicy() {
         return this.accessPolicy;
     }

@@ -8,13 +8,13 @@ import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 
 public class SspSDEVInfo {
     @org.springframework.data.annotation.Id
-    @JsonProperty("symId")
+    @JsonProperty("symId") 		//of  SDEV
     private String symId;
-    @JsonProperty("internalId")
+    @JsonProperty("internalId")  //of  SDEV
     private String internalId;
     @JsonProperty("pluginId")
     private String pluginId;
-    @JsonProperty("pluginURL")
+    @JsonProperty("pluginURL") // Interworking Interface URL
     private String pluginURL;
     @JsonProperty("dk1")
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -22,6 +22,10 @@ public class SspSDEVInfo {
     @JsonProperty("hashField")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String hashField;
+    
+    @JsonProperty("roaming")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private boolean roaming;
 
 
     public SspSDEVInfo() {
@@ -51,6 +55,15 @@ public class SspSDEVInfo {
         this.pluginId = pluginId;
     }
 
+    public boolean getRoaming() {
+        return this.roaming;
+    }
+
+    public void setRoaming(boolean roaming) {
+        this.roaming = roaming;
+    }
+
+    
     public String getPluginUrl() { return pluginURL; }
 
     public void setPluginUrl(String pluginUrl) { this.pluginURL = pluginURL; }
