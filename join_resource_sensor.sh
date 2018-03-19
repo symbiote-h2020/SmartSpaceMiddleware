@@ -1,8 +1,7 @@
 curl -H 'Content-Type: application/json' -d '
 {
-  "internalId":"",
-  "symId":"sym85",
-  "symIdResource":"",
+"symId":"sym607","internalId":"0",
+"internalIdResource":"",
   "semanticDescription":{
     "@c":".Sensor",
     "observesProperty":null,

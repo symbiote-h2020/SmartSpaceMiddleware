@@ -1,6 +1,6 @@
 curl -H 'Content-Type: application/json' -d '
 {
-  "symId": "",
+  "symId" :"",
   "pluginId": "5c:cf:7f:3a:6b:76",
   "pluginURL": "http://10.20.30.5:80",
   "dk1": "b15e3e8dab9f3badbce9a5444e58396",

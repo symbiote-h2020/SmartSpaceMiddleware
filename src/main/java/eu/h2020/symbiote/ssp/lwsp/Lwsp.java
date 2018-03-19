@@ -761,8 +761,9 @@ public class Lwsp {
 	public void setSessionId(String sessionId) {
 		this.sessionId=sessionId;
 	}
-	public void generateSessionId() {
+	public String generateSessionId() {
 		this.sessionId=getSaltS(8,alpha);
+		return this.sessionId;
 	}
 	
                 

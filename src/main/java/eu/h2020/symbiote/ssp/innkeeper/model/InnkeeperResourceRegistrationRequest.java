@@ -57,31 +57,83 @@ public class InnkeeperResourceRegistrationRequest {
 		//check The core and assign symId to the Resource (R5 optional)
 		String symIdResource = new CheckCoreUtility(resourcesRepository).checkCoreSymbioteIdRegistration(msg.getSemanticDescription().getId());
 		
-		//assign internal a new Id to the resource (R4)
-		String internalIdResource=new InternalIdUtils(resourcesRepository).createInternalId();
 		
-		//get internalId
-		log.info("msg.getSymId()="+msg.getSymId());
-		SessionInfo s = sessionsRepository.findBySymId(msg.getSymId());
-		String internalId = null;
-		if (s!=null) {
-			internalId = s.getInternalId(); //of SDEV/PLAT
-		}else {
-			log.warn("Symbiote ID for SDEV/PLat "+msg.getSymId()+" not exists");
-			res = new InnkeeperResourceRegistrationResponse(
-					symIdResource, 
-					internalIdResource,
-					msg.getSymId(),
-					internalId,
-					InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED,
-					0);
+		String results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
+		res = new InnkeeperResourceRegistrationResponse(
+				msg.getSemanticDescription().getId(), 
+				msg.getInternalIdResource(),
+				msg.getSymId(),
+				msg.getInternalId(),
+				results,
+				0);
+
+		//assign internal a new Id to the resource (R4)		
+		if (symIdResource == null) { //REJECTED
+			results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
+			
 			return res;
 		}
-		//Save Resource in MongoDB
 		
+		
+		if (symIdResource == "") { //OFFLINE
+
+			log.info("REGISTRATION OFFLINE symIdResource="+symIdResource);
+			
+			this.saveResource(msg,sessionsRepository.findByInternalId(msg.getInternalId()).getSessionExpiration());
+		
+			results=InnkeeperRestControllerConstants.REGISTRATION_OFFLINE;
+			msg.setInternalIdResource(new InternalIdUtils(resourcesRepository).createInternalId());
+			
+			res = new InnkeeperResourceRegistrationResponse(
+					msg.getSemanticDescription().getId(), 
+					msg.getInternalIdResource(),
+					msg.getSymId(),
+					msg.getInternalId(),
+					results,
+					DbConstants.EXPIRATION_TIME);
+			return res;
+		}  
+
+		if (symIdResource != "" && !msg.getSymId().equals(symIdResource)) { //REGISTER!
+									
+			log.info("NEW REGISTARTION symIdResource="+symIdResource);
+			
+			this.saveResource(msg,sessionsRepository.findByInternalId(msg.getInternalId()).getSessionExpiration());
+			
+			results=InnkeeperRestControllerConstants.REGISTRATION_OK;						
+			res = new InnkeeperResourceRegistrationResponse(
+					msg.getSemanticDescription().getId(), 
+					msg.getInternalIdResource(),
+					msg.getSymId(),
+					msg.getInternalId(),
+					results,
+					0);
+			return res;
+			
+		}	
+		
+		if (symIdResource != "" && msg.getSymId().equals(symIdResource)) { //Already exists
+			log.info("ALREADY REGISTERED symIdResource="+symIdResource);
+			results=InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED;
+			res = new InnkeeperResourceRegistrationResponse(
+					msg.getSemanticDescription().getId(), 
+					msg.getInternalIdResource(),
+					msg.getSymId(),
+					msg.getInternalId(),
+					results,
+					0);
+			return res;
+			
+		}	
+		
+		return res;
+				
+	}
+	
+	private void saveResource(SspResource msg,Date currTime) throws InvalidArgumentsException {
 		Resource resource = msg.getSemanticDescription();
 		String pluginId = msg.getPluginId();
-		String symbioteId = resource.getId(); 
+		String symbioteIdResource = resource.getId(); 
 		List<String> props = null;
 		if(resource instanceof StationarySensor) {
 			props = ((StationarySensor)resource).getObservesProperty();
@@ -89,24 +141,14 @@ public class InnkeeperResourceRegistrationRequest {
 			props = ((MobileSensor)resource).getObservesProperty();
 		}
 		try {
-			addPolicy(symbioteId, internalId, msg.getAccessPolicy());
+			addPolicy(symbioteIdResource, msg.getInternalIdResource(), msg.getAccessPolicy());
 		}catch (NullPointerException e) {
 			log.warn("AccessPolicy is null\n");
 		}
 		
-		addResource(symIdResource, internalIdResource,msg.getSymId(),internalId, props, pluginId,currTime);
+		addResource(msg.getSemanticDescription().getId(), msg.getInternalIdResource(),msg.getSymId(),msg.getInternalId(), props, pluginId,currTime);
 
-		//addCloudResourceInfoForOData(msgs);
-		res = new InnkeeperResourceRegistrationResponse(
-				symIdResource, 
-				internalIdResource,
-				msg.getSymId(),
-				internalId,
-				InnkeeperRestControllerConstants.SDEV_REGISTRATION_OK,
-				DbConstants.EXPIRATION_TIME);
-		return res;		
 	}
-
 
 
 	private void addCloudResourceInfoForOData(List<CloudResource> cloudResourceList) {

@@ -20,11 +20,11 @@ public class InnkeeperRestControllerConstants {
     public static final List<String> PLATFORM_REGISTRY_PAYLOAD_VALS= Arrays.asList("id","name","description","url","informationModel");
     public static final List<String> JOIN_RESOURCE_PAYLOAD_VALS= SDEV_REGISTRY_PAYLOAD_VALS;
     
-    public static final String SDEV_REGISTRATION_OK = "OK";
-    public static final String SDEV_REGISTRATION_ALREADY_REGISTERED = "ALREADY_REGISTERED";
-    public static final String SDEV_REGISTRATION_OFFLINE = "OFFLINE";
-    public static final String SDEV_REGISTRATION_REJECTED = "REJECTED";
-    public static final String SDEV_REGISTRATION_ERROR = "ERROR";
+    public static final String REGISTRATION_OK = "OK";
+    public static final String REGISTRATION_ALREADY_REGISTERED = "ALREADY_REGISTERED";
+    public static final String REGISTRATION_OFFLINE = "OFFLINE";
+    public static final String REGISTRATION_REJECTED = "REJECTED";
+    public static final String REGISTRATION_ERROR = "ERROR";
     
 	public static final String REJECTED_SYMID = "REJECTED";
 	public static final String OFFLINE_SYMID = "OFFLINE";

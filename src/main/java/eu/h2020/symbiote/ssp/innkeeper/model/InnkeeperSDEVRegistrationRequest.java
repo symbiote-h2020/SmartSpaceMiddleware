@@ -36,19 +36,19 @@ public class InnkeeperSDEVRegistrationRequest {
 
 		if (symIdFromCore==null) { // a null SymId from core == REJECT THE REQUEST
 			regResponse= new InnkeeperSDEVRegistrationResponse(
-					sspSDEVInfo.getSymId(),new InternalIdUtils(sessionsRepository).createInternalId(),InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED,0);	
+					sspSDEVInfo.getSymId(),new InternalIdUtils(sessionsRepository).createInternalId(),InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
 			
 		}else if (symIdFromCore.equals("")) { //EMPTY smyId from core == OFFLINE
 			regResponse= new InnkeeperSDEVRegistrationResponse(
-					sspSDEVInfo.getSymId(),new InternalIdUtils(sessionsRepository).createInternalId(),InnkeeperRestControllerConstants.SDEV_REGISTRATION_OFFLINE,DbConstants.EXPIRATION_TIME);
+					sspSDEVInfo.getSymId(),new InternalIdUtils(sessionsRepository).createInternalId(),InnkeeperRestControllerConstants.REGISTRATION_OFFLINE,DbConstants.EXPIRATION_TIME);
 
 		} else if (symIdFromCore.equals(sspSDEVInfo.getSymId())) { 	
 			String internalId = sessionsRepository.findBySymId(symIdFromCore).getInternalId();
 			regResponse= new InnkeeperSDEVRegistrationResponse(
-					symIdFromCore,internalId,InnkeeperRestControllerConstants.SDEV_REGISTRATION_ALREADY_REGISTERED,0);
+					symIdFromCore,internalId,InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED,0);
 		} else {
 			regResponse= new InnkeeperSDEVRegistrationResponse(
-					symIdFromCore,new InternalIdUtils(sessionsRepository).createInternalId(),InnkeeperRestControllerConstants.SDEV_REGISTRATION_OK,DbConstants.EXPIRATION_TIME);
+					symIdFromCore,new InternalIdUtils(sessionsRepository).createInternalId(),InnkeeperRestControllerConstants.REGISTRATION_OK,DbConstants.EXPIRATION_TIME);
 		}
 
 		return regResponse;

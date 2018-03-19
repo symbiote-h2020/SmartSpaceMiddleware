@@ -5,10 +5,12 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsExce
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResourceRegistrationRequest;
+import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResourceRegistrationResponse;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperSDEVRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperSDEVRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
+import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
@@ -17,6 +19,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -51,23 +54,29 @@ public class InnkeeperRestController {
 
 	@Autowired
 	InnkeeperSDEVRegistrationRequest innkeeperSDEVRegistrationRequest;
-	
+
 	@Autowired
 	InnkeeperResourceRegistrationRequest innkeeperResourceRegistrationRequest;
-	
+
 	@Autowired
 	Lwsp lwsp;
 
 	@Autowired
 	SessionsRepository sessionsRepository;
+	public InnkeeperRestController() {
 
+	}
 
 	//TODO: REGISTARTION OF A RESOURCE
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException, InvalidArgumentsException {
 
 		ResponseEntity<Object> responseEntity = null;
-		/*
+
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+		HttpStatus httpStatus = HttpStatus.OK;
+
 		boolean isLwspEnabled = false;
 		if (isLwspEnabled) {
 			//LWSP
@@ -75,12 +84,38 @@ public class InnkeeperRestController {
 			// NO encryption
 			String decoded_message = payload;
 			SspResource sspResource =  new ObjectMapper().readValue(decoded_message, SspResource.class);
-			Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymId()).getSessionExpiration();		
-			
-			InnkeeperResourceRegistrationResponse respSspResource = innkeeperResourceRegistrationRequest.registry(sspResource,sessionExpiration);
+
+			SessionInfo s=sessionsRepository.findBySymId(sspResource.getSymId());
+			// found Symbiote Id in Session Repository
+			if (s != null) {			
+				Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymId()).getSessionExpiration();					
+				InnkeeperResourceRegistrationResponse respSspResource = innkeeperResourceRegistrationRequest.registry(sspResource,sessionExpiration);
+				switch (respSspResource.getResult()) {
+				case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
+					httpStatus = HttpStatus.BAD_REQUEST;
+				default:
+					httpStatus = HttpStatus.OK;
+				}
+
+				responseEntity = new  ResponseEntity<Object>(respSspResource,responseHeaders,httpStatus);
+				return responseEntity;
+				
+			}else {
+				log.info("SymId not found, check with internal ID...");
+			}
+
+			s= sessionsRepository.findByInternalId(sspResource.getInternalId());
+
+			if (s != null) {			
+				Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymId()).getSessionExpiration();					
+				InnkeeperResourceRegistrationResponse respSspResource = innkeeperResourceRegistrationRequest.registry(sspResource,sessionExpiration);
+			}else {
+				log.info("InternalId not found, registration Failed");
+			}
+
 
 		}
-		*/
+
 		return responseEntity;
 	}
 
@@ -110,26 +145,30 @@ public class InnkeeperRestController {
 			case LwspConstants.SDEV_REGISTRY:
 				String decoded_message = lwsp.get_response();
 
-
-
 				InnkeeperSDEVRegistrationResponse respSDEV = 
 						innkeeperSDEVRegistrationRequest.registry(
 								new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class)
 								);
-
+				SessionInfo s = null;
 				switch (respSDEV.getResult()) {
-				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_OFFLINE: //OFFLINE
+				case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
 					httpStatus=HttpStatus.OK;
-					lwsp.updateSessionsRepository(lwsp.getSessionId(), respSDEV.getSymId(), respSDEV.getInternalId());
+					s = sessionsRepository.findBySessionId(lwsp.getSessionId());
+					s.setInternalId(respSDEV.getInternalId());
+					s.setSymId(respSDEV.getSymId());
+					sessionsRepository.save(s);
 					break;
-				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED:
+				case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
 					httpStatus=HttpStatus.BAD_REQUEST;
-				case InnkeeperRestControllerConstants.SDEV_REGISTRATION_ALREADY_REGISTERED:
+				case InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED:
 					httpStatus=HttpStatus.OK;
-					sessionsRepository.delete(sessionsRepository.findBySessionId(lwsp.getSessionId()));
 					break;
-				default:
-					lwsp.updateSessionsRepository(lwsp.getSessionId(), respSDEV.getSymId(), respSDEV.getInternalId());
+				default:			
+					// OK ONLINE
+					s = sessionsRepository.findBySessionId(lwsp.getSessionId());
+					s.setInternalId(respSDEV.getInternalId());
+					s.setSymId(respSDEV.getSymId());
+					sessionsRepository.save(s);					
 					break;
 				}
 
@@ -138,10 +177,10 @@ public class InnkeeperRestController {
 			}
 
 		}else{
+
 			Date currTime = new Timestamp(System.currentTimeMillis());
-			lwsp.generateSessionId();
-			SessionInfo sessionInfo = new SessionInfo(lwsp.getSessionId(),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,currTime,null,"0");
-			sessionsRepository.save(sessionInfo);			
+			String sessionId = new Lwsp().generateSessionId();
+			SessionInfo s = new SessionInfo();
 
 			String decoded_message = payload;
 
@@ -151,19 +190,24 @@ public class InnkeeperRestController {
 
 			//DEBUG: MOCK
 			switch (respSDEV.getResult()) {
-			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_OFFLINE: //OFFLINE
+			case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
+			case InnkeeperRestControllerConstants.REGISTRATION_OK:					
 				httpStatus=HttpStatus.OK;
-				lwsp.updateSessionsRepository(lwsp.getSessionId(), respSDEV.getSymId(), respSDEV.getInternalId());
+				s.setsessionId(sessionId);
+				s.setdk1(sspSDEVInfo.getDerivedKey1());
+				s.setInternalId(respSDEV.getInternalId());
+				s.setSymId(respSDEV.getSymId());				
+				sessionsRepository.save(s);				
 				break;
-			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_REJECTED:
-				httpStatus=HttpStatus.BAD_REQUEST;
-			case InnkeeperRestControllerConstants.SDEV_REGISTRATION_ALREADY_REGISTERED:
+
+
+			case InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED:
 				httpStatus=HttpStatus.OK;
-				sessionsRepository.delete(sessionsRepository.findBySessionId(lwsp.getSessionId()));
 				break;
+
+			case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
 			default:
-				lwsp.updateSessionsRepository(lwsp.getSessionId(), respSDEV.getSymId(), respSDEV.getInternalId());
-				break;
+				httpStatus=HttpStatus.BAD_REQUEST;
 			}
 
 			String encodedResponse = new ObjectMapper().writeValueAsString(respSDEV);
@@ -196,10 +240,10 @@ public class InnkeeperRestController {
 				InnkeeperSDEVRegistrationResponse response =new InnkeeperSDEVRegistrationResponse();
 				if (s!=null) { //if I found my SymIdDEv in the MongoDb session:
 					sessionsRepository.delete(s);					
-					response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_OK);					
+					response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
 					httpStatus=HttpStatus.OK;
 				}else {					
-					response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_ERROR);		
+					response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		
 					httpStatus=HttpStatus.BAD_REQUEST;
 
 				}
@@ -210,7 +254,7 @@ public class InnkeeperRestController {
 				//TODO: Delete Resources
 			default:
 				InnkeeperSDEVRegistrationResponse errorResponse =new InnkeeperSDEVRegistrationResponse();
-				errorResponse.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_ERROR);				
+				errorResponse.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);				
 				encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(errorResponse));
 				return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.BAD_REQUEST);
 
@@ -225,10 +269,10 @@ public class InnkeeperRestController {
 			InnkeeperSDEVRegistrationResponse response =new InnkeeperSDEVRegistrationResponse();
 			if (s!=null) { //if I found my SymIdDEv in the MongoDb session:
 				sessionsRepository.delete(s);					
-				response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_OK);					
+				response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
 				httpStatus=HttpStatus.OK;
 			} else {					
-				response.setResult(InnkeeperRestControllerConstants.SDEV_REGISTRATION_ERROR);		
+				response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		
 				httpStatus=HttpStatus.BAD_REQUEST;
 
 			}

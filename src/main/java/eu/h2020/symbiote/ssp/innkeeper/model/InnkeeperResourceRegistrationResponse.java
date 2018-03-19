@@ -37,7 +37,7 @@ public class InnkeeperResourceRegistrationResponse {
 	@JsonProperty("result") 					
 	private String result;
 	
-	@JsonProperty("registration_expiration") 
+	@JsonProperty("registrationExpiration") 
 	private Integer registration_expiration;
 	
 	public InnkeeperResourceRegistrationResponse() {}

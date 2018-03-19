@@ -53,7 +53,7 @@ public class SspResource {
         return this.symId;
     }
 
-    public void setSymIdDEV(String symId) {
+    public void setSymId(String symId) {
         this.symId = symId;
     }
    
