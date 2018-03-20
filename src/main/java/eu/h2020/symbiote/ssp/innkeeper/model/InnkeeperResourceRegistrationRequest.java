@@ -97,7 +97,10 @@ public class InnkeeperResourceRegistrationRequest {
 		if (symIdResource != "" && !msg.getSymId().equals(symIdResource)) { //REGISTER!
 									
 			log.info("NEW REGISTARTION symIdResource="+symIdResource);
-			
+			Resource r=msg.getSemanticDescription();
+			r.setId(symIdResource);			
+			msg.setInternalIdResource(new InternalIdUtils(resourcesRepository).createInternalId());
+			msg.setSemanticDesciption(r);
 			this.saveResource(msg,sessionsRepository.findByInternalId(msg.getInternalId()).getSessionExpiration());
 			
 			results=InnkeeperRestControllerConstants.REGISTRATION_OK;						
