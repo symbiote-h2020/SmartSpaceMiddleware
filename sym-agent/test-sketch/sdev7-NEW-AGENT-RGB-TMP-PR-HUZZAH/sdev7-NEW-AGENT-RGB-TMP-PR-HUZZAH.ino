@@ -6,7 +6,7 @@
 #include <Metro.h>
 #include <semantic_resources.h>
 
-String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalId\":\"sym1\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":40},{\"b\":80}]},\"type\" : \"SET\"}";
+String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalId\":\"sym1\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":5},{\"b\":5}]},\"type\" : \"SET\"}";
 String tmpTestJson2 = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalId\":\"sym1\",\"type\":\"Light\"},{\"type\" :\"Observation\"}],\"type\":\"GET\"}";
 
 #define SDA 4
@@ -94,13 +94,15 @@ void setup() {
   Serial.println("Start...");
   pixels.begin(); // This initializes the NeoPixel library
   if (sdev1.begin() == true) {
-  int joinresp = sdev1.join();
+  int joinresp = sdev1.registry();
   if (joinresp < 300 and joinresp >= 200) {
+    //sdev1.join();
     join_success = 1;
   } else {
       join_success = 0;
       Serial.println("Error in JOIN message");
     }
+    sdev1.join();
     // if 0 no RegExpiration
     if (sdev1.getRegExpiration() != 0) {
       registrationMetro.interval(floor(sdev1.getRegExpiration() * 0.9));
@@ -117,6 +119,15 @@ void setup() {
   //delay(3000);
   //sdev1.TestelaborateQuery(tmpTestJson2);
   if (join_success) Serial.println("\nJoin success!");
+
+  String tmpsymId = "112233445566778899aabbcc";
+  Serial.println("\n\nStart test r/w Flash\nReading...");
+  Serial.println(sdev1.TestgetSymIdResourceFromFlash());
+  Serial.print("Writing:");
+  Serial.println(tmpsymId);
+  sdev1.TestsaveSymIdResourceInFlash(tmpsymId);
+  Serial.println("Reading back...");
+  Serial.println(sdev1.TestgetSymIdResourceFromFlash());
 }
 
 void loop() {
@@ -129,7 +140,7 @@ void loop() {
   sdev1.handleSSPRequest();
   if (registrationMetro.check() == 1 && join_success == 1){
     //need another new join request
-    int joinresp = sdev1.join();
+    int joinresp = sdev1.registry();
     if (joinresp < 300 and joinresp >= 200) {
     join_success = 1;
   } else {

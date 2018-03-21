@@ -92,25 +92,112 @@ String symAgent::getSymIdFromFlash() {
 	String tmpID = "";
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
 	for (uint8_t i = FLASH_AGENT_START_SYMID; i < FLASH_AGENT_END_SYMID; i++) {
-		tmpID += String(EEPROM.read(i), HEX);
+		tmpID += String((char)EEPROM.read(i));
+		///tmpID += String(EEPROM.read(i), HEX);
 	}
 	PI("Read this SYM-ID from flash: ");
 	P(tmpID);
 	EEPROM.end();
 				//ffffffffffffffffffffffff
-	if (tmpID != "ffffffffffffffffffffffff") {
+	///if (tmpID != "ffffffffffffffffffffffff") {
+	if (tmpID != "ffffffffffffffffffffffffffffffffffffffffffffffff") {
 		//valid sym-id
 		P("Valid sym-id!");
 		return tmpID;
-	} else return "";
+	} else {
+		P("No symId found in flash");
+		return "";
+	}
 }
+
+String symAgent::getSymIdResourceFromFlash() {
+	String tmpID = "";
+	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
+	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
+		tmpID += String((char)EEPROM.read(i));
+	}
+	PI("Read this ResourceSymId from flash: ");
+	P(tmpID);
+	EEPROM.end();
+				//ffffffffffffffffffffffff
+	//if (tmpID != "ffffffffffffffffffffffff") {
+	if (tmpID != "ffffffffffffffffffffffffffffffffffffffffffffffff") {
+		//valid sym-id
+		P("Valid sym-id!");
+		return tmpID;
+	} else {
+		P("No symIdResource found in flash");
+		return "";
+	} 
+}
+
+////////////////////////
+// test function, to delete
+///////////////////////
+
+String symAgent::TestgetSymIdResourceFromFlash() {
+	String tmpID = "";
+	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
+	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
+		//tmpID += String(EEPROM.read(i), HEX);
+		tmpID += String((char)EEPROM.read(i));
+	}
+	PI("Read this ResourceSymId from flash: ");
+	P(tmpID);
+	EEPROM.end();
+				//ffffffffffffffffffffffff
+	if (tmpID != "ffffffffffffffffffffffffffffffffffffffffffffffff") {
+		//valid sym-id
+		P("Valid sym-id!");
+		return tmpID;
+	} else {
+		P("No symIdResource found in flash");
+		return "";
+	} 
+}
+
+void symAgent::TestsaveSymIdResourceInFlash(String symId) {
+	P("SAVE SYM-ID-RESOURCE IN FLASH");
+	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
+	uint8_t j = 0;
+	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
+		//PI((String(symId[j]) + String(symId[j+1])));
+		//PI( " => " );
+		//Serial.println((String(symId[j]) + String(symId[j+1])).toInt(), HEX);
+		//PI((String(symId[j]) + String(symId[j+1])));
+		//PI( " => " );
+		//P((String(symId[j], HEX) + String(symId[j+1], HEX)).toInt());
+		EEPROM.write(i, symId[j]);
+		j++;
+	}
+	EEPROM.commit();
+	EEPROM.end();
+#ifdef DEBUG_SYM_CLASS
+	String tmpID = "";
+	j = 0;
+	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
+	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
+		//tmpID += String(EEPROM.read(i), HEX);
+		tmpID += String((char)EEPROM.read(i));
+		//tmpID.setCharAt(j, (char)EEPROM.read(i));
+		j++;
+	}
+	PI("Read back SYM-ID-RESOURCE from flash: ");
+	P(tmpID);
+	PI("What I expect:");
+	P(_symIdResource);
+	EEPROM.end();
+#endif
+}
+
+//////////////////////
 
 void symAgent::saveIdInFlash() {
 	P("SAVE SYM-ID IN FLASH");
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
 	uint8_t j = 0;
 	for (uint8_t i = FLASH_AGENT_START_SYMID; i < FLASH_AGENT_END_SYMID; i++) {
-		EEPROM.write(i, _symId.charAt(j));
+		EEPROM.write(i, _symId[j]);
 		j++;
 	}
 	EEPROM.commit();
@@ -125,6 +212,31 @@ void symAgent::saveIdInFlash() {
 	P(tmpID);
 	PI("What I expect:");
 	P(_symId);
+	EEPROM.end();
+#endif
+}
+
+void symAgent::saveSymIdResourceInFlash() {
+	P("SAVE SYM-ID-RESOURCE IN FLASH");
+	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
+	uint8_t j = 0;
+	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
+		EEPROM.write(i, _symIdResource[j]);
+		j++;
+	}
+	EEPROM.commit();
+	EEPROM.end();
+#ifdef DEBUG_SYM_CLASS
+	String tmpID = "";
+	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
+	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
+		//tmpID += String(EEPROM.read(i), HEX);
+		tmpID += String((char)EEPROM.read(i));
+	}
+	PI("Read back SYM-ID-RESOURCE from flash: ");
+	P(tmpID);
+	PI("What I expect:");
+	P(_symIdResource);
 	EEPROM.end();
 #endif
 }
@@ -573,6 +685,154 @@ boolean symAgent::begin()
 }
 
 	//join the ssp, return a valid join response struct if success
+int symAgent::registry()
+{
+	P("REGISTRY");
+	_jsonBuff.clear();
+	JsonObject& _root = _jsonBuff.createObject();
+	/*
+		Create a JSON like this:
+		{
+		   String symIdSDEV,
+		   String pluginId,
+		   String pluginURL,
+		   String dk1,
+		   String hashField
+ 		}
+	*/
+ 		//read from flash if there is stored a valid symId
+	_symId = getSymIdFromFlash();
+	//_root["symIdSDEV"] = _internalId;
+	_root["symIdSDEV"] = _symId;
+	//_semantic->setSymId(_symId);
+	_root["pluginId"] = _mac;
+	//_root["pluginURL"] = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) + ":80";
+	_root["dk1"] = _security->getDK1();
+		//Regarding the hashField could be (i) all 0 when the SDEV joins for the first time
+		// or (ii) hashField = H(sym-id || previous dk1)
+	_root["hashField"] = _security->getHashOfIdentity(_symId);
+	//_root["semanticDescription"] = createSemanticDescription();
+
+	String tempClearData = "";
+	String tempCryptData = "";
+	String tempJsonPacket = "";
+	String resp = "";
+	_root.printTo(tempClearData);
+	P("Join message (CLEAR-DATA): ");
+#if DEBUG_SYM_CLASS == 1
+	_root.prettyPrintTo(Serial);
+	P(" ");
+#endif
+
+	/*
+		create a JSON like this:
+		{
+			"mti": 0x50,
+			"sessionId": <value>,
+			"data": "encryptJoinJSON"
+		}
+	*/
+			// crypt the data using the cryptosuite from lightweightsecurity protocol
+	_security->cryptData(tempClearData, tempCryptData);
+
+	_jsonBuff.clear();
+	JsonObject& jsonCrypt = _jsonBuff.createObject();
+	jsonCrypt["mti"] = STRING_MTI_SDEV_DATA_UPLINK;
+	jsonCrypt["sessionId"] = _security->getSessionId();
+	jsonCrypt["data"] = tempCryptData;
+	jsonCrypt.printTo(tempJsonPacket);
+
+	tempJsonPacket = "\r\n" + tempJsonPacket;
+	_rest_client->setContentType("application/encrypted");
+	int statusCode = _rest_client->post(JOIN_PATH, tempJsonPacket.c_str(), &resp);
+	P("Join message (SDEVP): ");
+#if DEBUG_SYM_CLASS == 1
+	jsonCrypt.prettyPrintTo(Serial);
+	P(" ");
+#endif
+	PI("Status code from server: ");
+  	P(statusCode);
+	if (statusCode < 300 and statusCode >= 200){
+		//got a valid response
+		_jsonBuff.clear();
+		//remove any additional byte from response like dimension of the buffer
+		resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
+		JsonObject& _rootCryptResp = _jsonBuff.parseObject(resp);
+		if (!_rootCryptResp.success()) {
+    		P("parseObject() failed");
+    		return ERR_PARSE_JSON;
+		}
+#if DEBUG_SYM_CLASS == 1
+		_rootCryptResp.prettyPrintTo(Serial);
+		P("");
+#endif
+		_security->decryptData( _rootCryptResp["data"].as<String>(), tempClearData);
+
+		_jsonBuff.clear();
+		JsonObject& _rootClearResp = _jsonBuff.parseObject(tempClearData);
+		if (!_rootCryptResp.success()) {
+    		P("parseObject() failed");
+    		return ERR_PARSE_JSON;
+		}
+#if DEBUG_SYM_CLASS == 1
+		P("Decrypted JSON");
+		_rootClearResp.prettyPrintTo(Serial);
+		P("");
+#endif
+		 if ((_rootClearResp["result"].as<String>() == "REJECTED")) {
+			//kick away fro the SSP
+			P("JOIN REJECTED");
+			return ERR_KICKED_OUT_FROM_JOIN;
+		} else if (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED") {
+			P("JOIN OK");
+			_regExpiration = _rootClearResp["registrationExpiration"].as<unsigned int>();
+			if (_symId == "" || _symId == _rootClearResp["symIdSDEV"].as<String>()) {
+				// everything ok
+				P("JOIN SYMID OK");
+				_symId = _rootClearResp["symIdSDEV"].as<String>();
+			} else {
+				P("JOIN MISMATCH");
+				return ERR_SYMID_MISMATCH_FROM_JOIN;
+			}
+		} else {
+			return ERR_UNKNOWN_RESPONSE_FROM_JOIN;
+		}
+	} else {
+			//error response from server
+			P("GOT http error code from INNK");
+			_jsonBuff.clear();
+			//remove any additional byte from response like dimension of the buffer
+			resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
+			JsonObject& _root2 = _jsonBuff.parseObject(resp);
+			if (!_root2.success()) {
+	    		P("parseObject() failed");
+	    		return ERR_PARSE_JSON;
+			}
+#if DEBUG_SYM_CLASS == 1
+			_root2.prettyPrintTo(Serial);
+			P("");
+#endif
+	}
+	if (_keep_alive > 0) {
+		//set up keepalive
+		volatile unsigned long next;
+		noInterrupts();
+	  	timer0_isr_init();
+	  	timer0_attachInterrupt(keepAliveISR);
+	  		//set the keep_alive interval. The value is in msec
+	  	next=ESP.getCycleCount() + _keep_alive;
+	  	timer0_write(next);
+	  	interrupts();
+	}
+	if (_roaming) {
+		P("ROAMING SDEV, SAVE CONTEXT IN FLASH");
+		_security->saveContextInFlash();
+			// save the symbiote-ID in flash
+		saveIdInFlash();
+	}
+	return statusCode;
+}
+
 int symAgent::join()
 {
 	P("JOIN");
@@ -581,23 +841,21 @@ int symAgent::join()
 	/*
 		Create a JSON like this:
 		{
-		   String sym-id,
-		   String pluginId,
+		   String symIdResources,
 		   String semanticDescription
-		   String dk1,
-		   String hashField
  		}
 	*/
  		//read from flash if there is stored a valid symId
-	_symId = getSymIdFromFlash();
+	_symIdResource = getSymIdResourceFromFlash();
+	_root["symIdResource"] = _symIdResource;
 	_root["internalId"] = _internalId;
-	_semantic->setSymId(_symId);
-	_root["pluginId"] = _mac;
+	_semantic->setSymId(_symIdResource);
+	//_root["pluginId"] = _mac;
 	//_root["pluginURL"] = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) + ":80";
-	_root["dk1"] = _security->getDK1();
+	//_root["dk1"] = _security->getDK1();
 		//Regarding the hashField could be (i) all 0 when the SDEV joins for the first time
 		// or (ii) hashField = H(sym-id || previous dk1)
-	_root["hashField"] = _security->getHashOfIdentity(_symId);
+	//_root["hashField"] = _security->getHashOfIdentity(_symId);
 	_root["semanticDescription"] = createSemanticDescription();
 
 	String tempClearData = "";
@@ -666,17 +924,17 @@ int symAgent::join()
 		_rootClearResp.prettyPrintTo(Serial);
 		P("");
 #endif
-		 if ((_rootClearResp["results"].as<String>() == "REJECTED")) {
+		 if ((_rootClearResp["result"].as<String>() == "REJECTED")) {
 			//kick away fro the SSP
 			P("JOIN REJECTED");
 			return ERR_KICKED_OUT_FROM_JOIN;
-		} else if (_rootClearResp["results"].as<String>() == "OK" || _rootClearResp["results"].as<String>() == "ALREADY_REGISTERED") {
+		} else if (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED") {
 			P("JOIN OK");
-			_regExpiration = _rootClearResp["registrationExpiration"].as<unsigned int>();
-			if (_symId == "" || _symId == _rootClearResp["symId"].as<String>()) {
+			//_regExpiration = _rootClearResp["registrationExpiration"].as<unsigned int>();
+			if (_symIdResource == "" || _symIdResource == _rootClearResp["symIdResource"].as<String>()) {
 				// everything ok
 				P("JOIN SYMID OK");
-				_symId = _rootClearResp["symId"].as<String>();
+				_symIdResource = _rootClearResp["symIdResource"].as<String>();
 			} else {
 				P("JOIN MISMATCH");
 				return ERR_SYMID_MISMATCH_FROM_JOIN;
@@ -700,22 +958,11 @@ int symAgent::join()
 			P("");
 #endif
 	}
-	if (_keep_alive > 0) {
-		//set up keepalive
-		volatile unsigned long next;
-		noInterrupts();
-	  	timer0_isr_init();
-	  	timer0_attachInterrupt(keepAliveISR);
-	  		//set the keep_alive interval. The value is in msec
-	  	next=ESP.getCycleCount() + _keep_alive;
-	  	timer0_write(next);
-	  	interrupts();
-	}
 	if (_roaming) {
 		P("ROAMING SDEV, SAVE CONTEXT IN FLASH");
-		_security->saveContextInFlash();
-			// save the symbiote-ID in flash
-		saveIdInFlash();
+		//_security->saveContextInFlash();
+			// save the symbiote-ID of resource in flash
+		saveSymIdResourceInFlash();
 	}
 	return statusCode;
 }

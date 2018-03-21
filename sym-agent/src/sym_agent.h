@@ -46,8 +46,15 @@
 #define FLASH_LSP_END_PREV_DK1    47 
 
 #define FLASH_AGENT_START_SYMID 48
-  // 12 HEX bytes for sym-Id
-#define FLASH_AGENT_END_SYMID   60
+  // 12 HEX bytes for sym-Id -> mapped to 24 ascii char
+//#define FLASH_AGENT_END_SYMID   60
+#define FLASH_AGENT_END_SYMID   72
+
+//#define FLASH_AGENT_START_RESOURCE_SYMID 61
+#define FLASH_AGENT_START_RESOURCE_SYMID 73
+  // 12 HEX bytes for sym-Id -> mapped to 24 ascii char
+//#define FLASH_AGENT_END_RESOURCE_SYMID 73
+#define FLASH_AGENT_END_RESOURCE_SYMID 97
 
 #define MAX_JSON_SIZE 2500
 #define JOIN_URL "innkeeper.symbiote.org"
@@ -106,6 +113,13 @@ class symAgent
 
     String getSymIdFromFlash();
     void saveIdInFlash();
+
+    void saveSymIdResourceInFlash();
+    String getSymIdResourceFromFlash();
+
+    String TestgetSymIdResourceFromFlash();
+    void TestsaveSymIdResourceInFlash(String symId);
+
     void setResource(String rapRequest);
 
     void subscribe();
@@ -116,6 +130,7 @@ class symAgent
       // return true if found a symbiotic ssid and so ssp and connect to it, false otherwise
     boolean begin();
       //join the ssp, return  status code of the request and do side effect of the response from the innkeeper into the join_resp struct
+    int registry();
     int join();
     String createSemanticDescription();
       //set the keep alive interval for the agent
@@ -161,6 +176,7 @@ class symAgent
     String _sspId;
       //this is the agent identifier
     String _symId;
+    String _symIdResource;
     String _internalId;
     String _description;
 
