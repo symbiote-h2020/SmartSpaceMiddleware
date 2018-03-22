@@ -73,9 +73,6 @@ public class RapPrimitiveProcessor implements PrimitiveProcessor {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${rap.plugin.requestEndpoint}") 
-    private String pluginRequestEndpoint;
-
     @Value("${rap.json.property.type}")
     private String jsonPropertyClassName;
     
@@ -83,8 +80,10 @@ public class RapPrimitiveProcessor implements PrimitiveProcessor {
     
     @Override
     public void init(OData odata, ServiceMetadata sm) {
-        storageHelper = new StorageHelper(resourcesRepo, pluginRepo, communicationHandler,
-                                        restTemplate, pluginRequestEndpoint, jsonPropertyClassName);
+        storageHelper = new StorageHelper(
+                resourcesRepo, pluginRepo, 
+                communicationHandler, restTemplate, 
+                jsonPropertyClassName);
     }
     
     @Override

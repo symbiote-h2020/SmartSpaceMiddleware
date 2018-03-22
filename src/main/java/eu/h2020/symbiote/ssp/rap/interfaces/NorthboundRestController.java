@@ -5,13 +5,9 @@
  */
 package eu.h2020.symbiote.ssp.rap.interfaces;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
-import eu.h2020.symbiote.ssp.rap.managers.ServiceResponseResult;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.exceptions.*;
@@ -20,14 +16,9 @@ import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessGetMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessHistoryMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessSetMessage;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
 import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
-import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
-import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
-import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
 import java.util.*;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
@@ -79,9 +70,6 @@ public class NorthboundRestController {
     @Autowired
     private RapCommunicationHandler communicationHandler;
 
-    @Value("${rap.plugin.requestEndpoint}")
-    private String pluginRequestEndpoint;
-
     @Value("${rap.json.property.type}")
     private String jsonPropertyClassName;
     
@@ -126,15 +114,13 @@ public class NorthboundRestController {
                 log.error("No plugin registered with id " + pluginId);
                 throw new Exception("No plugin registered with id " + pluginId);
             }
-            String pluginUrl = lst.get().getPluginURL();
-            
-            String url = pluginUrl + pluginRequestEndpoint;
-            log.info("Sending POST request to " + url);
+            String pluginUrl = lst.get().getPluginURL();            
+            log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            Object obj = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            Object obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             if (obj == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
@@ -210,14 +196,12 @@ public class NorthboundRestController {
                 throw new Exception("No plugin registered with id " + pluginId);
             }
             String pluginUrl = lst.get().getPluginURL();
-            
-            String url = pluginUrl + pluginRequestEndpoint;
-            log.info("Sending POST request to " + url);
+            log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            Object obj = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            Object obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             if (obj == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
@@ -295,14 +279,12 @@ public class NorthboundRestController {
                 throw new Exception("No plugin registered with id " + pluginId);
             }
             String pluginUrl = lst.get().getPluginURL();
-            
-            String url = pluginUrl + pluginRequestEndpoint;
-            log.info("Sending POST request to " + url);
+            log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            Object obj = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            Object obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             if(obj != null) {
                 String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
                 // checking if plugin response is a valid json

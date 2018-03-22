@@ -74,9 +74,6 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${rap.plugin.requestEndpoint}") 
-    private String pluginRequestEndpoint;
-
     @Value("${rap.json.property.type}")
     private String jsonPropertyClassName;
     
@@ -87,8 +84,10 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     public void init(OData odata, ServiceMetadata sm) {
     //    this.odata = odata;
     //    this.serviceMetadata = sm;
-        storageHelper = new StorageHelper(resourcesRepo, pluginRepo, communicationHandler,
-                                        restTemplate, pluginRequestEndpoint, jsonPropertyClassName);
+        storageHelper = new StorageHelper(
+                resourcesRepo, pluginRepo, 
+                communicationHandler, restTemplate, 
+                jsonPropertyClassName);
     }
 
     @Override

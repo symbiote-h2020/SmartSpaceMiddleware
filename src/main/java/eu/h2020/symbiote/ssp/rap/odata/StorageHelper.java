@@ -7,7 +7,6 @@ package eu.h2020.symbiote.ssp.rap.odata;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -17,36 +16,24 @@ import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessGetMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessHistoryMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessSetMessage;
-import eu.h2020.symbiote.model.cim.Observation;
-import eu.h2020.symbiote.ssp.rap.interfaces.ResourceAccessCramNotification;
-import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.rap.resources.query.Comparison;
 import eu.h2020.symbiote.ssp.rap.resources.query.Filter;
 import eu.h2020.symbiote.ssp.rap.resources.query.Operator;
 import eu.h2020.symbiote.ssp.rap.resources.query.Query;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
 import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
-import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
-import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.server.api.ODataApplicationException;
 import org.apache.olingo.server.api.uri.UriParameter;
@@ -78,7 +65,6 @@ public class StorageHelper {
     private final ResourcesRepository resourcesRepo;
     private final PluginRepository pluginRepo;
     private final RestTemplate restTemplate;
-    private final String pluginRequestEndpoint;
     private final String jsonPropertyClassName;
     
     private static final Pattern PATTERN = Pattern.compile(
@@ -88,12 +74,11 @@ public class StorageHelper {
 
     public StorageHelper(ResourcesRepository resourcesRepository, PluginRepository pluginRepository,
                          RapCommunicationHandler communicationHandler, RestTemplate restTemplate,
-                         String pluginRequestEndpoint, String jsonPropertyClassName) {
+                         String jsonPropertyClassName) {
         this.resourcesRepo = resourcesRepository;
         this.pluginRepo = pluginRepository;
         this.communicationHandler= communicationHandler;
-        this.restTemplate = restTemplate;
-        this.pluginRequestEndpoint = pluginRequestEndpoint;
+        this.restTemplate = restTemplate;        
         this.jsonPropertyClassName = jsonPropertyClassName;
     }
 
@@ -143,9 +128,7 @@ public class StorageHelper {
             if(lst == null || !lst.isPresent()) {
                 log.error("No plugin registered with id " + pluginId);
                 throw new Exception("No plugin registered with id " + pluginId);
-            }
-            String pluginUrl = lst.get().getPluginURL();
-            
+            }                        
             if (top == 1) {
                 msg = new ResourceAccessGetMessage(resourceInfoList);
             } else {
@@ -157,13 +140,13 @@ public class StorageHelper {
             mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
             String json = mapper.writeValueAsString(msg);
             
-            String url = pluginUrl + pluginRequestEndpoint;
-            log.info("Sending POST request to " + url);
+            String pluginUrl = lst.get().getPluginURL();
+            log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            ResponseEntity<?> responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity<?> responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             if (responseEntity == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
@@ -212,8 +195,6 @@ public class StorageHelper {
                 log.error("No plugin registered with id " + pluginId);
                 throw new Exception("No plugin registered with id " + pluginId);
             }
-            String pluginUrl = lst.get().getPluginURL();
-
             msg = new ResourceAccessSetMessage(resourceInfoList, requestBody);            
             String json = "";
             try {
@@ -225,13 +206,13 @@ public class StorageHelper {
             } catch (JsonProcessingException ex) {
                 log.error("JSon processing exception: " + ex.getMessage());
             }
-            String url = pluginUrl + pluginRequestEndpoint;
-            log.info("Sending POST request to " + url);
+            String pluginUrl = lst.get().getPluginURL();
+            log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
 
             Object obj = responseEntity.getBody();
             if(obj != null) {

@@ -54,9 +54,6 @@ public class TestRestController {
     @Autowired
     NorthboundRestController controller;
     
-    @Value("${rap.enableSpecificPlugin}")
-    private Boolean enableSpecificPlugin;
-    
     private MockMvc mockMvc;
     
     @Autowired
@@ -102,19 +99,8 @@ public class TestRestController {
             //test get
             ResultActions res = mockMvc.perform(get("/rap/Sensor/"+resourceId)
                 .headers(getHeader()));
-            if(enableSpecificPlugin){
-                res.andExpect(status().isOk());
-                String content = res.andReturn().getResponse().getContentAsString();
-
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-                Observation observation = mapper.readValue(content, Observation.class);
-                assert(observation != null);
-            }
-            else{
-                res.andExpect(status().isInternalServerError());
-            }
+            
+            res.andExpect(status().isInternalServerError());            
             //test security
             res = mockMvc.perform(get("/rap/Sensor/"+resourceId)
                 .headers(getHeader()));
@@ -155,20 +141,8 @@ public class TestRestController {
             //test history
             ResultActions res = mockMvc.perform(get("/rap/Sensor/"+resourceId+"/history")
                 .headers(getHeader()));
-            if(enableSpecificPlugin){
-                res.andExpect(status().isOk());
-                String content = res.andReturn().getResponse().getContentAsString();
-
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-                List<Observation> observations = mapper.readValue(content, new TypeReference<List<Observation>>() {});
-                assert(observations != null);
-                assert(!observations.isEmpty());
-            }
-            else{
-                res.andExpect(status().isInternalServerError());
-            }
+            
+            res.andExpect(status().isInternalServerError());            
             //test security            
             res = mockMvc.perform(get("/rap/Sensor/"+resourceId+"/history")
                 .headers(getHeader()));
@@ -215,18 +189,12 @@ public class TestRestController {
                 .content("null"));
             res.andExpect(status().isOk());
             String content = res.andReturn().getResponse().getContentAsString();
-            if(enableSpecificPlugin){
-                assert(content.equals(pluginId));
-            }
-            else{
-                content = res.andReturn().getResponse().getContentAsString();
-                assert(content.equals(""));
-            }
-            //test security
-            
-                res = mockMvc.perform(post("/rap/Actuator/"+resourceId)
-                    .headers(getHeader()));
-                res.andExpect(status().isInternalServerError());
+            content = res.andReturn().getResponse().getContentAsString();
+            assert(content.equals(""));
+            //test security            
+            res = mockMvc.perform(post("/rap/Actuator/"+resourceId)
+                .headers(getHeader()));
+            res.andExpect(status().isInternalServerError());
             
             //delete
             resourcesRepository.delete(resourceId);

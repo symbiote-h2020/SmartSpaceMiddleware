@@ -5,7 +5,6 @@
  */
 package eu.h2020.symbiote.ssp.rap;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -17,12 +16,6 @@ import org.springframework.web.client.RestTemplate;
 
 @Configuration
 public class RapConfig {
-
-    @Value("${rap.plugin.requestEndpoint}")
-    public String pluginRequestEndpoint;
-
-    @Value("${rap.json.property.type}")
-    public String jsonProperty;
 
     @Bean
     public RestTemplate restTemplate() {

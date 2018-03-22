@@ -18,7 +18,6 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
-import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
 import org.apache.olingo.commons.api.ex.ODataException;
 
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -75,9 +74,6 @@ public class NorthboundEdmController {
     
     @Autowired
     private RapPrimitiveProcessor primitiveProcessor;
-    
-    @Autowired
-    private AuthorizationManager authManager;
 
     @Autowired
     private RapCommunicationHandler communicationHandler;

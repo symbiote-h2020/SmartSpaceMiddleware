@@ -55,9 +55,6 @@ public class TestODataController {
     @Autowired
     NorthboundEdmController controller;
     
-    @Value("${rap.enableSpecificPlugin}")
-    private Boolean enableSpecificPlugin;
-    
     private MockMvc mockMvc;
     
     @Autowired
@@ -104,19 +101,8 @@ public class TestODataController {
             //test get
             ResultActions res = mockMvc.perform(get("/rap/Sensor('"+resourceId+"')/Observation?$top="+top)
                 .headers(getHeader()));
-            if(enableSpecificPlugin){
-                res.andExpect(status().isOk());
-                String content = res.andReturn().getResponse().getContentAsString();
-
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-                Observation observation = mapper.readValue(content, Observation.class);
-                assert(observation != null);
-            }
-            else{
-                res.andExpect(status().isInternalServerError());
-            }
+            
+            res.andExpect(status().isInternalServerError());           
             //test security
             res = mockMvc.perform(get("/rap/Sensor('"+resourceId+"')/Observation?$top="+top)
                 .headers(getHeader()));
@@ -157,20 +143,8 @@ public class TestODataController {
             //test history
             ResultActions res = mockMvc.perform(get("/rap/Sensor('"+resourceId+"')/Observation?$top="+top)
                 .headers(getHeader()));
-            if(enableSpecificPlugin){
-                res.andExpect(status().isOk());
-                String content = res.andReturn().getResponse().getContentAsString();
-
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-                List<Observation> observations = mapper.readValue(content, new TypeReference<List<Observation>>() {});
-                assert(observations != null);
-                assert(!observations.isEmpty());
-            }
-            else{
-                res.andExpect(status().isInternalServerError());
-            }
+            
+            res.andExpect(status().isInternalServerError());
             //test security
             res = mockMvc.perform(get("/rap/Sensor('"+resourceId+"')/Observation?$top="+top)
                 .headers(getHeader()));
@@ -218,13 +192,9 @@ public class TestODataController {
                 .content("{\"RGBCapability\": [{\"r\":0,\"g\":0,\"b\":0}]}"));
             res.andExpect(status().isOk());
             String content = res.andReturn().getResponse().getContentAsString();
-            if(enableSpecificPlugin){           
-                assert(content.equals(pluginId));
-            }
-            else{
-                content = res.andReturn().getResponse().getContentAsString();
-                assert(content.equals(""));
-            }
+
+            content = res.andReturn().getResponse().getContentAsString();
+            assert(content.equals(""));            
             //actuate Dimmer
             res = mockMvc.perform(put("/rap/Light('"+resourceId+"')")
                 .headers(getHeader())
@@ -232,13 +202,9 @@ public class TestODataController {
                 .content("{\"DimmerCapability\": [{\"level\":0}]}"));
             res.andExpect(status().isOk());
             content = res.andReturn().getResponse().getContentAsString();
-            if(enableSpecificPlugin){           
-                assert(content.equals(pluginId));
-            }
-            else{
-                content = res.andReturn().getResponse().getContentAsString();
-                assert(content.equals(""));
-            }
+
+            content = res.andReturn().getResponse().getContentAsString();
+            assert(content.equals(""));            
             //actuate Curtain
             res = mockMvc.perform(put("/rap/Curtain('"+resourceId+"')")
                 .headers(getHeader())
@@ -246,13 +212,9 @@ public class TestODataController {
                 .content("{\"SetPositionCapability\": [{\"position\":0}]}"));
             res.andExpect(status().isOk());
             content = res.andReturn().getResponse().getContentAsString();
-            if(enableSpecificPlugin){           
-                assert(content.equals(pluginId));
-            }
-            else{
-                content = res.andReturn().getResponse().getContentAsString();
-                assert(content.equals(""));
-            }
+            
+            content = res.andReturn().getResponse().getContentAsString();
+            assert(content.equals(""));            
             //wrong actuation
             res = mockMvc.perform(put("/rap/Actuator('"+resourceId+"')")
                 .headers(getHeader())
