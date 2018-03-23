@@ -112,7 +112,9 @@ public class Lwsp {
 	private Timestamp sessionExpiration;
 
 	private String symId;
-	private String internalId; 
+	private String internalId;
+	private String pluginId;
+	private String pluginURL;
 
 	/*
   _____      _            _         __  __      _   _               _
@@ -515,7 +517,7 @@ public class Lwsp {
 			log.info("Sent back 0x20:\n"+OutBuffer);
 			if (!this.get_mti().contains("0xf")) 
 			{
-				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime,symId,internalId);
+				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime,symId,internalId,pluginId,pluginURL);
 				sessionsRepository.save(sessionInfo);
 			}
 			break;
@@ -578,7 +580,7 @@ public class Lwsp {
 							jsonData1.put("authn", Base64.getEncoder().encodeToString(aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk1)));
 							out=jsonData1.toString();
 							this.sessionExpiration = new Timestamp(System.currentTimeMillis());
-							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration,symId,internalId);
+							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration,symId,internalId,pluginId,pluginURL);
 							sessionsRepository.save(sessionInfo);
 							out=jsonData1.toString();
 							log.info("\n+--------------------------------+"+

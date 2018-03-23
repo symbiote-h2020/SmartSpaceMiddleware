@@ -135,8 +135,8 @@ public class InnkeeperResourceRegistrationRequest {
 	
 	private void saveResource(SspResource msg,Date currTime) throws InvalidArgumentsException {
 		Resource resource = msg.getSemanticDescription();
-		String pluginId = msg.getPluginId();
-		String symbioteIdResource = resource.getId(); 
+		String pluginId = sessionsRepository.findByInternalId(msg.getInternalId()).getPluginId(); 
+		String symbioteIdResource = resource.getId();
 		List<String> props = null;
 		if(resource instanceof StationarySensor) {
 			props = ((StationarySensor)resource).getObservesProperty();

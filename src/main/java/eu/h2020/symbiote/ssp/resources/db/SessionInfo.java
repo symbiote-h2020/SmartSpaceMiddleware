@@ -86,6 +86,13 @@ public class SessionInfo {
 
 	@JsonProperty("internalId")
 	private String internalId;
+	
+	@JsonProperty("pluginId")
+	private String pluginId;
+
+	@JsonProperty("pluginURL")
+	private String pluginURL;
+	
 
 	/* HOWTO read expiration time directly via mongoDB client
       db.sessions.aggregate(     
@@ -120,8 +127,9 @@ public class SessionInfo {
 			@JsonProperty("kdf") String kdf,
 			@JsonProperty("session_expiration") Date session_expiration,
 			@JsonProperty("symId") String symId,
-			@JsonProperty("internalId") String internalId
-
+			@JsonProperty("internalId") String internalId,
+			@JsonProperty("pluginId") String pluginId,
+			@JsonProperty("pluginURL") String pluginURL
 			) {
 		this.sessionId = sessionId;
 		this.session_expiration = session_expiration;
@@ -144,6 +152,8 @@ public class SessionInfo {
 		this.kdf = kdf;        
 		this.symId=symId;
 		this.internalId=internalId;
+		this.pluginId=pluginId;
+		this.pluginURL=pluginURL;
 	}
 
 	@JsonProperty("session_expiration")
@@ -353,9 +363,34 @@ public class SessionInfo {
 	{
 		this.internalId = internalId;
 	}
+	
 	public String getInternalId() 
 	{
 		return this.internalId;
+	}
+	
+
+	@JsonProperty("pluginId")
+	public void setPluginId(String pluginId) 
+	{
+		this.pluginId = pluginId;
+	}
+	
+	public String getPluginId() 
+	{
+		return this.pluginId;
+	}
+	
+	
+	@JsonProperty("pluginURL")
+	public void setPluginURL(String pluginURL) 
+	{
+		this.pluginURL = pluginURL;
+	}
+	
+	public String getPluginURL() 
+	{
+		return this.pluginURL;
 	}
 	
 }

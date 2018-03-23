@@ -80,9 +80,5 @@ public class SspResource {
     public void setSemanticDesciption(Resource resource) {
         this.resource = resource;
     }
-
-	public String getPluginId() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	
 }

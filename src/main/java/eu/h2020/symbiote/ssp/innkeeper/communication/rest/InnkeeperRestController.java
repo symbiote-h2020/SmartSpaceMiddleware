@@ -144,11 +144,9 @@ public class InnkeeperRestController {
 
 			case LwspConstants.SDEV_REGISTRY:
 				String decoded_message = lwsp.get_response();
-
+				SspSDEVInfo sspSDEVInfo = new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
 				InnkeeperSDEVRegistrationResponse respSDEV = 
-						innkeeperSDEVRegistrationRequest.registry(
-								new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class)
-								);
+						innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
 				SessionInfo s = null;
 				switch (respSDEV.getResult()) {
 				case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
@@ -156,6 +154,8 @@ public class InnkeeperRestController {
 					s = sessionsRepository.findBySessionId(lwsp.getSessionId());
 					s.setInternalId(respSDEV.getInternalId());
 					s.setSymId(respSDEV.getSymId());
+					s.setPluginId(sspSDEVInfo.getPluginId());
+					s.setPluginURL(sspSDEVInfo.getPluginUrl());
 					sessionsRepository.save(s);
 					break;
 				case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
