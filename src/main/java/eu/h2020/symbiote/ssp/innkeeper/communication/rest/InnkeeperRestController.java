@@ -60,6 +60,9 @@ public class InnkeeperRestController {
 
 	@Autowired
 	Lwsp lwsp;
+	
+	@Value("${innk.lwsp.enabled:true}") 
+	Boolean isLwspEnabled;
 
 	@Autowired
 	SessionsRepository sessionsRepository;
@@ -77,7 +80,7 @@ public class InnkeeperRestController {
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
 
-		boolean isLwspEnabled = false;
+		
 		if (isLwspEnabled) {
 			//LWSP
 		}else{	
@@ -127,8 +130,7 @@ public class InnkeeperRestController {
 		ResponseEntity<Object> responseEntity = null;
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-		HttpStatus httpStatus = HttpStatus.OK;
-		boolean isLwspEnabled = false;
+		HttpStatus httpStatus = HttpStatus.OK;		
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
@@ -168,6 +170,8 @@ public class InnkeeperRestController {
 					s = sessionsRepository.findBySessionId(lwsp.getSessionId());
 					s.setInternalId(respSDEV.getInternalId());
 					s.setSymId(respSDEV.getSymId());
+					s.setPluginId(sspSDEVInfo.getPluginId());
+					s.setPluginURL(sspSDEVInfo.getPluginUrl());
 					sessionsRepository.save(s);					
 					break;
 				}
@@ -196,7 +200,10 @@ public class InnkeeperRestController {
 				s.setsessionId(sessionId);
 				s.setdk1(sspSDEVInfo.getDerivedKey1());
 				s.setInternalId(respSDEV.getInternalId());
-				s.setSymId(respSDEV.getSymId());				
+				s.setSymId(respSDEV.getSymId());						
+				s.setPluginId(sspSDEVInfo.getPluginId());
+				s.setPluginURL(sspSDEVInfo.getPluginUrl());
+				s.setSessionExpiration(currTime);				
 				sessionsRepository.save(s);				
 				break;
 
@@ -224,7 +231,7 @@ public class InnkeeperRestController {
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
-		boolean isLwspEnabled = false;
+		
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");

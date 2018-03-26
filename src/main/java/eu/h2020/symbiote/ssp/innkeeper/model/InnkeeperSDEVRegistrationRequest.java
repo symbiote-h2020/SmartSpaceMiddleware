@@ -36,7 +36,7 @@ public class InnkeeperSDEVRegistrationRequest {
 
 		if (symIdFromCore==null) { // a null SymId from core == REJECT THE REQUEST
 			regResponse= new InnkeeperSDEVRegistrationResponse(
-					sspSDEVInfo.getSymId(),new InternalIdUtils(sessionsRepository).createInternalId(),InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
+					sspSDEVInfo.getSymId(),sspSDEVInfo.getInternalId(),InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
 			
 		}else if (symIdFromCore.equals("")) { //EMPTY smyId from core == OFFLINE
 			regResponse= new InnkeeperSDEVRegistrationResponse(
