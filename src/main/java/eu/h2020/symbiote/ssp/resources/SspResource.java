@@ -12,8 +12,11 @@ public class SspResource {
     @JsonProperty("internalIdResource")
     private String internalIdResource; //resource Internal Id
     
-    @JsonProperty("internalId")
-    private String internalId; // SDEV Internal Id
+    @JsonProperty("sspIdResource")
+    private String sspIdResource; // Resource SSP Id
+    
+    @JsonProperty("sspId")
+    private String sspId; // SDEV SSP Id
     
     @JsonProperty("symId") 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -39,14 +42,23 @@ public class SspResource {
     public void setInternalIdResource(String internalIdResource) {
         this.internalIdResource = internalIdResource;
     }
-    
-    
-    public String getInternalId() {
-        return this.internalId;
+
+    public String getSspIdResource() {
+        return this.sspIdResource;
     }
 
-    public void setInternalId(String internalId) {
-        this.internalId = internalId;
+    public void setSspIdResource(String sspIdResource) {
+        this.sspIdResource = sspIdResource;
+    }
+
+    
+    
+    public String getSspId() {
+        return this.sspId;
+    }
+
+    public void setSspId(String sspId) {
+        this.sspId = sspId;
     }
 
     public String getSymId() {

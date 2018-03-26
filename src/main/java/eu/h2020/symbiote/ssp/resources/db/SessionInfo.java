@@ -84,8 +84,8 @@ public class SessionInfo {
 	@JsonProperty("symId")
 	private String symId;
 
-	@JsonProperty("internalId")
-	private String internalId;
+	@JsonProperty("sspId")
+	private String sspId;
 	
 	@JsonProperty("pluginId")
 	private String pluginId;
@@ -127,7 +127,7 @@ public class SessionInfo {
 			@JsonProperty("kdf") String kdf,
 			@JsonProperty("session_expiration") Date session_expiration,
 			@JsonProperty("symId") String symId,
-			@JsonProperty("internalId") String internalId,
+			@JsonProperty("sspId") String sspId,
 			@JsonProperty("pluginId") String pluginId,
 			@JsonProperty("pluginURL") String pluginURL
 			) {
@@ -151,7 +151,7 @@ public class SessionInfo {
 		this.gnonce2 = gnonce2;
 		this.kdf = kdf;        
 		this.symId=symId;
-		this.internalId=internalId;
+		this.sspId=sspId;
 		this.pluginId=pluginId;
 		this.pluginURL=pluginURL;
 	}
@@ -358,15 +358,15 @@ public class SessionInfo {
 		return this.symId;
 	}
 	
-	@JsonProperty("internalId")
-	public void setInternalId(String internalId) 
+	@JsonProperty("sspId")
+	public void setSspId(String sspId) 
 	{
-		this.internalId = internalId;
+		this.sspId = sspId;
 	}
 	
-	public String getInternalId() 
+	public String getSspId() 
 	{
-		return this.internalId;
+		return this.sspId;
 	}
 	
 

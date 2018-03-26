@@ -112,7 +112,7 @@ public class Lwsp {
 	private Timestamp sessionExpiration;
 
 	private String symId;
-	private String internalId;
+	private String sspId;
 	private String pluginId;
 	private String pluginURL;
 
@@ -517,7 +517,7 @@ public class Lwsp {
 			log.info("Sent back 0x20:\n"+OutBuffer);
 			if (!this.get_mti().contains("0xf")) 
 			{
-				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime,symId,internalId,pluginId,pluginURL);
+				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime,symId,sspId,pluginId,pluginURL);
 				sessionsRepository.save(sessionInfo);
 			}
 			break;
@@ -580,7 +580,7 @@ public class Lwsp {
 							jsonData1.put("authn", Base64.getEncoder().encodeToString(aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk1)));
 							out=jsonData1.toString();
 							this.sessionExpiration = new Timestamp(System.currentTimeMillis());
-							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration,symId,internalId,pluginId,pluginURL);
+							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration,symId,sspId,pluginId,pluginURL);
 							sessionsRepository.save(sessionInfo);
 							out=jsonData1.toString();
 							log.info("\n+--------------------------------+"+
@@ -734,12 +734,12 @@ public class Lwsp {
 	}
 
 
-	public String getInternalId() {
-		return this.internalId;
+	public String getSspId() {
+		return this.sspId;
 	}
 
-	public void setInternalId(String internalId) {
-		this.internalId = internalId;
+	public void setSspId(String sspId) {
+		this.sspId = sspId;
 	}
 
 	public String getSymId() {
@@ -750,9 +750,9 @@ public class Lwsp {
 		this.symId = symId;
 	}
 
-	public void updateSessionsRepository(String sessionId, String symId, String internalId) {
+	public void updateSessionsRepository(String sessionId, String symId, String sspId) {
 		SessionInfo s = sessionsRepository.findBySessionId(sessionId);
-		s.setInternalId(internalId);
+		s.setSspId(sspId);
 		s.setSymId(symId);
 		sessionsRepository.save(s);
 	}

@@ -3,19 +3,21 @@ package eu.h2020.symbiote.ssp.utils;
 import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 
-
 public class CheckCoreUtility {
 	private Object repository;
-	private boolean isOnline=true;	
+ 
+	private Boolean isOnline;
 	
 	
-	public CheckCoreUtility(Object repo) {
+	public CheckCoreUtility(Object repo, Boolean isOnline) {
 		this.repository=repo;
+		this.isOnline=isOnline;
 	}
 
 	public String checkCoreSymbioteIdRegistration(String symId) {

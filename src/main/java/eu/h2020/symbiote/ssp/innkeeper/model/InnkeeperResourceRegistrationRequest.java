@@ -8,6 +8,7 @@ import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,7 +32,7 @@ import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import eu.h2020.symbiote.ssp.utils.CheckCoreUtility;
-import eu.h2020.symbiote.ssp.utils.InternalIdUtils;
+import eu.h2020.symbiote.ssp.utils.SspIdUtils;
 
 @Service
 public class InnkeeperResourceRegistrationRequest {
@@ -49,13 +50,16 @@ public class InnkeeperResourceRegistrationRequest {
 
 	@Autowired
 	OwlApiHelper owlApiHelp;
+	
+	@Value("${innk.core.enabled:true}")
+	Boolean isCoreOnline;
 
 	public InnkeeperResourceRegistrationResponse registry(SspResource msg, Date currTime) throws InvalidArgumentsException {
 		InnkeeperResourceRegistrationResponse res= null;
 		
 		
 		//check The core and assign symId to the Resource (R5 optional)
-		String symIdResource = new CheckCoreUtility(resourcesRepository).checkCoreSymbioteIdRegistration(msg.getSemanticDescription().getId());
+		String symIdResource = new CheckCoreUtility(resourcesRepository,isCoreOnline).checkCoreSymbioteIdRegistration(msg.getSemanticDescription().getId());
 		
 		
 		String results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
@@ -63,7 +67,7 @@ public class InnkeeperResourceRegistrationRequest {
 				msg.getSemanticDescription().getId(), 
 				msg.getInternalIdResource(),
 				msg.getSymId(),
-				msg.getInternalId(),
+				msg.getSspId(),
 				results,
 				0);
 
@@ -79,16 +83,15 @@ public class InnkeeperResourceRegistrationRequest {
 
 			log.info("REGISTRATION OFFLINE symIdResource="+symIdResource);
 			
-			this.saveResource(msg,sessionsRepository.findByInternalId(msg.getInternalId()).getSessionExpiration());
+			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspId()).getSessionExpiration());
 		
 			results=InnkeeperRestControllerConstants.REGISTRATION_OFFLINE;
-			msg.setInternalIdResource(new InternalIdUtils(resourcesRepository).createInternalId());
 			
 			res = new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 
-					msg.getInternalIdResource(),
+					msg.getSspIdResource(),
 					msg.getSymId(),
-					msg.getInternalId(),
+					msg.getSspId(),
 					results,
 					DbConstants.EXPIRATION_TIME);
 			return res;
@@ -99,16 +102,16 @@ public class InnkeeperResourceRegistrationRequest {
 			log.info("NEW REGISTARTION symIdResource="+symIdResource);
 			Resource r=msg.getSemanticDescription();
 			r.setId(symIdResource);			
-			msg.setInternalIdResource(new InternalIdUtils(resourcesRepository).createInternalId());
+			msg.setSspIdResource(new SspIdUtils(resourcesRepository).createSspId());
 			msg.setSemanticDesciption(r);
-			this.saveResource(msg,sessionsRepository.findByInternalId(msg.getInternalId()).getSessionExpiration());
+			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspId()).getSessionExpiration());
 			
 			results=InnkeeperRestControllerConstants.REGISTRATION_OK;						
 			res = new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 
-					msg.getInternalIdResource(),
+					msg.getSspIdResource(),
 					msg.getSymId(),
-					msg.getInternalId(),
+					msg.getSspId(),
 					results,
 					0);
 			return res;
@@ -120,9 +123,9 @@ public class InnkeeperResourceRegistrationRequest {
 			results=InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED;
 			res = new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 
-					msg.getInternalIdResource(),
+					msg.getSspIdResource(),
 					msg.getSymId(),
-					msg.getInternalId(),
+					msg.getSspId(),
 					results,
 					0);
 			return res;
@@ -135,7 +138,7 @@ public class InnkeeperResourceRegistrationRequest {
 	
 	private void saveResource(SspResource msg,Date currTime) throws InvalidArgumentsException {
 		Resource resource = msg.getSemanticDescription();
-		String pluginId = sessionsRepository.findByInternalId(msg.getInternalId()).getPluginId(); 
+		String pluginId = sessionsRepository.findBySspId(msg.getSspId()).getPluginId(); 
 		String symbioteIdResource = resource.getId();
 		List<String> props = null;
 		if(resource instanceof StationarySensor) {
@@ -149,7 +152,7 @@ public class InnkeeperResourceRegistrationRequest {
 			log.warn("AccessPolicy is null\n");
 		}
 		
-		addResource(msg.getSemanticDescription().getId(), msg.getInternalIdResource(),msg.getSymId(),msg.getInternalId(), props, pluginId,currTime);
+		addResource(msg.getSemanticDescription().getId(), msg.getInternalIdResource(),msg.getSymId(),msg.getSspId(), props, pluginId,currTime);
 
 	}
 

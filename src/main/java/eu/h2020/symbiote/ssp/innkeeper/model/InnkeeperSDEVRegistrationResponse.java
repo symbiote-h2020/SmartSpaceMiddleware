@@ -24,7 +24,7 @@ public class InnkeeperSDEVRegistrationResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonProperty("symId") 				private String symId;
     @JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonProperty("internalId") 			private String internalId;
+	@JsonProperty("sspId") 			private String sspId;
     @JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonProperty("result") 					private String result;
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -33,22 +33,22 @@ public class InnkeeperSDEVRegistrationResponse {
 	public InnkeeperSDEVRegistrationResponse() {		
 	}
 	
-	public InnkeeperSDEVRegistrationResponse(String symId, String internalId, String result) {
+	public InnkeeperSDEVRegistrationResponse(String symId, String sspId, String result) {
 		this.symId=symId;
-		this.internalId=internalId;
+		this.sspId=sspId;
 		this.result=result;
 	}
-	public InnkeeperSDEVRegistrationResponse(String symId, String internalId, String result, Integer registration_expiration) {
+	public InnkeeperSDEVRegistrationResponse(String symId, String sspId, String result, Integer registration_expiration) {
 		this.symId=symId;
-		this.internalId=internalId;		
+		this.sspId=sspId;		
 		this.result=result;
 		this.registrationExpiration=registration_expiration;
 	}
 	public String getSymId() {
 		return this.symId;
 	}
-	public String getInternalId() {
-		return this.internalId;
+	public String getSspId() {
+		return this.sspId;
 	}
 	public String getResult() {
 		return this.result;

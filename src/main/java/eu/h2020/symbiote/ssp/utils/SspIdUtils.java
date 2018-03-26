@@ -10,13 +10,13 @@ import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 
-public class InternalIdUtils {
+public class SspIdUtils {
 
 	private Object repository;
-	public InternalIdUtils(Object repository){
+	public SspIdUtils(Object repository){
 		this.repository=repository;
 	}
-	public String createInternalId() {
+	public String createSspId() {
 		// TODO Auto-generated method stub
 		String myInternalId = null;
 		if (repository instanceof SessionsRepository) {
@@ -25,7 +25,7 @@ public class InternalIdUtils {
 			List<String> sessionIdList = new ArrayList<String>();
 
 			for (SessionInfo s : ss)
-				sessionIdList.add(s.getInternalId() );
+				sessionIdList.add(s.getSspId() );
 			int i=0;
 			myInternalId = Integer.toString(i);
 			while (true) {

@@ -10,8 +10,8 @@ public class SspSDEVInfo {
     @org.springframework.data.annotation.Id
     @JsonProperty("symId") 		//of  SDEV
     private String symId;
-    @JsonProperty("internalId")  //of  SDEV
-    private String internalId;
+    @JsonProperty("sspId")  //of  SDEV
+    private String sspId;    
     @JsonProperty("pluginId")
     private String pluginId;
     @JsonProperty("pluginURL") // Interworking Interface URL
@@ -31,12 +31,12 @@ public class SspSDEVInfo {
     public SspSDEVInfo() {
     }
 
-    public String getInternalId() {
-        return this.internalId;
+    public String getSspId() {
+        return this.sspId;
     }
     
-    public void setInternalId(String internalId) {
-        this.internalId = internalId;
+    public void setSspId(String sspId) {
+        this.sspId = sspId;
     }
     
     public String getSymId() {
@@ -64,7 +64,7 @@ public class SspSDEVInfo {
     }
 
     
-    public String getPluginUrl() { return pluginURL; }
+    public String getPluginURL() { return pluginURL; }
 
     public void setPluginUrl(String pluginUrl) { this.pluginURL = pluginURL; }
 

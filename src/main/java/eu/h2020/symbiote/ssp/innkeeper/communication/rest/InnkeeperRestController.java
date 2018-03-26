@@ -104,10 +104,10 @@ public class InnkeeperRestController {
 				return responseEntity;
 				
 			}else {
-				log.info("SymId not found, check with internal ID...");
+				log.info("SymId not found, check with SSP ID...");
 			}
 
-			s= sessionsRepository.findByInternalId(sspResource.getInternalId());
+			s= sessionsRepository.findBySspId(sspResource.getSspId());
 
 			if (s != null) {			
 				Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymId()).getSessionExpiration();					
@@ -154,10 +154,10 @@ public class InnkeeperRestController {
 				case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
 					httpStatus=HttpStatus.OK;
 					s = sessionsRepository.findBySessionId(lwsp.getSessionId());
-					s.setInternalId(respSDEV.getInternalId());
+					s.setSspId(respSDEV.getSspId());
 					s.setSymId(respSDEV.getSymId());
 					s.setPluginId(sspSDEVInfo.getPluginId());
-					s.setPluginURL(sspSDEVInfo.getPluginUrl());
+					s.setPluginURL(sspSDEVInfo.getPluginURL());
 					sessionsRepository.save(s);
 					break;
 				case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
@@ -168,10 +168,10 @@ public class InnkeeperRestController {
 				default:			
 					// OK ONLINE
 					s = sessionsRepository.findBySessionId(lwsp.getSessionId());
-					s.setInternalId(respSDEV.getInternalId());
+					s.setSspId(respSDEV.getSspId());
 					s.setSymId(respSDEV.getSymId());
 					s.setPluginId(sspSDEVInfo.getPluginId());
-					s.setPluginURL(sspSDEVInfo.getPluginUrl());
+					s.setPluginURL(sspSDEVInfo.getPluginURL());
 					sessionsRepository.save(s);					
 					break;
 				}
@@ -199,10 +199,10 @@ public class InnkeeperRestController {
 				httpStatus=HttpStatus.OK;
 				s.setsessionId(sessionId);
 				s.setdk1(sspSDEVInfo.getDerivedKey1());
-				s.setInternalId(respSDEV.getInternalId());
+				s.setSspId(respSDEV.getSspId());
 				s.setSymId(respSDEV.getSymId());						
 				s.setPluginId(sspSDEVInfo.getPluginId());
-				s.setPluginURL(sspSDEVInfo.getPluginUrl());
+				s.setPluginURL(sspSDEVInfo.getPluginURL());
 				s.setSessionExpiration(currTime);				
 				sessionsRepository.save(s);				
 				break;
