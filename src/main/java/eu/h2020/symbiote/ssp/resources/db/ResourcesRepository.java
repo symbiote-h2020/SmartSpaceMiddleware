@@ -45,6 +45,8 @@ public interface ResourcesRepository extends MongoRepository<ResourceInfo, Strin
     
     public List<ResourceInfo> findBySymIdLike(String id);
     
+    public List<ResourceInfo> findByPluginId(String pluginId);
+    
     
     
 }

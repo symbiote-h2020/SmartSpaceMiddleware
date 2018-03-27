@@ -1,5 +1,8 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
@@ -60,7 +63,7 @@ public class InnkeeperRestController {
 
 	@Autowired
 	Lwsp lwsp;
-	
+
 	@Value("${innk.lwsp.enabled:true}") 
 	Boolean isLwspEnabled;
 
@@ -74,56 +77,69 @@ public class InnkeeperRestController {
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException, InvalidArgumentsException {
 
+		if (isLwspEnabled) {
+			//LWSP TBD:
+			return null;
+		}else{	
+			// NO encryption
+			return SspJoinResource(payload);
+		}
+
+
+	}
+
+	private ResponseEntity<Object> SspJoinResource(String decoded_message) throws JsonParseException, JsonMappingException, IOException, InvalidArgumentsException{
+
+
 		ResponseEntity<Object> responseEntity = null;
 
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
 
-		
-		if (isLwspEnabled) {
-			//LWSP
-		}else{	
-			// NO encryption
-			String decoded_message = payload;
-			SspResource sspResource =  new ObjectMapper().readValue(decoded_message, SspResource.class);
+		SspResource sspResource =  new ObjectMapper().readValue(decoded_message, SspResource.class);
 
-			SessionInfo s=sessionsRepository.findBySymId(sspResource.getSymId());
-			// found Symbiote Id in Session Repository
-			if (s != null) {			
-				Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymId()).getSessionExpiration();					
-				InnkeeperResourceRegistrationResponse respSspResource = innkeeperResourceRegistrationRequest.registry(sspResource,sessionExpiration);
-				switch (respSspResource.getResult()) {
-				case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
-					httpStatus = HttpStatus.BAD_REQUEST;
-				default:
-					httpStatus = HttpStatus.OK;
-				}
-
-				responseEntity = new  ResponseEntity<Object>(respSspResource,responseHeaders,httpStatus);
-				return responseEntity;
-				
-			}else {
-				log.info("SymId not found, check with SSP ID...");
+		SessionInfo s=sessionsRepository.findBySymId(sspResource.getSymId());
+		// found Symbiote Id in Session Repository
+		if (s != null) {			
+			Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymId()).getSessionExpiration();					
+			InnkeeperResourceRegistrationResponse respSspResource = innkeeperResourceRegistrationRequest.registry(sspResource,sessionExpiration);
+			switch (respSspResource.getResult()) {
+			case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
+				httpStatus = HttpStatus.BAD_REQUEST;
+				break;
+			default:
+				httpStatus = HttpStatus.OK;
 			}
 
-			s= sessionsRepository.findBySspId(sspResource.getSspId());
+			responseEntity = new  ResponseEntity<Object>(respSspResource,responseHeaders,httpStatus);
+			return responseEntity;
 
-			if (s != null) {			
-				Date sessionExpiration = s.getSessionExpiration();					
-				InnkeeperResourceRegistrationResponse respSspResource = innkeeperResourceRegistrationRequest.registry(sspResource,sessionExpiration);
-				httpStatus=HttpStatus.OK;
-				return new ResponseEntity<Object>(respSspResource,responseHeaders,httpStatus);
-			}else {
-				log.info("sspId not found, registration Failed");
-				httpStatus=HttpStatus.BAD_REQUEST;
-				return new ResponseEntity<Object>("BAD_REQUEST\n",responseHeaders,httpStatus);
-			}
-
-
+		}else {
+			log.info("SymId not found, check with SSP ID...");
 		}
 
-		return responseEntity;
+		s= sessionsRepository.findBySspId(sspResource.getSspId());
+
+		if (s != null) {			
+			Date sessionExpiration = s.getSessionExpiration();					
+			InnkeeperResourceRegistrationResponse respSspResource = innkeeperResourceRegistrationRequest.registry(sspResource,sessionExpiration);
+			
+			switch (respSspResource.getResult()) {
+			
+			case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
+				httpStatus = HttpStatus.BAD_REQUEST;
+				break;
+			default:
+				httpStatus = HttpStatus.OK;
+			}			
+			return new ResponseEntity<Object>(respSspResource,responseHeaders,httpStatus);
+		} else {
+			log.info("sspId not found, registration Failed");
+			httpStatus=HttpStatus.BAD_REQUEST;
+			return new ResponseEntity<Object>("ERROR:sspId not found\nregistration Failed\nsent message: "+decoded_message,responseHeaders,httpStatus);
+		}
+
 	}
 
 
@@ -131,16 +147,18 @@ public class InnkeeperRestController {
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_REGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> registry(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 
-		ResponseEntity<Object> responseEntity = null;
-		HttpHeaders responseHeaders = new HttpHeaders();
-		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-		HttpStatus httpStatus = HttpStatus.OK;		
+		log.info("Resource is Core ONLINE = "+innkeeperResourceRegistrationRequest.isCoreOnline());
+		log.info("SDEV is Core ONLINE = "+innkeeperSDEVRegistrationRequest.isCoreOnline());
+
+
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
 			String outputMessage = lwsp.processMessage();
 			log.info(outputMessage);
 			log.info("MTI:"+lwsp.get_mti());
+			HttpHeaders responseHeaders = new HttpHeaders();
+			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 
 
 			switch (lwsp.get_mti()) {
@@ -150,92 +168,70 @@ public class InnkeeperRestController {
 
 			case LwspConstants.SDEV_REGISTRY:
 				String decoded_message = lwsp.get_response();
-				SspSDEVInfo sspSDEVInfo = new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
-				InnkeeperSDEVRegistrationResponse respSDEV = 
-						innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
-				SessionInfo s = null;
-				switch (respSDEV.getResult()) {
-				case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
-					httpStatus=HttpStatus.OK;
-					s = sessionsRepository.findBySessionId(lwsp.getSessionId());
-					s.setSspId(respSDEV.getSspId());
-					s.setSymId(respSDEV.getSymId());
-					s.setPluginId(sspSDEVInfo.getPluginId());
-					s.setPluginURL(sspSDEVInfo.getPluginURL());
-					sessionsRepository.save(s);
-					break;
-				case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
-					httpStatus=HttpStatus.BAD_REQUEST;
-				case InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED:
-					httpStatus=HttpStatus.OK;
-					break;
-				default:			
-					// OK ONLINE
-					s = sessionsRepository.findBySessionId(lwsp.getSessionId());
-					s.setSspId(respSDEV.getSspId());
-					s.setSymId(respSDEV.getSymId());
-					s.setPluginId(sspSDEVInfo.getPluginId());
-					s.setPluginURL(sspSDEVInfo.getPluginURL());
-					sessionsRepository.save(s);					
-					break;
-				}
-
-				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(respSDEV));
-				return new ResponseEntity<Object>(encodedResponse,responseHeaders,httpStatus);
+				ResponseEntity<Object> res = SspRegistry(decoded_message);
+				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
+				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
+			default:
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 
 		}else{
+			return SspRegistry(payload);
 
-			Date currTime = new Timestamp(System.currentTimeMillis());
-			String sessionId = new Lwsp().generateSessionId();
-			SessionInfo s = new SessionInfo();
-
-			String decoded_message = payload;
-
-			SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
-
-			InnkeeperSDEVRegistrationResponse respSDEV = innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
-
-			//DEBUG: MOCK
-			switch (respSDEV.getResult()) {
-			case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
-			case InnkeeperRestControllerConstants.REGISTRATION_OK:					
-				httpStatus=HttpStatus.OK;
-				s.setsessionId(sessionId);
-				s.setdk1(sspSDEVInfo.getDerivedKey1());
-				s.setSspId(respSDEV.getSspId());
-				s.setSymId(respSDEV.getSymId());						
-				s.setPluginId(sspSDEVInfo.getPluginId());
-				s.setPluginURL(sspSDEVInfo.getPluginURL());
-				s.setSessionExpiration(currTime);				
-				sessionsRepository.save(s);				
-				break;
-
-
-			case InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED:
-				httpStatus=HttpStatus.OK;
-				break;
-
-			case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
-			default:
-				httpStatus=HttpStatus.BAD_REQUEST;
-			}
-
-			String encodedResponse = new ObjectMapper().writeValueAsString(respSDEV);
-			return new ResponseEntity<Object>(encodedResponse,responseHeaders,httpStatus);
 		}
-
-		return responseEntity;
 
 	}
 
+
+	private ResponseEntity<Object> SspRegistry(String decoded_message) throws IOException {
+
+		ResponseEntity<Object> responseEntity = null;
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+		HttpStatus httpStatus = HttpStatus.OK;		
+
+		Date currTime = new Timestamp(System.currentTimeMillis());
+		String sessionId = new Lwsp().generateSessionId();
+		SessionInfo s = new SessionInfo();
+
+		SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(decoded_message, SspSDEVInfo.class);
+
+		InnkeeperSDEVRegistrationResponse respSDEV = innkeeperSDEVRegistrationRequest.registry(sspSDEVInfo);
+
+		//DEBUG: MOCK
+		switch (respSDEV.getResult()) {
+		case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
+		case InnkeeperRestControllerConstants.REGISTRATION_OK:					
+			httpStatus=HttpStatus.OK;
+			s.setsessionId(sessionId);
+			s.setdk1(sspSDEVInfo.getDerivedKey1());
+			s.setSspId(respSDEV.getSspId());
+			s.setSymId(respSDEV.getSymId());						
+			s.setPluginId(sspSDEVInfo.getPluginId());
+			s.setPluginURL(sspSDEVInfo.getPluginURL());
+			s.setSessionExpiration(currTime);				
+			sessionsRepository.save(s);				
+			break;
+
+
+		case InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED:
+			httpStatus=HttpStatus.OK;
+			break;
+
+		case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
+		default:
+			httpStatus=HttpStatus.BAD_REQUEST;
+		}
+		String response = new ObjectMapper().writeValueAsString(respSDEV);
+		return new ResponseEntity<Object>(response,responseHeaders,httpStatus);
+	}
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_UNREGISTRY_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> unregistry(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
-		
+
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
@@ -326,6 +322,27 @@ public class InnkeeperRestController {
 		}
 		 */
 		return responseEntity;
+	}
+
+	private ResponseEntity<Object>setCoreOnline(Boolean v){
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+		HttpStatus httpStatus = HttpStatus.OK;
+		innkeeperSDEVRegistrationRequest.setIsCoreOnline(v);
+		innkeeperResourceRegistrationRequest.setIsCoreOnline(v);
+		log.info("Resource is Core ONLINE = "+innkeeperResourceRegistrationRequest.isCoreOnline());
+		log.info("SDEV is Core ONLINE = "+innkeeperSDEVRegistrationRequest.isCoreOnline());
+		return new ResponseEntity<Object>("{\"result\"=\"OK\"}",responseHeaders,httpStatus);
+	}
+
+	@RequestMapping(value = InnkeeperRestControllerConstants.SET_INNK_ONLINE, method = RequestMethod.POST)
+	public ResponseEntity<Object> set_innk_online(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
+		return setCoreOnline(true);
+	}
+
+	@RequestMapping(value = InnkeeperRestControllerConstants.SET_INNK_OFFLINE, method = RequestMethod.POST)
+	public ResponseEntity<Object> set_innk_offline(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
+		return setCoreOnline(false);
 	}
 
 

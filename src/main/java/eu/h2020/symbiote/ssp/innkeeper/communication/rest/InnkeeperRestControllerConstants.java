@@ -15,6 +15,8 @@ public class InnkeeperRestControllerConstants {
 
     public static final String INNKEEPER_LIST_RESOURCES_REQUEST_PATH = "/list_resources";
     public static final String INNKEEPER_KEEP_ALIVE_REQUEST_PATH = "/keep_alive";
+    public static final String SET_INNK_ONLINE = "/set_innk_online";
+    public static final String SET_INNK_OFFLINE = "/set_innk_offline";
     
     public static final List<String> SDEV_REGISTRY_PAYLOAD_VALS= Arrays.asList("id","pluginId","pluginURL","semanticDescription");
     public static final List<String> PLATFORM_REGISTRY_PAYLOAD_VALS= Arrays.asList("id","name","description","url","informationModel");
