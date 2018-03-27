@@ -110,10 +110,14 @@ public class InnkeeperRestController {
 			s= sessionsRepository.findBySspId(sspResource.getSspId());
 
 			if (s != null) {			
-				Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymId()).getSessionExpiration();					
+				Date sessionExpiration = s.getSessionExpiration();					
 				InnkeeperResourceRegistrationResponse respSspResource = innkeeperResourceRegistrationRequest.registry(sspResource,sessionExpiration);
+				httpStatus=HttpStatus.OK;
+				return new ResponseEntity<Object>(respSspResource,responseHeaders,httpStatus);
 			}else {
-				log.info("InternalId not found, registration Failed");
+				log.info("sspId not found, registration Failed");
+				httpStatus=HttpStatus.BAD_REQUEST;
+				return new ResponseEntity<Object>("BAD_REQUEST\n",responseHeaders,httpStatus);
 			}
 
 

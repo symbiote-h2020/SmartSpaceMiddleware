@@ -2,6 +2,7 @@ package eu.h2020.symbiote.ssp.innkeeper.model;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyFactory;
 import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -24,6 +26,7 @@ import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControlle
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
 import eu.h2020.symbiote.ssp.resources.SspResource;
+import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
@@ -54,22 +57,24 @@ public class InnkeeperResourceRegistrationRequest {
 	@Value("${innk.core.enabled:true}")
 	Boolean isCoreOnline;
 
-	public InnkeeperResourceRegistrationResponse registry(SspResource msg, Date currTime) throws InvalidArgumentsException {
+	
+	public InnkeeperResourceRegistrationResponse registry(SspResource msg, Date currTime) throws InvalidArgumentsException, JsonProcessingException {
 		InnkeeperResourceRegistrationResponse res= null;
-		
+		log.info(new ObjectMapper().writeValueAsString(msg));
 		
 		//check The core and assign symId to the Resource (R5 optional)
 		String symIdResource = new CheckCoreUtility(resourcesRepository,isCoreOnline).checkCoreSymbioteIdRegistration(msg.getSemanticDescription().getId());
 		
-		
 		String results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
+		
 		res = new InnkeeperResourceRegistrationResponse(
-				msg.getSemanticDescription().getId(), 
-				msg.getInternalIdResource(),
-				msg.getSymId(),
-				msg.getSspId(),
-				results,
-				0);
+				msg.getSemanticDescription().getId(), 	//symIdResource
+				msg.getSspIdResource(),					//sspIdResource
+				msg.getSymId(),							//symId (SDEV)
+				msg.getSspId(),							//sspId (SDEV)
+				results,								//Result
+				0									//registration expiration
+				);
 
 		//assign internal a new Id to the resource (R4)		
 		if (symIdResource == null) { //REJECTED
@@ -82,7 +87,14 @@ public class InnkeeperResourceRegistrationRequest {
 		if (symIdResource == "") { //OFFLINE
 
 			log.info("REGISTRATION OFFLINE symIdResource="+symIdResource);
+			Resource r=msg.getSemanticDescription();
+			r.setId(symIdResource);
+			String newSspIdResource = new SspIdUtils(resourcesRepository).createSspId();
+			log.info(newSspIdResource);
+			msg.setSspIdResource(newSspIdResource);
+			msg.setSemanticDesciption(r);
 			
+			ResourceInfo resInfo = resourcesRepository.findById(msg.getSspId()).get(); //SSP ID
 			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspId()).getSessionExpiration());
 		
 			results=InnkeeperRestControllerConstants.REGISTRATION_OFFLINE;
@@ -91,7 +103,7 @@ public class InnkeeperResourceRegistrationRequest {
 					msg.getSemanticDescription().getId(), 
 					msg.getSspIdResource(),
 					msg.getSymId(),
-					msg.getSspId(),
+					new SspIdUtils(resourcesRepository).createSspId(),
 					results,
 					DbConstants.EXPIRATION_TIME);
 			return res;
@@ -99,11 +111,12 @@ public class InnkeeperResourceRegistrationRequest {
 
 		if (symIdResource != "" && !msg.getSymId().equals(symIdResource)) { //REGISTER!
 									
-			log.info("NEW REGISTARTION symIdResource="+symIdResource);
+			log.info("NEW REGISTRATION symIdResource="+symIdResource);
 			Resource r=msg.getSemanticDescription();
 			r.setId(symIdResource);			
 			msg.setSspIdResource(new SspIdUtils(resourcesRepository).createSspId());
 			msg.setSemanticDesciption(r);
+			
 			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspId()).getSessionExpiration());
 			
 			results=InnkeeperRestControllerConstants.REGISTRATION_OK;						
@@ -151,8 +164,15 @@ public class InnkeeperResourceRegistrationRequest {
 		}catch (NullPointerException e) {
 			log.warn("AccessPolicy is null\n");
 		}
-		
-		addResource(msg.getSemanticDescription().getId(), msg.getInternalIdResource(),msg.getSymId(),msg.getSspId(), props, pluginId,currTime);
+		log.info("ADD RESOURCE:");
+		log.info("[_id]sspId:"+msg.getSspIdResource());
+		addResource(
+				msg.getSemanticDescription().getId(), //symbioteId Resource
+				msg.getSspIdResource(),				//sspId resource
+				msg.getInternalIdResource(),		//internal Id resource
+				msg.getSymId(),						//symbiote Id of SDEV
+				msg.getSspId(),						//sspId of SDEV  
+				props, pluginId,currTime);	
 
 	}
 
@@ -167,13 +187,15 @@ public class InnkeeperResourceRegistrationRequest {
 	}
 	private void addResource(
 			String symIdResource,
+			String sspIdResource,
 			String internalIdResource,
 			String symId, // of SDEV/Plat
-			String internalId,
+			String sspId,
 			List<String> obsProperties, 
 			String pluginId, 
 			Date currTime) {
-		ResourceInfo resourceInfo = new ResourceInfo(symIdResource, internalIdResource,symId,internalId, currTime);
+		
+		ResourceInfo resourceInfo = new ResourceInfo(symIdResource, sspIdResource,internalIdResource,symId,sspId, currTime);
 		if(obsProperties != null)
 			resourceInfo.setObservedProperties(obsProperties);
 		if(pluginId != null && pluginId.length()>0)

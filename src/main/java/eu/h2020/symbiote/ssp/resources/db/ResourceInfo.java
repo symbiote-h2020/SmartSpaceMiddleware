@@ -24,16 +24,22 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class ResourceInfo {
 
 	@Id
-	@JsonProperty("symIdResource") //of Resource
+	@JsonProperty("sspIdResource") // of Resource
 	private String id;
-	@JsonProperty("internalIdResource") // of Resource
+	
+	@JsonProperty("symIdResource") //of Resource
+	private String symIdResource;
+	
+	
+	
+	@JsonProperty("InternalIdResource") // of Resource
 	private String internalIdResource;
 
 
 	@JsonProperty("symId") //of SDEV/Plat
 	private String symId;
-	@JsonProperty("internalId") // of SDEV/Plat
-	private String internalId;
+	@JsonProperty("sspId") // of SDEV/Plat
+	private String sspId;
 
 
 	@JsonProperty("type")
@@ -51,13 +57,14 @@ public class ResourceInfo {
 
 
 	public ResourceInfo() {
+		this.symIdResource = "";
 		this.id = "";
-		this.internalIdResource = "";
+		this.internalIdResource="";
 		this.symId="";
-		this.internalId="";        
+		this.sspId="";
 		this.pluginId = null;
 		this.observedProperties = null;
-		this.sessionIdList = null;
+		this.sessionIdList = null;       
 		this.type = null;
 	}
 	@JsonCreator
@@ -65,14 +72,16 @@ public class ResourceInfo {
 
 	public ResourceInfo(
 			@JsonProperty("symIdResource")  String symIdResource,
+			@JsonProperty("sspIdResource")  String sspIdResource,
 			@JsonProperty("internalIdResource")  String internalIdResource,
 			@JsonProperty("symId") String symId, // of SDEV/Plat
-			@JsonProperty("internalId") String internalId
+			@JsonProperty("sspId") String sspId
 			) {
-		this.id = symIdResource;
-		this.internalIdResource = internalIdResource;
+		this.symIdResource = symIdResource;
+		this.id = sspIdResource;
+		this.internalIdResource=internalIdResource;
 		this.symId=symId;
-		this.internalId=internalId;
+		this.sspId=sspId;
 		this.pluginId = null;
 		this.observedProperties = null;
 		this.sessionIdList = null;       
@@ -82,15 +91,17 @@ public class ResourceInfo {
 	@JsonCreator
 	public ResourceInfo(
 			@JsonProperty("symIdResource")  String symIdResource,
+			@JsonProperty("sspIdResource")  String sspIdResource,
 			@JsonProperty("internalIdResource")  String internalIdResource,
 			@JsonProperty("symId") String symId, // of SDEV/Plat
-			@JsonProperty("internalId") String internalId,
+			@JsonProperty("sspId") String sspId,
 			@JsonProperty("sessionExpiration") Date session_expiration
 			) {
-		this.id = symIdResource;
-		this.internalIdResource = internalIdResource;
+		this.symIdResource = symIdResource;
+		this.id = sspIdResource;
+		this.internalIdResource=internalIdResource;
 		this.symId=symId;
-		this.internalId=internalId;
+		this.sspId=sspId;
 		this.pluginId = null;
 		this.observedProperties = null;
 		this.sessionIdList = null;       
@@ -108,32 +119,37 @@ public class ResourceInfo {
 		this.symId = symId;
 	}
 
-	@JsonProperty("internalId")
-	public String getInternalId() {
-		return internalId;
+	@JsonProperty("sspId")
+	public String getSspId() {
+		return sspId;
+	}
+	
+	@JsonProperty("sspIdResource")
+	public String getSspIdResource() {
+		return id;
 	}
 
-	@JsonProperty("internalId")
-	public void setInternalId(String internalId) {
-		this.internalId = internalIdResource;
+	@JsonProperty("sspId")
+	public void setSspId(String sspId) {
+		this.sspId = sspId;
 	}
 
 
 	@JsonProperty("symIdResource")
 	public String getSymIdResource() {
-		return id;
+		return symIdResource;
 	}
 
 	@JsonProperty("symIdResource")
 	public void setSymIdResource(String symIdResource) {
-		this.id = symIdResource;
+		this.symIdResource = symIdResource;
 	}
 
 	@JsonProperty("internalIdResource")
 	public String getInternalIdResource() {
 		return internalIdResource;
 	}
-
+	
 	@JsonProperty("internalIdResource")
 	public void setInternalIdResource(String internalIdResource) {
 		this.internalIdResource = internalIdResource;

@@ -8,6 +8,9 @@ package eu.h2020.symbiote.ssp.resources.db;
 import java.util.Optional;
 import java.util.List;
 import org.springframework.stereotype.Repository;
+
+import eu.h2020.symbiote.model.cim.Resource;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 /**
@@ -24,7 +27,7 @@ public interface ResourcesRepository extends MongoRepository<ResourceInfo, Strin
      * @param resourceId    the id of the resource
      * @return              the Resource instance
      */
-    public Optional<ResourceInfo> findById(String symIdResource);
+    public Optional<ResourceInfo> findById(String id);
     public Optional<ResourceInfo> findBySymId(String symId);
     
     /**
@@ -34,9 +37,8 @@ public interface ResourcesRepository extends MongoRepository<ResourceInfo, Strin
      * @param internalId            the id of the resource in the platform
      * @return                      the Resource instance(s)
      */
-    public List<ResourceInfo> findByInternalId(String internalId);
+    public List<ResourceInfo> findBySspId(String sspId);
     public List<ResourceInfo> findByInternalIdResource(String internalIdResource);
-
     
     @Override
     public List<ResourceInfo> findAll();

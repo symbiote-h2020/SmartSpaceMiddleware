@@ -354,7 +354,7 @@ public class WebSocketController extends TextWebSocketHandler {
     private ResourceInfo getResourceByInternalId(String internalId) {
         ResourceInfo resInfo = null;
         try {
-            List<ResourceInfo> resInfoList = resourcesRepo.findByInternalId(internalId);
+            List<ResourceInfo> resInfoList = resourcesRepo.findByInternalIdResource(internalId);
             if (resInfoList != null && !resInfoList.isEmpty()) {
                 for(ResourceInfo ri: resInfoList){
                     resInfo = ri;

@@ -50,20 +50,27 @@ public class InnkeeperSDEVRegistrationRequest {
 					sspSDEVInfo.getSymId(),sspSDEVInfo.getSspId(),InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
 
 		}else if (symIdFromCore.equals("")) { //EMPTY smyId from core == OFFLINE
-
-			// check sspSDEVInfo.getSspId() value, multiple registration for the same SDEV
-
-			if (checkRegistrationInjection(sspSDEVInfo)) {
-				// Got some duplicate fields in Session, suspect on registration,found other registration, reject.
+			
+			//  check if sspId exists
+			System.out.println("symIdFromCore="+symIdFromCore);
+			SessionInfo sInfo= sessionsRepository.findBySspId(sspSDEVInfo.getSspId());
+			
+			if (sInfo!=null) {
+				String sspId = sInfo.getSspId();
 				regResponse= new InnkeeperSDEVRegistrationResponse(
-						sspSDEVInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);				
-			}else { 
-				//No duplicate registration, go ahead
-				regResponse= new InnkeeperSDEVRegistrationResponse(
-						sspSDEVInfo.getSymId(),new SspIdUtils(sessionsRepository).createSspId(),InnkeeperRestControllerConstants.REGISTRATION_OFFLINE,DbConstants.EXPIRATION_TIME);
+						symIdFromCore,sspId,InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED,0);
+			} else {
+				// registration injection workaround: check sspSDEVInfo.getSspId() value, multiple registration for the same SDEV
+				if (checkRegistrationInjection(sspSDEVInfo)) {
+					// Got some duplicate fields in Session, suspect on registration,found other registration, reject.
+					regResponse= new InnkeeperSDEVRegistrationResponse(
+							sspSDEVInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);				
+				}else { 
+					//No duplicate registration, go ahead
+					regResponse= new InnkeeperSDEVRegistrationResponse(
+							sspSDEVInfo.getSymId(),new SspIdUtils(sessionsRepository).createSspId(),InnkeeperRestControllerConstants.REGISTRATION_OFFLINE,DbConstants.EXPIRATION_TIME);
+				}
 			}
-
-
 
 		} else if (symIdFromCore.equals(sspSDEVInfo.getSymId())) { 	
 			String sspId = sessionsRepository.findBySymId(symIdFromCore).getSspId();

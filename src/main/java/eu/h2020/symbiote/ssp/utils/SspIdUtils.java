@@ -18,7 +18,7 @@ public class SspIdUtils {
 	}
 	public String createSspId() {
 		// TODO Auto-generated method stub
-		String myInternalId = null;
+		String mySspId = null;
 		if (repository instanceof SessionsRepository) {
 
 			List<SessionInfo> ss= ((SessionsRepository)(repository)).findAll();
@@ -27,10 +27,10 @@ public class SspIdUtils {
 			for (SessionInfo s : ss)
 				sessionIdList.add(s.getSspId() );
 			int i=0;
-			myInternalId = Integer.toString(i);
+			mySspId = Integer.toString(i);
 			while (true) {
-				myInternalId = Integer.toString(i);
-				if (!sessionIdList.contains(myInternalId)) {
+				mySspId = Integer.toString(i);
+				if (!sessionIdList.contains(mySspId)) {
 					break;
 				}
 				i++;
@@ -40,22 +40,24 @@ public class SspIdUtils {
 		if (repository instanceof ResourcesRepository) {
 
 			List<ResourceInfo> ss= ((ResourcesRepository)(repository)).findAll();
-			List<String> sessionIdList = new ArrayList<String>();
+			List<String> resourceIdList = new ArrayList<String>();
 
-			for (ResourceInfo s : ss)
-				sessionIdList.add(s.getInternalId() );
+			for (ResourceInfo s : ss) {
+				resourceIdList.add(s.getSspIdResource() );
+			}
+			
 			int i=0;
-			myInternalId = Integer.toString(i);
+			mySspId = Integer.toString(i);
 			while (true) {
-				myInternalId = Integer.toString(i);
-				if (!sessionIdList.contains(myInternalId)) {
+				mySspId = Integer.toString(i);
+				if (!resourceIdList.contains(mySspId)) {
 					break;
 				}
 				i++;
 			}
 
 		}
-		return myInternalId;
+		return mySspId;
 
 
 	}

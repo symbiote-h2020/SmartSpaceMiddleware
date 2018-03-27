@@ -13,26 +13,19 @@ import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 public class InnkeeperResourceRegistrationResponse {
 
 	private static Log log = LogFactory.getLog(InnkeeperResourceRegistrationResponse.class);
-    @Autowired
-    ResourcesRepository resourcesRepository;
-
-    @Autowired
-    AccessPolicyRepository accessPolicyRepository;
     
-    @Autowired
-    OwlApiHelper owlApiHelp;
 	
 	@JsonProperty("symIdResource")				
 	private String symIdResource;
 	
-	@JsonProperty("internalIdResource")			
-	private String internalIdResource;
+	@JsonProperty("sspIdResource")				
+	private String sspIdResource;
 	
 	@JsonProperty("symId")				
 	private String symId;
 	
-	@JsonProperty("internalId")			
-	private String internalId;
+	@JsonProperty("sspId")				
+	private String sspId;
 	
 	@JsonProperty("result") 					
 	private String result;
@@ -42,40 +35,28 @@ public class InnkeeperResourceRegistrationResponse {
 	
 	public InnkeeperResourceRegistrationResponse() {}
 	
-	public InnkeeperResourceRegistrationResponse(String symIdResource, String internalIdResource,String symId, String internalId, String result) {
-		this.symIdResource=symIdResource;
-		this.internalIdResource=internalIdResource;
-		
-		this.symId=symId;
-		this.internalId=internalId;
-		
+	public InnkeeperResourceRegistrationResponse(String SymIdResource, String sspIdResource, String symId,String sspId, String result) {
+		this.symIdResource=SymIdResource;
+		this.sspIdResource=sspIdResource;
+		this.symId=symId;		
+		this.sspId=sspId;				
 		this.result=result;
 	}
-	public InnkeeperResourceRegistrationResponse(String symIdResource, String internalIdResource,String symId, String internalId, String result, Integer registration_expiration) {
-		this.symIdResource=symIdResource;
-		this.internalIdResource=internalIdResource;
-		
-		this.symId=symId;
-		this.internalId=internalId;
-		
+	public InnkeeperResourceRegistrationResponse(String SymIdResource, String sspIdResource, String symId,String sspId, String result, Integer registration_expiration) {
+		this.symIdResource=SymIdResource;
+		this.sspIdResource=sspIdResource;
+		this.symId=symId;		
+		this.sspId=sspId;				
 		this.result=result;
 		this.registration_expiration=registration_expiration;
 	}
 	
-	public String getSymIdResource() {
-		return this.symIdResource;
+	public String getSspIdResource() {
+		return this.sspIdResource;
 	}
 	
-	public void setSymIdResource(String symIdResource) {
-		this.symIdResource=symIdResource;
-	}
-	
-	public String getInternalIdResource() {
-		return this.internalIdResource;
-	}
-	
-	public void setInternalIdResource(String internalIdResource) {
-		this.internalIdResource=internalIdResource;
+	public void setSspIdResource(String sspIdResource) {
+		this.sspIdResource=sspIdResource;
 	}
 	
 	public String getSymId() {
@@ -84,14 +65,6 @@ public class InnkeeperResourceRegistrationResponse {
 	
 	public void setSymIdDEV(String symId) {
 		this.symId=symId;
-	}
-	
-	public String getInternalId() {
-		return this.internalId;
-	}
-	
-	public void setInternalId(String internalId) {
-		this.internalId=internalId;
 	}
 	
 	public String getResult() {
