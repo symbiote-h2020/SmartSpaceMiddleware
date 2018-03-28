@@ -1,5 +1,8 @@
 package eu.h2020.symbiote.ssp.innkeeper.model;
 
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,14 +24,17 @@ public class InnkeeperSDEVRegistrationResponse {
     
     @Autowired
     OwlApiHelper owlApiHelp;
+    
     @JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonProperty("symId") 				private String symId;
+	@JsonProperty("symId") 						private String symId;
     @JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonProperty("sspId") 			private String sspId;
+	@JsonProperty("sspId") 						private String sspId;
     @JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonProperty("result") 					private String result;
     @JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonProperty("registrationExpiration") 	private Integer registrationExpiration;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonProperty("updatedSymId") 	private List<Map<String,String>> updatedSymId;
 	
 	public InnkeeperSDEVRegistrationResponse() {		
 	}
@@ -47,6 +53,10 @@ public class InnkeeperSDEVRegistrationResponse {
 	public String getSymId() {
 		return this.symId;
 	}
+	
+	public void setSymId(String symId) {
+		this.symId=symId;
+	}
 	public String getSspId() {
 		return this.sspId;
 	}
@@ -59,6 +69,20 @@ public class InnkeeperSDEVRegistrationResponse {
 
 	public Integer getRegistrationExpiration() {
 		return this.registrationExpiration;		
-	}	
+	}
+	
+	public List<Map<String,String>> getupdatedSymId(){
+		return this.updatedSymId;
+	}
+	
+	
+	public void setUpdatedSymId( List<Map<String,String>> updatedSymId) {
+		this.updatedSymId=updatedSymId;
+	}
+
+	public void setSspId(String sspId) {
+		this.sspId=sspId;
+		
+	}
 
 }

@@ -85,8 +85,15 @@ public class InnkeeperResourceRegistrationRequest {
 
 		//assign internal a new Id to the resource (R4)		
 		if (symIdResource == null) { //REJECTED
+			log.info("REJECTED: symIdResource=null");
 			results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
 
+			return res;
+		}
+
+		if (sessionsRepository.findBySspId(msg.getSspId())==null) {
+			log.info("REJECTED: symIdResource=null SspId"+msg.getSspId()+" not found");
+			results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED; 
 			return res;
 		}
 
@@ -100,7 +107,7 @@ public class InnkeeperResourceRegistrationRequest {
 			log.info(newSspIdResource);
 			msg.setSspIdResource(newSspIdResource);
 			msg.setSemanticDesciption(r);
-
+			msg.setSymId(sessionsRepository.findBySspId(msg.getSspId()).getSymId());
 			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspId()).getSessionExpiration());
 
 			results=InnkeeperRestControllerConstants.REGISTRATION_OFFLINE;
@@ -109,7 +116,7 @@ public class InnkeeperResourceRegistrationRequest {
 					msg.getSemanticDescription().getId(), 
 					msg.getSspIdResource(),
 					msg.getSymId(),
-					new SspIdUtils(resourcesRepository).createSspId(),
+					msg.getSspId(),
 					results,
 					DbConstants.EXPIRATION_TIME);
 		}  
@@ -119,6 +126,9 @@ public class InnkeeperResourceRegistrationRequest {
 		// request symId and sspId not match in SessionRepository
 		SessionInfo s = sessionsRepository.findBySymId(msg.getSymId());
 		if( s==null ) {
+			
+			log.info("REJECTED: symIdResource=null SymId"+msg.getSymId()+" not found");
+
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 								//symIdResource
 					msg.getSspIdResource(),												//sspIdResource
@@ -128,17 +138,19 @@ public class InnkeeperResourceRegistrationRequest {
 					0																	//registration expiration
 					);
 
-		}else {
-			if ( !(s.getSspId().equals(msg.getSspId())) ) {
-				return new InnkeeperResourceRegistrationResponse(
-						msg.getSemanticDescription().getId(), 								//symIdResource
-						msg.getSspIdResource(),												//sspIdResource
-						msg.getSymId(),														//symId (SDEV)
-						msg.getSspId(),														//sspId (SDEV)
-						InnkeeperRestControllerConstants.REGISTRATION_REJECTED,				//Result
-						0																	//registration expiration
-						);
-			}
+		}
+		
+		if ( !(s.getSspId().equals(msg.getSspId())) ) {
+			log.info("REJECTED: symIdResource=null SspId"+msg.getSymId()+" not matched in Session Repository");
+
+			return new InnkeeperResourceRegistrationResponse(
+					msg.getSemanticDescription().getId(), 								//symIdResource
+					msg.getSspIdResource(),												//sspIdResource
+					msg.getSymId(),														//symId (SDEV)
+					msg.getSspId(),														//sspId (SDEV)
+					InnkeeperRestControllerConstants.REGISTRATION_REJECTED,				//Result
+					0																	//registration expiration
+					);
 		}
 
 		if (symIdResource != "" && !msg.getSymId().equals(symIdResource)) { //REGISTER!

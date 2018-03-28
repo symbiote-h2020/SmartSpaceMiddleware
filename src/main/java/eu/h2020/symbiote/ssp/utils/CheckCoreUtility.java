@@ -19,6 +19,10 @@ public class CheckCoreUtility {
 		this.repository=repo;
 		this.isOnline=isOnline;
 	}
+	
+	public Boolean getCoreConnectivity() {
+		return this.isOnline;
+	}
 
 	public String checkCoreSymbioteIdRegistration(String symId) {
 		if (!this.isOnline)
