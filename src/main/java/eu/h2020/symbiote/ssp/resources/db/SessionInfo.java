@@ -93,6 +93,9 @@ public class SessionInfo {
 	@JsonProperty("pluginURL")
 	private String pluginURL;
 	
+	@JsonProperty("roaming")
+	private Boolean roaming;
+	
 
 	/* HOWTO read expiration time directly via mongoDB client
       db.sessions.aggregate(     
@@ -156,6 +159,61 @@ public class SessionInfo {
 		this.pluginURL=pluginURL;
 	}
 
+	@JsonCreator
+	public SessionInfo( @JsonProperty("sessionId") String sessionId,
+			@JsonProperty("iv") String iv,
+			@JsonProperty("psk") byte[] psk,
+			@JsonProperty("dk") String dk,
+			@JsonProperty("dk1") String dk1,
+			@JsonProperty("dk2") String dk2,
+			@JsonProperty("sn") String sn,
+			@JsonProperty("sign") String sign,
+			@JsonProperty("authn") String authn,
+			@JsonProperty("data") String data,
+			@JsonProperty("OutBuffer") String OutBuffer,
+			@JsonProperty("cipher") String cipher,
+			@JsonProperty("macaddress") String macaddress,
+			@JsonProperty("snonce") String snonce,
+			@JsonProperty("snonce2") String snonce2,
+			@JsonProperty("gnonce") String gnonce,
+			@JsonProperty("gnonce2") String gnonce2,
+			@JsonProperty("kdf") String kdf,
+			@JsonProperty("session_expiration") Date session_expiration,
+			@JsonProperty("symId") String symId,
+			@JsonProperty("sspId") String sspId,
+			@JsonProperty("pluginId") String pluginId,
+			@JsonProperty("pluginURL") String pluginURL,
+			@JsonProperty("roaming") String roaming
+			
+			) {
+		this.sessionId = sessionId;
+		this.session_expiration = session_expiration;
+		this.iv = iv;
+		this.psk = psk;
+		this.dk = dk;
+		this.dk1 = dk1;
+		this.dk2 = dk2;
+		this.sn = sn;
+		this.sign = sign;
+		this.authn = authn;
+		this.data = data;
+		this.OutBuffer = OutBuffer;
+		this.cipher = cipher;
+		this.macaddress = macaddress;
+		this.snonce = snonce;
+		this.snonce2 = snonce2;
+		this.gnonce = gnonce;
+		this.gnonce2 = gnonce2;
+		this.kdf = kdf;        
+		this.symId=symId;
+		this.sspId=sspId;
+		this.pluginId=pluginId;
+		this.pluginURL=pluginURL;
+		this.roaming=Boolean.valueOf(roaming.toLowerCase());
+	}
+	
+	
+	
 	@JsonProperty("session_expiration")
 	public void setSessionExpiration(Date session_expiration) {
 		this.session_expiration = session_expiration;
@@ -392,5 +450,19 @@ public class SessionInfo {
 	{
 		return this.pluginURL;
 	}
+	
+	
+	@JsonProperty("roaming")
+	public void setRoaming(Boolean roaming) 
+	{
+		this.roaming = roaming;
+	}
+	
+	public Boolean getRoaming() 
+	{
+		return this.roaming;
+	}
+	
+	
 	
 }

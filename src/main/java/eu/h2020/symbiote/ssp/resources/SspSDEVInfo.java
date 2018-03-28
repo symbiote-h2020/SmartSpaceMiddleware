@@ -2,8 +2,6 @@ package eu.h2020.symbiote.ssp.resources;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import eu.h2020.symbiote.model.cim.Resource;
-import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 
 
 public class SspSDEVInfo {
