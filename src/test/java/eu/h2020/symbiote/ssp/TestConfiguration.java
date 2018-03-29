@@ -1,4 +1,4 @@
-package eu.h2020.symbiote.rap;
+package eu.h2020.symbiote.ssp;
 
 import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
 

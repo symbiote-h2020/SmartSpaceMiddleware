@@ -77,7 +77,7 @@ public class OwlApiHelper {
     private static final String privateUri = "http://www.symbiote-h2020.eu/ontology/pim";
 
     public OwlApiHelper() throws Exception{
-        URL url = OwlApiHelper.class.getResource(PIM_FILE);        
+        URL url = OwlApiHelper.class.getResource(PIM_FILE);
         if(url == null)
             url = OwlApiHelper.class.getResource(BIM_FILE);            
         if(url == null)
