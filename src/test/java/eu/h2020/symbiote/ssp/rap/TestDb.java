@@ -1,5 +1,6 @@
 package eu.h2020.symbiote.ssp.rap;
 
+import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
@@ -73,19 +74,19 @@ public class TestDb {
         assert(resInfoOptional.isPresent() == true);
         resInfoOptional = resourcesRepository.findById(resourceId+"2");
         assert(resInfoOptional.isPresent() == false);        
-        List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId+"2");
+        List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalIdResource(platformResourceId+"2");
         assert(resourceInfoList == null || resourceInfoList.isEmpty());
-        resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
+        resourceInfoList = resourcesRepository.findByInternalIdResource(platformResourceId);
         assert(resourceInfoList != null);
         assert(!resourceInfoList.isEmpty());
         //delete
-        resourcesRepository.delete(resourceInfoList.get(0).getSymbioteId());
-        resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
+        resourcesRepository.delete(resourceId);
+        resourceInfoList = resourcesRepository.findByInternalIdResource(platformResourceId);
         assert(resourceInfoList == null || resourceInfoList.isEmpty());
     }
     
     private ResourceInfo addResource(String resourceId, String platformResourceId, List<String> obsProperties, String pluginId) {
-        ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId);
+        ResourceInfo resourceInfo = new ResourceInfo(resourceId, "", platformResourceId,"", "");
         if(obsProperties != null)
             resourceInfo.setObservedProperties(obsProperties);
         if(pluginId != null && pluginId.length()>0)
@@ -125,7 +126,6 @@ public class TestDb {
     @Test 
     public void testAccessPolicy() throws Exception{
         //insert resource
-        /*
         String resourceId = "1";
         String platformResourceId = "pl_1";
         List<String> obsProperties = null;
@@ -133,7 +133,7 @@ public class TestDb {
         ResourceInfo resourceInfoResult = addResource(resourceId, platformResourceId, obsProperties, pluginId);
         assert(resourceInfoResult != null);
         //insert
-        SingleTokenAccessPolicyType policyType = SingleTokenAccessPolicyType.PUBLIC;
+        AccessPolicyType policyType = AccessPolicyType.PUBLIC;
         Map<String, String> requiredClaims = new HashMap<>();
         SingleTokenAccessPolicySpecifier accPolicy = new SingleTokenAccessPolicySpecifier(policyType,requiredClaims);
         AccessPolicy accessPolicy = addPolicy(resourceId,platformResourceId,accPolicy);
@@ -155,7 +155,7 @@ public class TestDb {
         //delete
         resourcesRepository.delete(resourceId);
         Optional<ResourceInfo> resourceInfoOptional = resourcesRepository.findById(resourceId);
-        assert(!resourceInfoOptional.isPresent());*/
+        assert(!resourceInfoOptional.isPresent());
     }
     
     private AccessPolicy addPolicy(String resourceId, String internalId, SingleTokenAccessPolicySpecifier accPolicy) throws InvalidArgumentsException {
@@ -177,14 +177,14 @@ public class TestDb {
         RegistrationInfoOData rio = new RegistrationInfoOData(symbioteId, className, superClass, parameters);
         registrationInfoODataRepository.insertNew(rio);
         //search
-        List<RegistrationInfoOData> registrationInfoOdataList = registrationInfoODataRepository.findByClassName(className);
-        assert(registrationInfoOdataList != null);
-        assert(!registrationInfoOdataList.isEmpty());
-        registrationInfoOdataList = registrationInfoODataRepository.findByClassName(className+"2");
-        assert(registrationInfoOdataList == null || registrationInfoOdataList.isEmpty());
+        List<RegistrationInfoOData> registrationInfoODataList = registrationInfoODataRepository.findByClassName(className);
+        assert(registrationInfoODataList != null);
+        assert(!registrationInfoODataList.isEmpty());
+        registrationInfoODataList = registrationInfoODataRepository.findByClassName(className+"2");
+        assert(registrationInfoODataList == null || registrationInfoODataList.isEmpty());
         //delete
         registrationInfoODataRepository.delete(rio.getId());
-        registrationInfoOdataList = registrationInfoODataRepository.findByClassName(className);
-        assert(registrationInfoOdataList == null || registrationInfoOdataList.isEmpty());
+        registrationInfoODataList = registrationInfoODataRepository.findByClassName(className);
+        assert(registrationInfoODataList == null || registrationInfoODataList.isEmpty());
     }
 }

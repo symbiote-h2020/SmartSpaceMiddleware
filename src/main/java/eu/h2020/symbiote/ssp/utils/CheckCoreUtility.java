@@ -45,7 +45,7 @@ public class CheckCoreUtility {
 				}
 
 				if (repository instanceof ResourcesRepository) {
-					smyIdSessionsRepositoryExists = ((ResourcesRepository) (repository)).findBySymId(symId) != null;
+					smyIdSessionsRepositoryExists = ((ResourcesRepository) (repository)).findBySymIdParent(symId) != null;
 				}
 
 				symId_ret=symId;

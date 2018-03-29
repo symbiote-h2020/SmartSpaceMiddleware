@@ -7,11 +7,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -23,7 +21,6 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
@@ -129,7 +126,7 @@ public class InnkeeperSDEVRegistrationRequest {
 						"",sspId,InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED,0);
 			}
 			
-			// registration injection workaround: check sspSDEVInfo.getSspId() value, multiple registration for the same SDEV
+			// registration injection workaround: check sspSDEVInfo.getSspIdParent() value, multiple registration for the same SDEV
 			if (checkRegistrationInjection(sspSDEVInfo)) {
 				// Got some duplicate fields in Session, suspect on registration,found other registration, reject.
 				log.info("REGISTRATION REJECTED AS SUSPECT DUPLICATED SDEVOInfo="+new ObjectMapper().writeValueAsString(sspSDEVInfo));
@@ -245,7 +242,7 @@ public class InnkeeperSDEVRegistrationRequest {
 			}
 		}
 
-		log.info("s.getSymId()="+s.getSymId());
+		log.info("s.getSymIdParent()="+s.getSymId());
 		s.setSessionExpiration(currTime);
 		sessionsRepository.save(s);
 
@@ -253,7 +250,7 @@ public class InnkeeperSDEVRegistrationRequest {
 		//UPDATE Expiration time of Resources
 
 		//TODO: check also for Policies and ODATA?
-		List<ResourceInfo> resList= resourcesRepository.findBySspId(s.getSspId());
+		List<ResourceInfo> resList= resourcesRepository.findBySspIdParent(s.getSspId());
 		List<Map<String, String>> updatedSymIdList = new ArrayList<Map<String,String>>();
 		for (ResourceInfo r : resList) {
 
@@ -266,7 +263,7 @@ public class InnkeeperSDEVRegistrationRequest {
 			symIdEntry.put("symIdResource", r.getSymIdResource());
 			symIdEntry.put("sspIdResource", r.getSspIdResource());
 			updatedSymIdList.add(symIdEntry);
-			r.setSymId(s.getSymId());
+			r.setSymIdParent(s.getSymId());
 			r.setSessionExpiration(currTime);
 
 			resourcesRepository.save(r);
@@ -319,7 +316,7 @@ public class InnkeeperSDEVRegistrationRequest {
 
 			//Delete Resources
 			//TODO: check also for Policies and ODATA?
-			List<ResourceInfo> resList= resourcesRepository.findBySspId(s.getSspId());
+			List<ResourceInfo> resList= resourcesRepository.findBySspIdParent(s.getSspId());
 
 			for (ResourceInfo r : resList) {
 				resourcesRepository.delete(r);

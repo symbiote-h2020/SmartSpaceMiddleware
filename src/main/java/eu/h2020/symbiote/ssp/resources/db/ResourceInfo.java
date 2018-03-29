@@ -7,6 +7,7 @@ package eu.h2020.symbiote.ssp.resources.db;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,16 +31,13 @@ public class ResourceInfo {
 	@JsonProperty("symIdResource") //of Resource
 	private String symIdResource;
 	
-	
-	
-	@JsonProperty("InternalIdResource") // of Resource
+	@JsonProperty("internalIdResource") // of Resource
 	private String internalIdResource;
 
-
-	@JsonProperty("symId") //of SDEV/Plat
-	private String symId;
-	@JsonProperty("sspId") // of SDEV/Plat
-	private String sspId;
+	@JsonProperty("symIdParent") //of SDEV/Plat
+	private String symIdParent;
+	@JsonProperty("sspIdParent") // of SDEV/Plat
+	private String sspIdParent;
 
 
 	@JsonProperty("type")
@@ -53,35 +51,34 @@ public class ResourceInfo {
 
 	@Field
 	@Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
+	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private Date session_expiration;
 
 
 	public ResourceInfo() {
-		this.symIdResource = "";
 		this.id = "";
+		this.symIdResource = "";
 		this.internalIdResource="";
-		this.symId="";
-		this.sspId="";
+		this.symIdParent ="";
+		this.sspIdParent ="";
 		this.pluginId = null;
 		this.observedProperties = null;
 		this.sessionIdList = null;       
 		this.type = null;
 	}
-	@JsonCreator
-
 
 	public ResourceInfo(
-			@JsonProperty("symIdResource")  String symIdResource,
 			@JsonProperty("sspIdResource")  String sspIdResource,
+			@JsonProperty("symIdResource")  String symIdResource,
 			@JsonProperty("internalIdResource")  String internalIdResource,
-			@JsonProperty("symId") String symId, // of SDEV/Plat
-			@JsonProperty("sspId") String sspId
+			@JsonProperty("symIdParent") String symIdParent, // of SDEV/Plat
+			@JsonProperty("sspIdParent") String sspIdParent
 			) {
-		this.symIdResource = symIdResource;
 		this.id = sspIdResource;
+		this.symIdResource = symIdResource;
 		this.internalIdResource=internalIdResource;
-		this.symId=symId;
-		this.sspId=sspId;
+		this.symIdParent =symIdParent;
+		this.sspIdParent = sspIdParent;
 		this.pluginId = null;
 		this.observedProperties = null;
 		this.sessionIdList = null;       
@@ -90,18 +87,18 @@ public class ResourceInfo {
 
 	@JsonCreator
 	public ResourceInfo(
-			@JsonProperty("symIdResource")  String symIdResource,
 			@JsonProperty("sspIdResource")  String sspIdResource,
+			@JsonProperty("symIdResource")  String symIdResource,
 			@JsonProperty("internalIdResource")  String internalIdResource,
-			@JsonProperty("symId") String symId, // of SDEV/Plat
-			@JsonProperty("sspId") String sspId,
+			@JsonProperty("symIdParent") String symIdParent, // of SDEV/Plat
+			@JsonProperty("sspIdParent") String sspIdParent,
 			@JsonProperty("sessionExpiration") Date session_expiration
 			) {
-		this.symIdResource = symIdResource;
 		this.id = sspIdResource;
+		this.symIdResource = symIdResource;
 		this.internalIdResource=internalIdResource;
-		this.symId=symId;
-		this.sspId=sspId;
+		this.symIdParent =symIdParent;
+		this.sspIdParent = sspIdParent;
 		this.pluginId = null;
 		this.observedProperties = null;
 		this.sessionIdList = null;       
@@ -109,31 +106,28 @@ public class ResourceInfo {
 		this.session_expiration=session_expiration;
 	}
 
-	@JsonProperty("symId")
-	public String getSymId() {
-		return symId;
-	}
-
-	@JsonProperty("symId")
-	public void setSymId(String symId) {
-		this.symId = symId;
-	}
-
-	@JsonProperty("sspId")
-	public String getSspId() {
-		return sspId;
-	}
-	
 	@JsonProperty("sspIdResource")
 	public String getSspIdResource() {
 		return id;
 	}
 
-	@JsonProperty("sspId")
-	public void setSspId(String sspId) {
-		this.sspId = sspId;
+	@JsonProperty("symIdParent")
+	public String getSymIdParent() {
+		return symIdParent;
 	}
 
+	@JsonProperty("symIdParent")
+	public void setSymIdParent(String symIdParent) {
+		this.symIdParent = symIdParent;
+	}
+
+	@JsonProperty("sspIdParent")
+	public String getSspIdParent() { return sspIdParent; }
+
+	@JsonProperty("sspIdParent")
+	public void setSspIdParent(String sspIdParent) {
+		this.sspIdParent = sspIdParent;
+	}
 
 	@JsonProperty("symIdResource")
 	public String getSymIdResource() {
