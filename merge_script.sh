@@ -27,7 +27,7 @@
 
   <meta name="viewport" content="width=device-width">
   
-  <title>SmartSpaceMiddleware/pushing_script.sh at master · symbiote-h2020/SmartSpaceMiddleware</title>
+  <title>SmartSpaceMiddleware/merge_script.sh at master · symbiote-h2020/SmartSpaceMiddleware</title>
     <meta name="description" content="GitHub is where people build software. More than 27 million people use GitHub to discover, fork, and contribute to over 80 million projects.">
   <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="GitHub">
   <link rel="fluid-icon" href="https://github.com/fluidicon.png" title="GitHub">
@@ -37,10 +37,10 @@
     <meta property="og:image" content="https://avatars3.githubusercontent.com/u/19265763?s=400&amp;v=4" /><meta property="og:site_name" content="GitHub" /><meta property="og:type" content="object" /><meta property="og:title" content="symbiote-h2020/SmartSpaceMiddleware" /><meta property="og:url" content="https://github.com/symbiote-h2020/SmartSpaceMiddleware" /><meta property="og:description" content="Contribute to SmartSpaceMiddleware development by creating an account on GitHub." />
 
   <link rel="assets" href="https://assets-cdn.github.com/">
-  <link rel="web-socket" href="wss://live.github.com/_sockets/VjI6MjUwODY4MDczOmQ1MWYyYmFjNTk2MTE3NWE5ZThjNTM4ZTRmYWY2NzAwNTBiNDRhMmM1MGI2MTg3YzYyMDNkOTdjM2ZiOGMwNWU=--fb5814195333d652e6fd435df7e58b4c8b6b4e2c">
+  <link rel="web-socket" href="wss://live.github.com/_sockets/VjI6MjUwODY4MDczOjQwMGE4YmM1NTk3ZWFhMDgxOTM2ODRhNzEwMGMxZTQ1NWY3Y2U4NmM2MzZhMjRhNzJlZDZjZjk5ZjhhMjlkMmI=--835e83ef430552e3bd774cffead11c02dfcbf419">
   <meta name="pjax-timeout" content="1000">
   <link rel="sudo-modal" href="/sessions/sudo_modal">
-  <meta name="request-id" content="73A4:12CC:1541870:26EEDCC:5ABD0199" data-pjax-transient>
+  <meta name="request-id" content="73A4:12CC:1540FEC:26EED3E:5ABD0199" data-pjax-transient>
 
 
   
@@ -52,7 +52,7 @@
   <meta name="google-site-verification" content="GXs5KoUUkNCoaAZn7wPN-t01Pywp9M3sEjnt_3_ZWPc">
     <meta name="google-analytics" content="UA-3769691-2">
 
-<meta name="octolytics-host" content="collector.githubapp.com" /><meta name="octolytics-app-id" content="github" /><meta name="octolytics-event-url" content="https://collector.githubapp.com/github-external/browser_event" /><meta name="octolytics-dimension-request_id" content="73A4:12CC:1541870:26EEDCC:5ABD0199" /><meta name="octolytics-dimension-region_edge" content="iad" /><meta name="octolytics-dimension-region_render" content="iad" /><meta name="octolytics-actor-id" content="16545154" /><meta name="octolytics-actor-login" content="mpardi-nextworks" /><meta name="octolytics-actor-hash" content="7aff31b393eca587251c9fdb9ce20ad7cad6096eb2245278ffe3f7ee65dbf9f4" />
+<meta name="octolytics-host" content="collector.githubapp.com" /><meta name="octolytics-app-id" content="github" /><meta name="octolytics-event-url" content="https://collector.githubapp.com/github-external/browser_event" /><meta name="octolytics-dimension-request_id" content="73A4:12CC:1540FEC:26EED3E:5ABD0199" /><meta name="octolytics-dimension-region_edge" content="iad" /><meta name="octolytics-dimension-region_render" content="iad" /><meta name="octolytics-actor-id" content="16545154" /><meta name="octolytics-actor-login" content="mpardi-nextworks" /><meta name="octolytics-actor-hash" content="7aff31b393eca587251c9fdb9ce20ad7cad6096eb2245278ffe3f7ee65dbf9f4" />
 <meta name="hydro-events-url" content="https://github.com/hydro_browser_events" />
 <meta name="analytics-location" content="/&lt;user-name&gt;/&lt;repo-name&gt;/blob/show" data-pjax-transient="true" />
 
@@ -68,7 +68,7 @@
     <meta name="user-login" content="mpardi-nextworks">
 
       <meta name="expected-hostname" content="github.com">
-    <meta name="js-proxy-site-detection-payload" content="N2NjNTZiNThiM2I5ZGFiNTEyNjViNTMyMjExNmU5OTY0ZjQ3ZTVlZTJlNmYwZDBiYWYxYWU2MGUxNjIzNGNkY3x7InJlbW90ZV9hZGRyZXNzIjoiMTk1LjgxLjEwNC42NiIsInJlcXVlc3RfaWQiOiI3M0E0OjEyQ0M6MTU0MTg3MDoyNkVFRENDOjVBQkQwMTk5IiwidGltZXN0YW1wIjoxNTIyMzM2MTY2LCJob3N0IjoiZ2l0aHViLmNvbSJ9">
+    <meta name="js-proxy-site-detection-payload" content="ZTI3NjAyMzc3ZTgyNmRhNzRhMjEwNTAyMTM4ODY4ZDE3NWYzNzE4NTdjODIwYzk5OWU5NGJiNjM0YTM3YTY4YXx7InJlbW90ZV9hZGRyZXNzIjoiMTk1LjgxLjEwNC42NiIsInJlcXVlc3RfaWQiOiI3M0E0OjEyQ0M6MTU0MEZFQzoyNkVFRDNFOjVBQkQwMTk5IiwidGltZXN0YW1wIjoxNTIyMzM2MTUzLCJob3N0IjoiZ2l0aHViLmNvbSJ9">
 
     <meta name="enabled-features" content="UNIVERSE_BANNER,FREE_TRIALS,MARKETPLACE_INSIGHTS,MARKETPLACE_INSIGHTS_CONVERSION_PERCENTAGES">
 
@@ -85,7 +85,7 @@
   <meta name="octolytics-dimension-user_id" content="19265763" /><meta name="octolytics-dimension-user_login" content="symbiote-h2020" /><meta name="octolytics-dimension-repository_id" content="97227480" /><meta name="octolytics-dimension-repository_nwo" content="symbiote-h2020/SmartSpaceMiddleware" /><meta name="octolytics-dimension-repository_public" content="true" /><meta name="octolytics-dimension-repository_is_fork" content="false" /><meta name="octolytics-dimension-repository_network_root_id" content="97227480" /><meta name="octolytics-dimension-repository_network_root_nwo" content="symbiote-h2020/SmartSpaceMiddleware" /><meta name="octolytics-dimension-repository_explore_github_marketplace_ci_cta_shown" content="false" />
 
 
-    <link rel="canonical" href="https://github.com/symbiote-h2020/SmartSpaceMiddleware/blob/master/pushing_script.sh" data-pjax-transient>
+    <link rel="canonical" href="https://github.com/symbiote-h2020/SmartSpaceMiddleware/blob/master/merge_script.sh" data-pjax-transient>
 
 
   <meta name="browser-stats-url" content="https://api.github.com/_private/browser/stats">
@@ -136,7 +136,7 @@
               <div class="header-search scoped-search site-scoped-search js-site-search" role="search">
   <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="js-site-search-form" data-scoped-search-url="/symbiote-h2020/SmartSpaceMiddleware/search" data-unscoped-search-url="/search" action="/symbiote-h2020/SmartSpaceMiddleware/search" accept-charset="UTF-8" method="get"><input name="utf8" type="hidden" value="&#x2713;" />
     <label class="form-control header-search-wrapper  js-chromeless-input-container">
-        <a class="header-search-scope no-underline" href="/symbiote-h2020/SmartSpaceMiddleware/blob/master/pushing_script.sh">This repository</a>
+        <a class="header-search-scope no-underline" href="/symbiote-h2020/SmartSpaceMiddleware/blob/master/merge_script.sh">This repository</a>
       <input type="text"
         class="form-control header-search-input  js-site-search-focus js-site-search-field is-clearable"
         data-hotkey="s,/"
@@ -263,7 +263,7 @@
           Settings
         </a></li>
 
-        <li><!-- '"` --><!-- </textarea></xmp> --></option></form><form class="logout-form" action="/logout" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="OxUi88TXou4pVDM5xG5jVucEUgt7HFGBVdTx29mSVGSTlMZrdJZSjcT0aPpX9HRpl9GesHzlrNthPsojcJS0yw==" />
+        <li><!-- '"` --><!-- </textarea></xmp> --></option></form><form class="logout-form" action="/logout" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="fmopbSwrAHsLBSj6sAKEsnKED32xGVL1OVKHbcrS0n7W6831nGrwGOalczkjmJONAlHDxrbgr68NuLyVY9Qy0Q==" />
           <button type="submit" class="dropdown-item dropdown-signout" data-ga-click="Header, sign out, icon:logout">
             Sign out
           </button>
@@ -275,7 +275,7 @@
 
 
 
-        <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="sr-only right-0" action="/logout" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="p7PMZdLgMos3Pkco7XD4I0tMVOid0pw+qwq3x57hm1cPMij9YqHC6NqeHOt+6u8cO5mYU5orYWSf4Iw/N+d7+A==" />
+        <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="sr-only right-0" action="/logout" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="Fap90ymmvlr/To4rnP+y/SUFALwS4gpAgl7gx9I8Uei9K5lLmedOORLu1egPZaXCVdDMBxUb9xq2tNs/ezqxRw==" />
           <button type="submit" class="dropdown-item dropdown-signout" data-ga-click="Header, sign out, icon:logout">
             Sign out
           </button>
@@ -313,7 +313,7 @@
 
       <ul class="pagehead-actions">
   <li>
-        <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-autosubmit="true" data-remote="true" class="js-social-container" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="X5QWO929PhYyh+OR5izyqFwTRiVhk+9O/DL8Qu3eFw4hrewx1+icnRqRN8L6wB2LnSxZ+ttTJb+cI12wTajB5g==" />      <input type="hidden" name="repository_id" id="repository_id" value="97227480" class="form-control" />
+        <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-autosubmit="true" data-remote="true" class="js-social-container" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="TLd85yzTN3SuOGqCcm0pi2TGlbG5PcXL3J/9/lTkMoMyjobtJoaV/4YuvtFugcaopfmKbgP9Dzq8jlwM9JLkaw==" />      <input type="hidden" name="repository_id" id="repository_id" value="97227480" class="form-control" />
 
         <div class="select-menu js-menu-container js-select-menu">
           <a href="/symbiote-h2020/SmartSpaceMiddleware/subscription"
@@ -393,7 +393,7 @@
   <li>
     
   <div class="js-toggler-container js-social-container starring-container ">
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="starred js-social-form" action="/symbiote-h2020/SmartSpaceMiddleware/unstar" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="2PvssPANTCRb0AYYdDnJsdGqQ9up0iLbfVORmez4wQZoo47lE2jtntGsl12CoBOVMYUagXKO4eVwZQhZCDX09A==" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="starred js-social-form" action="/symbiote-h2020/SmartSpaceMiddleware/unstar" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="oJ2Dh41tNAddwGvhmFEVqO1MVoZO/A8ws+JdOjQ0W0kQxeHSbgiVvde8+qRuyM+MDWMP3JWgzA6+1MT60Pluuw==" />
       <input type="hidden" name="context" value="repository"></input>
       <button
         type="submit"
@@ -408,7 +408,7 @@
           0
         </a>
 </form>
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="unstarred js-social-form" action="/symbiote-h2020/SmartSpaceMiddleware/star" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="xBp2ULBoFhk+C6cuNPD21GnVI2BY2K0PWy1BspxKvmE2oKzqlzyiT5zDDp2s7aCxMBS/xlWv0RsRJG09ybaCag==" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="unstarred js-social-form" action="/symbiote-h2020/SmartSpaceMiddleware/star" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="hnZEnosNwGFc6lQKk/V3ngLUFwW6nnMy/mGpWh/44ft0zJ4krFl0N/4i/bkL6CH7WxWLo7fpDya0aIXVSgTd8A==" />
       <input type="hidden" name="context" value="repository"></input>
       <button
         type="submit"
@@ -515,9 +515,9 @@
   <div class="repository-content ">
 
     
-  <a class="d-none js-permalink-shortcut" data-hotkey="y" href="/symbiote-h2020/SmartSpaceMiddleware/blob/e30f876853024ce40a6b691e4da390a0cb67dbea/pushing_script.sh">Permalink</a>
+  <a class="d-none js-permalink-shortcut" data-hotkey="y" href="/symbiote-h2020/SmartSpaceMiddleware/blob/e30f876853024ce40a6b691e4da390a0cb67dbea/merge_script.sh">Permalink</a>
 
-  <!-- blob contrib key: blob_contributors:v21:30ec511ff0fd201b3e401e3bafeda66e -->
+  <!-- blob contrib key: blob_contributors:v21:0d7660ed6241f0ae791c0558e3a14512 -->
 
   <div class="file-navigation">
     
@@ -559,7 +559,7 @@
 
 
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/develop/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/develop/merge_script.sh"
                data-name="develop"
                data-skip-pjax="true"
                rel="nofollow">
@@ -569,7 +569,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/innkeeper-develop/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/innkeeper-develop/merge_script.sh"
                data-name="innkeeper-develop"
                data-skip-pjax="true"
                rel="nofollow">
@@ -579,7 +579,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/innkeeper/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/innkeeper/merge_script.sh"
                data-name="innkeeper"
                data-skip-pjax="true"
                rel="nofollow">
@@ -589,7 +589,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open selected"
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/master/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/master/merge_script.sh"
                data-name="master"
                data-skip-pjax="true"
                rel="nofollow">
@@ -599,7 +599,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/rap-develop/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/rap-develop/merge_script.sh"
                data-name="rap-develop"
                data-skip-pjax="true"
                rel="nofollow">
@@ -609,7 +609,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/rap-innk-develop/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/rap-innk-develop/merge_script.sh"
                data-name="rap-innk-develop"
                data-skip-pjax="true"
                rel="nofollow">
@@ -619,7 +619,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/rap-innk-lwsp-develop/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/rap-innk-lwsp-develop/merge_script.sh"
                data-name="rap-innk-lwsp-develop"
                data-skip-pjax="true"
                rel="nofollow">
@@ -629,7 +629,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/sh_integration/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/sh_integration/merge_script.sh"
                data-name="sh_integration"
                data-skip-pjax="true"
                rel="nofollow">
@@ -639,7 +639,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/ssp-rap/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/ssp-rap/merge_script.sh"
                data-name="ssp-rap"
                data-skip-pjax="true"
                rel="nofollow">
@@ -649,7 +649,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/staging/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/staging/merge_script.sh"
                data-name="staging"
                data-skip-pjax="true"
                rel="nofollow">
@@ -659,7 +659,7 @@
               </span>
             </a>
             <a class="select-menu-item js-navigation-item js-navigation-open "
-               href="/symbiote-h2020/SmartSpaceMiddleware/blob/sym-agent/pushing_script.sh"
+               href="/symbiote-h2020/SmartSpaceMiddleware/blob/sym-agent/merge_script.sh"
                data-name="sym-agent"
                data-skip-pjax="true"
                rel="nofollow">
@@ -670,7 +670,7 @@
             </a>
         </div>
 
-          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="js-create-branch select-menu-item select-menu-new-item-form js-navigation-item js-new-item-form" action="/symbiote-h2020/SmartSpaceMiddleware/branches" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="OeU5NSTdje96SigMh857OXtxQQxg4Cf5oK82FMnHZOZPYgC+/p7i38DrGvxprIgpc4OlXHHhnqe/2aZ5pUPy+Q==" />
+          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="js-create-branch select-menu-item select-menu-new-item-form js-navigation-item js-new-item-form" action="/symbiote-h2020/SmartSpaceMiddleware/branches" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="F20qonRU0w2JMq2Wi0E1qbIg2EPTJFoNL2Vd9bVa5Y5h6hMprhe8PTOTn2ZlI8a5utI8E8Il41MwE82Y2d5zkQ==" />
           <svg class="octicon octicon-git-branch select-menu-item-icon" viewBox="0 0 10 16" version="1.1" width="10" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M10 5c0-1.11-.89-2-2-2a1.993 1.993 0 0 0-1 3.72v.3c-.02.52-.23.98-.63 1.38-.4.4-.86.61-1.38.63-.83.02-1.48.16-2 .45V4.72a1.993 1.993 0 0 0-1-3.72C.88 1 0 1.89 0 3a2 2 0 0 0 1 1.72v6.56c-.59.35-1 .99-1 1.72 0 1.11.89 2 2 2 1.11 0 2-.89 2-2 0-.53-.2-1-.53-1.36.09-.06.48-.41.59-.47.25-.11.56-.17.94-.17 1.05-.05 1.95-.45 2.75-1.25S8.95 7.77 9 6.73h-.02C9.59 6.37 10 5.73 10 5zM2 1.8c.66 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2C1.35 4.2.8 3.65.8 3c0-.65.55-1.2 1.2-1.2zm0 12.41c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2zm6-8c-.66 0-1.2-.55-1.2-1.2 0-.65.55-1.2 1.2-1.2.65 0 1.2.55 1.2 1.2 0 .65-.55 1.2-1.2 1.2z"/></svg>
             <div class="select-menu-item-text">
               <span class="select-menu-item-heading">Create branch: <span class="js-new-item-name"></span></span>
@@ -678,7 +678,7 @@
             </div>
             <input type="hidden" name="name" id="name" class="js-new-item-value">
             <input type="hidden" name="branch" id="branch" value="master">
-            <input type="hidden" name="path" id="path" value="pushing_script.sh">
+            <input type="hidden" name="path" id="path" value="merge_script.sh">
 </form>
       </div>
 
@@ -711,12 +711,12 @@
       </clipboard-copy>
     </div>
     <div id="blob-path" class="breadcrumb">
-      <span class="repo-root js-repo-root"><span class="js-path-segment"><a data-pjax="true" href="/symbiote-h2020/SmartSpaceMiddleware"><span>SmartSpaceMiddleware</span></a></span></span><span class="separator">/</span><strong class="final-path">pushing_script.sh</strong>
+      <span class="repo-root js-repo-root"><span class="js-path-segment"><a data-pjax="true" href="/symbiote-h2020/SmartSpaceMiddleware"><span>SmartSpaceMiddleware</span></a></span></span><span class="separator">/</span><strong class="final-path">merge_script.sh</strong>
     </div>
   </div>
 
 
-  <include-fragment src="/symbiote-h2020/SmartSpaceMiddleware/contributors/master/pushing_script.sh" class="commit-tease">
+  <include-fragment src="/symbiote-h2020/SmartSpaceMiddleware/contributors/master/merge_script.sh" class="commit-tease">
     <div>
       Fetching contributors&hellip;
     </div>
@@ -732,9 +732,9 @@
   <div class="file-actions">
 
     <div class="BtnGroup">
-      <a id="raw-url" class="btn btn-sm BtnGroup-item" href="/symbiote-h2020/SmartSpaceMiddleware/raw/master/pushing_script.sh">Raw</a>
-        <a class="btn btn-sm js-update-url-with-hash BtnGroup-item" data-hotkey="b" href="/symbiote-h2020/SmartSpaceMiddleware/blame/master/pushing_script.sh">Blame</a>
-      <a rel="nofollow" class="btn btn-sm BtnGroup-item" href="/symbiote-h2020/SmartSpaceMiddleware/commits/master/pushing_script.sh">History</a>
+      <a id="raw-url" class="btn btn-sm BtnGroup-item" href="/symbiote-h2020/SmartSpaceMiddleware/raw/master/merge_script.sh">Raw</a>
+        <a class="btn btn-sm js-update-url-with-hash BtnGroup-item" data-hotkey="b" href="/symbiote-h2020/SmartSpaceMiddleware/blame/master/merge_script.sh">Blame</a>
+      <a rel="nofollow" class="btn btn-sm BtnGroup-item" href="/symbiote-h2020/SmartSpaceMiddleware/commits/master/merge_script.sh">History</a>
     </div>
 
         <a class="btn-octicon tooltipped tooltipped-nw"
@@ -744,13 +744,13 @@
             <svg class="octicon octicon-device-desktop" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M15 2H1c-.55 0-1 .45-1 1v9c0 .55.45 1 1 1h5.34c-.25.61-.86 1.39-2.34 2h8c-1.48-.61-2.09-1.39-2.34-2H15c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1zm0 9H1V3h14v8z"/></svg>
         </a>
 
-          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form js-update-url-with-hash" action="/symbiote-h2020/SmartSpaceMiddleware/edit/master/pushing_script.sh" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="QyT8Wu88u0dd9FfXRyijRl9KoE3eDur/H+ZFJkfKUm2oQhFo6Rv3CnU1t2TuQUNqiZq/ag8fCRdL6HEvWi35Zw==" />
+          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form js-update-url-with-hash" action="/symbiote-h2020/SmartSpaceMiddleware/edit/master/merge_script.sh" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="k00C4l10FHZIzdWMWSjjWsKsmETcvZuLfUhCya5S7TOyq7g5B5JHzl2EyZ78fa8aqbdUHXxB//w+J8pmSEO3sA==" />
             <button class="btn-octicon tooltipped tooltipped-nw" type="submit"
               aria-label="Edit this file" data-hotkey="e" data-disable-with>
               <svg class="octicon octicon-pencil" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M0 12v3h3l8-8-3-3-8 8zm3 2H1v-2h1v1h1v1zm10.3-9.3L12 6 9 3l1.3-1.3a.996.996 0 0 1 1.41 0l1.59 1.59c.39.39.39 1.02 0 1.41z"/></svg>
             </button>
 </form>
-        <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form" action="/symbiote-h2020/SmartSpaceMiddleware/delete/master/pushing_script.sh" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="NPwNr4KrrJRedzDNHmHrodqOWlusqAlVpynTHgi3slhfdzenPYLDp+o8I8pFAwj3oG/SUGlpYI+tCgxpwFeElg==" />
+        <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form" action="/symbiote-h2020/SmartSpaceMiddleware/delete/master/merge_script.sh" accept-charset="UTF-8" method="post"><input name="utf8" type="hidden" value="&#x2713;" /><input type="hidden" name="authenticity_token" value="VdFiOyu1YzsLNcQGbtpAsq1xHDByT0KJzP+kG1IdjpbrfTQNdb8H1kU7Ofv5HfuWCTwEBLV5IC9xNKFRoM11hg==" />
           <button class="btn-octicon btn-octicon-danger tooltipped tooltipped-nw" type="submit"
             aria-label="Delete this file" data-disable-with>
             <svg class="octicon octicon-trashcan" viewBox="0 0 12 16" version="1.1" width="12" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M11 2H9c0-.55-.45-1-1-1H5c-.55 0-1 .45-1 1H2c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1v9c0 .55.45 1 1 1h7c.55 0 1-.45 1-1V5c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1zm-1 12H3V5h1v8h1V5h1v8h1V5h1v8h1V5h1v9zm1-10H2V3h9v1z"/></svg>
@@ -758,11 +758,9 @@
 </form>  </div>
 
   <div class="file-info">
-      <span class="file-mode" title="File mode">executable file</span>
+      20 lines (15 sloc)
       <span class="file-info-divider"></span>
-      11 lines (7 sloc)
-      <span class="file-info-divider"></span>
-    329 Bytes
+    609 Bytes
   </div>
 </div>
 
@@ -781,7 +779,7 @@
       </tr>
       <tr>
         <td id="L3" class="blob-num js-line-number" data-line-number="3"></td>
-        <td id="LC3" class="blob-code blob-code-inner js-file-line"><span class="pl-c1">:</span> <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">${GITHUB_SECRET_TOKEN?}</span><span class="pl-pds">&quot;</span></span> <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">${GITHUB_REPO?}</span><span class="pl-pds">&quot;</span></span> </td>
+        <td id="LC3" class="blob-code blob-code-inner js-file-line"><span class="pl-c1">:</span> <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">${GITHUB_SECRET_TOKEN?}</span><span class="pl-pds">&quot;</span></span> <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">${GITHUB_REPO?}</span><span class="pl-pds">&quot;</span></span></td>
       </tr>
       <tr>
         <td id="L4" class="blob-num js-line-number" data-line-number="4"></td>
@@ -790,33 +788,70 @@
       </tr>
       <tr>
         <td id="L5" class="blob-num js-line-number" data-line-number="5"></td>
-        <td id="LC5" class="blob-code blob-code-inner js-file-line"><span class="pl-c"><span class="pl-c">#</span># shellcheck disable=SC2164</span></td>
+        <td id="LC5" class="blob-code blob-code-inner js-file-line"><span class="pl-k">export</span> GIT_COMMITTER_EMAIL=<span class="pl-s"><span class="pl-pds">&#39;</span>travis@travis<span class="pl-pds">&#39;</span></span></td>
       </tr>
       <tr>
         <td id="L6" class="blob-num js-line-number" data-line-number="6"></td>
-        <td id="LC6" class="blob-code blob-code-inner js-file-line">
-</td>
+        <td id="LC6" class="blob-code blob-code-inner js-file-line"><span class="pl-k">export</span> GIT_COMMITTER_NAME=<span class="pl-s"><span class="pl-pds">&#39;</span>Travis CI<span class="pl-pds">&#39;</span></span></td>
       </tr>
       <tr>
         <td id="L7" class="blob-num js-line-number" data-line-number="7"></td>
-        <td id="LC7" class="blob-code blob-code-inner js-file-line">push_uri=<span class="pl-s"><span class="pl-pds">&quot;</span>https://<span class="pl-smi">$GITHUB_SECRET_TOKEN</span>@github.com/<span class="pl-smi">$GITHUB_REPO</span><span class="pl-pds">&quot;</span></span></td>
-      </tr>
-      <tr>
-        <td id="L8" class="blob-num js-line-number" data-line-number="8"></td>
-        <td id="LC8" class="blob-code blob-code-inner js-file-line">
+        <td id="LC7" class="blob-code blob-code-inner js-file-line">
 </td>
       </tr>
       <tr>
+        <td id="L8" class="blob-num js-line-number" data-line-number="8"></td>
+        <td id="LC8" class="blob-code blob-code-inner js-file-line"><span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">&#39;</span>Removing staging branch as it has been handled already\n<span class="pl-pds">&#39;</span></span></td>
+      </tr>
+      <tr>
         <td id="L9" class="blob-num js-line-number" data-line-number="9"></td>
-        <td id="LC9" class="blob-code blob-code-inner js-file-line"><span class="pl-c"><span class="pl-c">#</span> Redirect to /dev/null to avoid secret leakage</span></td>
+        <td id="LC9" class="blob-code blob-code-inner js-file-line"><span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">&#39;</span>git push %s :staging &gt;/dev/null 2&gt;&amp;1\n<span class="pl-pds">&#39;</span></span> <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">$GITHUB_REPO</span><span class="pl-pds">&quot;</span></span></td>
       </tr>
       <tr>
         <td id="L10" class="blob-num js-line-number" data-line-number="10"></td>
-        <td id="LC10" class="blob-code blob-code-inner js-file-line"><span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">&#39;</span>git push %s staging:develop &gt;/dev/null 2&gt;&amp;1\n<span class="pl-pds">&#39;</span></span> <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">$GITHUB_REPO</span><span class="pl-pds">&quot;</span></span></td>
+        <td id="LC10" class="blob-code blob-code-inner js-file-line">push_uri=<span class="pl-s"><span class="pl-pds">&quot;</span>https://<span class="pl-smi">$GITHUB_SECRET_TOKEN</span>@github.com/<span class="pl-smi">$GITHUB_REPO</span><span class="pl-pds">&quot;</span></span></td>
       </tr>
       <tr>
         <td id="L11" class="blob-num js-line-number" data-line-number="11"></td>
-        <td id="LC11" class="blob-code blob-code-inner js-file-line">git push <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">$push_uri</span><span class="pl-pds">&quot;</span></span> staging:develop <span class="pl-k">&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span></td>
+        <td id="LC11" class="blob-code blob-code-inner js-file-line">git push <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">$push_uri</span><span class="pl-pds">&quot;</span></span> :staging <span class="pl-k">&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span></td>
+      </tr>
+      <tr>
+        <td id="L12" class="blob-num js-line-number" data-line-number="12"></td>
+        <td id="LC12" class="blob-code blob-code-inner js-file-line">
+</td>
+      </tr>
+      <tr>
+        <td id="L13" class="blob-num js-line-number" data-line-number="13"></td>
+        <td id="LC13" class="blob-code blob-code-inner js-file-line"><span class="pl-c"><span class="pl-c">#</span> Preparing for merge</span></td>
+      </tr>
+      <tr>
+        <td id="L14" class="blob-num js-line-number" data-line-number="14"></td>
+        <td id="LC14" class="blob-code blob-code-inner js-file-line">git checkout staging</td>
+      </tr>
+      <tr>
+        <td id="L15" class="blob-num js-line-number" data-line-number="15"></td>
+        <td id="LC15" class="blob-code blob-code-inner js-file-line">git config user.email <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">$GIT_COMMITTER_EMAIL</span><span class="pl-pds">&quot;</span></span></td>
+      </tr>
+      <tr>
+        <td id="L16" class="blob-num js-line-number" data-line-number="16"></td>
+        <td id="LC16" class="blob-code blob-code-inner js-file-line">git config user.name <span class="pl-s"><span class="pl-pds">&quot;</span><span class="pl-smi">$GIT_COMMITTER_NAME</span><span class="pl-pds">&quot;</span></span></td>
+      </tr>
+      <tr>
+        <td id="L17" class="blob-num js-line-number" data-line-number="17"></td>
+        <td id="LC17" class="blob-code blob-code-inner js-file-line">
+</td>
+      </tr>
+      <tr>
+        <td id="L18" class="blob-num js-line-number" data-line-number="18"></td>
+        <td id="LC18" class="blob-code blob-code-inner js-file-line"><span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">&#39;</span>Pulling develop\n<span class="pl-pds">&#39;</span></span> <span class="pl-k">&gt;&amp;2</span></td>
+      </tr>
+      <tr>
+        <td id="L19" class="blob-num js-line-number" data-line-number="19"></td>
+        <td id="LC19" class="blob-code blob-code-inner js-file-line">git fetch origin +develop:develop</td>
+      </tr>
+      <tr>
+        <td id="L20" class="blob-num js-line-number" data-line-number="20"></td>
+        <td id="LC20" class="blob-code blob-code-inner js-file-line">git merge develop --no-edit</td>
       </tr>
 </table>
 
@@ -828,7 +863,7 @@
       <ul class="BlobToolbar-dropdown dropdown-menu dropdown-menu-se mt-2">
         <li><clipboard-copy class="dropdown-item" style="cursor:pointer;" id="js-copy-lines" data-original-text="Copy lines">Copy lines</clipboard-copy></li>
         <li><clipboard-copy class="dropdown-item" id="js-copy-permalink" style="cursor:pointer;" data-original-text="Copy permalink">Copy permalink</clipboard-copy></li>
-        <li><a class="dropdown-item js-update-url-with-hash" id="js-view-git-blame" href="/symbiote-h2020/SmartSpaceMiddleware/blame/e30f876853024ce40a6b691e4da390a0cb67dbea/pushing_script.sh">View git blame</a></li>
+        <li><a class="dropdown-item js-update-url-with-hash" id="js-view-git-blame" href="/symbiote-h2020/SmartSpaceMiddleware/blame/e30f876853024ce40a6b691e4da390a0cb67dbea/merge_script.sh">View git blame</a></li>
           <li><a class="dropdown-item" id="js-new-issue" href="/symbiote-h2020/SmartSpaceMiddleware/issues/new">Open new issue</a></li>
       </ul>
     </div>
@@ -859,7 +894,7 @@
 <div class="footer container-lg px-3" role="contentinfo">
   <div class="position-relative d-flex flex-justify-between py-6 mt-6 f6 text-gray border-top border-gray-light ">
     <ul class="list-style-none d-flex flex-wrap ">
-      <li class="mr-3">&copy; 2018 <span title="0.35763s from unicorn-2749737251-km9t0">GitHub</span>, Inc.</li>
+      <li class="mr-3">&copy; 2018 <span title="0.41179s from unicorn-3861358883-9qfp2">GitHub</span>, Inc.</li>
         <li class="mr-3"><a data-ga-click="Footer, go to terms, text:terms" href="https://github.com/site/terms">Terms</a></li>
         <li class="mr-3"><a data-ga-click="Footer, go to privacy, text:privacy" href="https://github.com/site/privacy">Privacy</a></li>
         <li class="mr-3"><a href="https://help.github.com/articles/github-security/" data-ga-click="Footer, go to security, text:security">Security</a></li>
