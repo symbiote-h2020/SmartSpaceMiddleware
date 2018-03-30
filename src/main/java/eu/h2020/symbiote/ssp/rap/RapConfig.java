@@ -18,14 +18,13 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class RapConfig {
 
-    @Value("${rap.plugin.requestEndpoint}")
-    public String pluginRequestEndpoint;
+    public static String JSON_PROPERTY_CLASS_NAME;
 
     @Value("${rap.json.property.type}")
-    public String jsonProperty;
+    public void setPropertyName(String property) {
+        JSON_PROPERTY_CLASS_NAME = property;
+    }
 
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
+    public RestTemplate restTemplate() { return new RestTemplate(); }
 }

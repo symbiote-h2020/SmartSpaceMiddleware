@@ -78,7 +78,6 @@ public class StorageHelper {
     private final ResourcesRepository resourcesRepo;
     private final PluginRepository pluginRepo;
     private final RestTemplate restTemplate;
-    private final String pluginRequestEndpoint;
     private final String jsonPropertyClassName;
     
     private static final Pattern PATTERN = Pattern.compile(
@@ -88,12 +87,11 @@ public class StorageHelper {
 
     public StorageHelper(ResourcesRepository resourcesRepository, PluginRepository pluginRepository,
                          RapCommunicationHandler communicationHandler, RestTemplate restTemplate,
-                         String pluginRequestEndpoint, String jsonPropertyClassName) {
+                         String jsonPropertyClassName) {
         this.resourcesRepo = resourcesRepository;
         this.pluginRepo = pluginRepository;
         this.communicationHandler= communicationHandler;
         this.restTemplate = restTemplate;
-        this.pluginRequestEndpoint = pluginRequestEndpoint;
         this.jsonPropertyClassName = jsonPropertyClassName;
     }
 
@@ -157,13 +155,12 @@ public class StorageHelper {
             mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
             String json = mapper.writeValueAsString(msg);
             
-            String url = pluginUrl + pluginRequestEndpoint;
-            log.info("Sending POST request to " + url);
+            log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            ResponseEntity<?> responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity<?> responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             if (responseEntity == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
@@ -176,7 +173,7 @@ public class StorageHelper {
                 JsonNode jsonObj = mapper.readTree(responseString);
                 if(!jsonObj.has(jsonPropertyClassName)) {
                     log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
-                    //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
+                    //    throw new Exception("Field " + JSON_PROPERTY_CLASS_NAME + " is mandatory in plugin response");
                 }
             } catch (Exception ex){
                 log.error("Response from plugin is not a valid json", ex);
@@ -225,13 +222,12 @@ public class StorageHelper {
             } catch (JsonProcessingException ex) {
                 log.error("JSon processing exception: " + ex.getMessage());
             }
-            String url = pluginUrl + pluginRequestEndpoint;
-            log.info("Sending POST request to " + url);
+            log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, Object.class);
+            responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
 
             Object obj = responseEntity.getBody();
             if(obj != null) {
@@ -242,7 +238,7 @@ public class StorageHelper {
                     JsonNode jsonObj = mapper.readTree(responseString);
                     if (!jsonObj.has(jsonPropertyClassName)) {
                         log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
-                        //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
+                        //    throw new Exception("Field " + JSON_PROPERTY_CLASS_NAME + " is mandatory in plugin response");
                     }
                 } catch (Exception ex) {
                     log.error("Response from plugin is not a valid json", ex);

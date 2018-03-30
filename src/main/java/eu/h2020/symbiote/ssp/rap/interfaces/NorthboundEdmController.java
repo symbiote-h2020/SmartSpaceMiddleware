@@ -95,6 +95,7 @@ public class NorthboundEdmController {
         return processRequestPrivate(req);
     }
 
+    @CrossOrigin(origins = "*")
     @RequestMapping(value = "*('{resourceId}')/*")
     public ResponseEntity<String> processResources(HttpServletRequest req) throws Exception {
         return processRequestPrivate(req);

@@ -9,15 +9,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import eu.h2020.symbiote.ssp.rap.RapConfig;
 import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.rap.resources.query.Query;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
+
 import static eu.h2020.symbiote.ssp.rap.odata.RapEntityCollectionProcessor.setErrorResponse;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -48,7 +48,6 @@ import org.apache.olingo.server.core.uri.UriResourcePrimitivePropertyImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -73,18 +72,12 @@ public class RapPrimitiveProcessor implements PrimitiveProcessor {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${rap.plugin.requestEndpoint}") 
-    private String pluginRequestEndpoint;
-
-    @Value("${rap.json.property.type}")
-    private String jsonPropertyClassName;
-    
     private StorageHelper storageHelper;
     
     @Override
     public void init(OData odata, ServiceMetadata sm) {
         storageHelper = new StorageHelper(resourcesRepo, pluginRepo, communicationHandler,
-                                        restTemplate, pluginRequestEndpoint, jsonPropertyClassName);
+                                        restTemplate, RapConfig.JSON_PROPERTY_CLASS_NAME);
     }
     
     @Override

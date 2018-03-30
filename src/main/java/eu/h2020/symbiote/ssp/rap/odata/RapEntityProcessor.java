@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import eu.h2020.symbiote.ssp.rap.RapConfig;
 import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
@@ -44,7 +45,6 @@ import org.apache.olingo.server.api.uri.UriResourceNavigation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -70,12 +70,6 @@ public class RapEntityProcessor implements EntityProcessor{
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${rap.plugin.requestEndpoint}")
-    private String pluginRequestEndpoint;
-
-    @Value("${rap.json.property.type}")
-    private String jsonProperty;
-
     private OData odata;
 
     private StorageHelper storageHelper;
@@ -85,8 +79,8 @@ public class RapEntityProcessor implements EntityProcessor{
     public void init(OData odata, ServiceMetadata sm) {
         this.odata = odata;
     //    this.serviceMetadata = sm;
-        storageHelper = new StorageHelper(resourcesRepo, pluginRepo, communicationHandler, restTemplate,
-                                        pluginRequestEndpoint, jsonProperty);
+        storageHelper = new StorageHelper(resourcesRepo, pluginRepo,
+                communicationHandler, restTemplate, RapConfig.JSON_PROPERTY_CLASS_NAME);
     }
 
     @Override

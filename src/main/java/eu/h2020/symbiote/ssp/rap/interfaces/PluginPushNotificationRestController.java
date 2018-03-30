@@ -50,7 +50,7 @@ public class PluginPushNotificationRestController {
                 JsonNode jsonObj = mapper.readTree(responseString);
                 if (!jsonObj.has(jsonPropertyClassName)) {
                     log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
-                    //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
+                    //    throw new Exception("Field " + JSON_PROPERTY_CLASS_NAME + " is mandatory in plugin response");
                 }
             } catch (Exception ex) {
                 log.error("Response from plugin is not a valid json", ex);
