@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -315,7 +314,8 @@ public class OwlApiHelper {
                         }
                     }
                 }
-                else if(! StringUtils.isAllUpperCase(key)){
+                //else if(! StringUtils.isAllUpperCase(key)){
+                else if(key.compareTo(key.toUpperCase()) != 0){
                     attribute2type.put(key, value);
                 }
             }

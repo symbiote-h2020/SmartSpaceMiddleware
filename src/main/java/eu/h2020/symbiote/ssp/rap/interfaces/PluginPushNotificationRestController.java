@@ -5,18 +5,10 @@
  */
 package eu.h2020.symbiote.ssp.rap.interfaces;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.netflix.discovery.converters.Auto;
 import eu.h2020.symbiote.model.cim.Observation;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import eu.h2020.symbiote.ssp.rap.pushNotificationService.WebSocketController;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
