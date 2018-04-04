@@ -83,7 +83,9 @@ public class InnkeeperRestController {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperResourceRegistrationRequest.SspJoinResource(decoded_message);
-				String encodedResponse = lwsp.send_data(res.getBody().toString());
+				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
+
+
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
 				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
@@ -119,6 +121,7 @@ public class InnkeeperRestController {
 				return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
 
 			case LwspConstants.REGISTRY:
+				
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
@@ -151,7 +154,7 @@ public class InnkeeperRestController {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspDelete(decoded_message);
-				String encodedResponse = lwsp.send_data(res.getBody().toString());
+				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
 				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
@@ -179,7 +182,7 @@ public class InnkeeperRestController {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspKeepAlive(decoded_message);
-				String encodedResponse = lwsp.send_data(res.getBody().toString());
+				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
 				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
