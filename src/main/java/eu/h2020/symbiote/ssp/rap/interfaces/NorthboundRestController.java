@@ -305,15 +305,19 @@ public class NorthboundRestController {
         // first search by symbioteId (global)
         Optional<ResourceInfo> resInfo = resourcesRepo.findBySymIdResource(resourceId);
         // if not present, search by sspId (local)
-        if(!resInfo.isPresent()) {
+        if(resInfo == null || !resInfo.isPresent()) {
             Optional<ResourceInfo> tmp = resourcesRepo.findById(resourceId);
             if(tmp != null && tmp.isPresent()) {
                 // check if symbioteId is empty, otherwise using sspId is not valid (it could be a mismatch)
                 String symId = tmp.get().getSymIdResource();
-                if(symId == null && symId.length()<1)
+                if(symId == null || symId.length()<1) {
                     resInfo = tmp;
-                else
-                    throw new EntityNotFoundException("Resource " + resourceId + " not found");
+                } else {
+                    log.error("Resource with local id " + resourceId + " has a valid symbioteId");
+                    throw new EntityNotFoundException(resourceId);
+                }
+            } else {
+                throw new EntityNotFoundException(resourceId);
             }
         }
         return resInfo.get();

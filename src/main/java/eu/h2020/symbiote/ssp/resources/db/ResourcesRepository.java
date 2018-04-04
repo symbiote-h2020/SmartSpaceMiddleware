@@ -33,10 +33,10 @@ public interface ResourcesRepository extends MongoRepository<ResourceInfo, Strin
      * This method will find (a) Resource instance(s) in the database by
      * its(their) internalId.
      *
-     * @param sspIdResource         the id of the resource in the SSP
+     * @param resourceId         the id of the resource in the SSP
      * @return                      the Resource instance(s)
      */
-    public Optional<ResourceInfo> findBySymIdResource(String sspIdResource);
+    public Optional<ResourceInfo> findBySymIdResource(String resourceId);
 
     /**
      * This method will find (a) Resource instance(s) in the database by
