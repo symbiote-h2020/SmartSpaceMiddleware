@@ -4,8 +4,6 @@ import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
-import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
@@ -49,10 +47,7 @@ public class TestDb {
     
     @Autowired
     private ResourcesRepository resourcesRepository;
-    
-    @Autowired
-    private PluginRepository pluginRepository;
-        
+
     @Autowired
     private AccessPolicyRepository accessPolicyRepository;
     
@@ -90,39 +85,12 @@ public class TestDb {
         if(obsProperties != null)
             resourceInfo.setObservedProperties(obsProperties);
         if(pluginId != null && pluginId.length()>0)
-            resourceInfo.setPluginId(pluginId);
+            resourceInfo.setPluginUrl(pluginId);
         
         ResourceInfo resourceInfoResult = resourcesRepository.save(resourceInfo);
         return resourceInfoResult;
     }
-    
 
-    @Test
-    public void testPlatformInfo() throws Exception{
-        //insert
-        String pluginId = "plugin_1";
-        String pluginUrl = "www.example.com";
-        boolean hasFilters = false;
-        boolean hasNotifications = false;
-        PluginInfo pluginInfo = addPlugin(pluginId, pluginUrl, hasFilters, hasNotifications);
-        assert(pluginInfo != null);
-        //search
-        Optional<PluginInfo> platformInfoOptional = pluginRepository.findById(pluginId);
-        assert(platformInfoOptional.isPresent());
-        platformInfoOptional = pluginRepository.findById(pluginId+"2");
-        assert(!platformInfoOptional.isPresent());
-        //delete
-        pluginRepository.delete(pluginId);
-        platformInfoOptional = pluginRepository.findById(pluginId+"2");
-        assert(!platformInfoOptional.isPresent());
-    }
-    
-    private PluginInfo addPlugin(String pluginId, String pluginUrl, boolean hasFilters, boolean hasNotifications) {
-        PluginInfo platformInfo = new PluginInfo(pluginId, pluginUrl, hasFilters, hasNotifications);
-        PluginInfo platformInfoResponse = pluginRepository.save(platformInfo);
-        return platformInfoResponse;
-    }
-    
     @Test 
     public void testAccessPolicy() throws Exception{
         //insert resource

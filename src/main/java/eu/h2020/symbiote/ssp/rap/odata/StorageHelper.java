@@ -7,7 +7,6 @@ package eu.h2020.symbiote.ssp.rap.odata;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -17,36 +16,26 @@ import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessGetMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessHistoryMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessSetMessage;
-import eu.h2020.symbiote.model.cim.Observation;
-import eu.h2020.symbiote.ssp.rap.interfaces.ResourceAccessCramNotification;
-import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.rap.resources.query.Comparison;
 import eu.h2020.symbiote.ssp.rap.resources.query.Filter;
 import eu.h2020.symbiote.ssp.rap.resources.query.Operator;
 import eu.h2020.symbiote.ssp.rap.resources.query.Query;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
-import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
-import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
-import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
+
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
+import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.server.api.ODataApplicationException;
 import org.apache.olingo.server.api.uri.UriParameter;
@@ -76,7 +65,7 @@ public class StorageHelper {
     
     private final RapCommunicationHandler communicationHandler;
     private final ResourcesRepository resourcesRepo;
-    private final PluginRepository pluginRepo;
+    private final SessionsRepository sessionsRepo;
     private final RestTemplate restTemplate;
     private final String jsonPropertyClassName;
     
@@ -85,11 +74,11 @@ public class StorageHelper {
             + "T\\p{Digit}{1,2}:\\p{Digit}{1,2}(?::\\p{Digit}{1,2})?"
             + "(Z|([-+]\\p{Digit}{1,2}:\\p{Digit}{2}))?");
 
-    public StorageHelper(ResourcesRepository resourcesRepository, PluginRepository pluginRepository,
+    public StorageHelper(ResourcesRepository resourcesRepository, SessionsRepository sessionsRepo,
                          RapCommunicationHandler communicationHandler, RestTemplate restTemplate,
                          String jsonPropertyClassName) {
         this.resourcesRepo = resourcesRepository;
-        this.pluginRepo = pluginRepository;
+        this.sessionsRepo = sessionsRepo;
         this.communicationHandler= communicationHandler;
         this.restTemplate = restTemplate;
         this.jsonPropertyClassName = jsonPropertyClassName;
@@ -123,26 +112,26 @@ public class StorageHelper {
             top = (top == null) ? TOP_LIMIT : top;
             ResourceAccessMessage msg;
             
-            String pluginId = null;
+            String sspIdParent = null;
             for(ResourceInfo resourceInfo: resourceInfoList) {
                 String symbioteIdTemp = resourceInfo.getSymIdResource();
                 if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
                     symbioteId = symbioteIdTemp;
-                String pluginIdTemp = resourceInfo.getPluginId();
-                if(pluginIdTemp != null && !pluginIdTemp.isEmpty())
-                    pluginId = pluginIdTemp;
+                String sspIdParentTemp = resourceInfo.getSspIdParent();
+                if(sspIdParent != null && !sspIdParent.isEmpty())
+                    sspIdParent = sspIdParentTemp;
             }
             
-            if(pluginId == null) {
-                log.error("No plugin associated with resource");
-                throw new Exception("No plugin associated with resource");
+            if(sspIdParent == null) {
+                log.error("No plugin url associated with resource");
+                throw new Exception("No plugin url associated with resource");
             }
-            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
-            if(lst == null || !lst.isPresent()) {
-                log.error("No plugin registered with id " + pluginId);
-                throw new Exception("No plugin registered with id " + pluginId);
+            SessionInfo sessionInfo = sessionsRepo.findBySspId(sspIdParent);
+            if(sessionInfo == null) {
+                log.error("No session associated to resource owner with id " + sspIdParent);
+                throw new Exception("No session associated to resource owner with id " + sspIdParent);
             }
-            String pluginUrl = lst.get().getPluginURL();
+            String pluginUrl = sessionInfo.getPluginURL();
             
             if (top == 1) {
                 msg = new ResourceAccessGetMessage(resourceInfoList);
@@ -193,24 +182,23 @@ public class StorageHelper {
         ResponseEntity<?> responseEntity = new ResponseEntity("Unknown error", HttpStatus.INTERNAL_SERVER_ERROR);
         try {
             ResourceAccessMessage msg;
-            String pluginId = null;
+            String sspIdParent = null;
             for(ResourceInfo resourceInfo: resourceInfoList){
-                pluginId = resourceInfo.getPluginId();
-                if(pluginId != null)
+                sspIdParent = resourceInfo.getSspIdParent();
+                if(sspIdParent != null)
                     break;
-            }            
-
-            if(pluginId == null) {
-                log.error("No plugin associated with resource");
-                throw new Exception("No plugin associated with resource");
             }
-            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
-            if(lst == null || !lst.isPresent()) {
-                log.error("No plugin registered with id " + pluginId);
-                throw new Exception("No plugin registered with id " + pluginId);
+            if(sspIdParent == null) {
+                log.error("No plugin url associated with resource");
+                throw new Exception("No plugin url associated with resource");
             }
-            String pluginUrl = lst.get().getPluginURL();
 
+            SessionInfo sessionInfo = sessionsRepo.findBySspId(sspIdParent);
+            if(sessionInfo == null) {
+                log.error("No session associated to SDEV " + sspIdParent);
+                throw new Exception("No session associated to SDEV " + sspIdParent);
+            }
+            String pluginUrl = sessionInfo.getPluginURL();
             msg = new ResourceAccessSetMessage(resourceInfoList, requestBody);            
             String json = "";
             try {

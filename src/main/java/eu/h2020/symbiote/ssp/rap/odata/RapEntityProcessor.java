@@ -14,7 +14,6 @@ import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import static eu.h2020.symbiote.ssp.rap.odata.RapEntityCollectionProcessor.setErrorResponse;
 import java.io.ByteArrayInputStream;
@@ -23,6 +22,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.logging.Level;
+
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.apache.commons.io.IOUtils;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
@@ -62,8 +63,8 @@ public class RapEntityProcessor implements EntityProcessor{
     private ResourcesRepository resourcesRepo;
     
     @Autowired
-    private PluginRepository pluginRepo;
-    
+    private SessionsRepository sessionsRepo;
+
     @Autowired
     private RapCommunicationHandler communicationHandler;
     
@@ -79,7 +80,7 @@ public class RapEntityProcessor implements EntityProcessor{
     public void init(OData odata, ServiceMetadata sm) {
         this.odata = odata;
     //    this.serviceMetadata = sm;
-        storageHelper = new StorageHelper(resourcesRepo, pluginRepo,
+        storageHelper = new StorageHelper(resourcesRepo, sessionsRepo,
                 communicationHandler, restTemplate, RapConfig.JSON_PROPERTY_CLASS_NAME);
     }
 

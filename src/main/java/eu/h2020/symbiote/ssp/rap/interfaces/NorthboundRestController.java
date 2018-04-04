@@ -17,12 +17,13 @@ import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessGetMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessHistoryMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessSetMessage;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
-import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 
 import java.util.*;
 import javax.servlet.http.HttpServletRequest;
+
+import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.server.api.ODataApplicationException;
 import org.slf4j.Logger;
@@ -65,9 +66,9 @@ public class NorthboundRestController {
     
     @Autowired
     private ResourcesRepository resourcesRepo;
-    
+
     @Autowired
-    private PluginRepository pluginRepo;
+    private SessionsRepository sessionsRepo;
 
     @Autowired
     private RapCommunicationHandler communicationHandler;
@@ -102,18 +103,13 @@ public class NorthboundRestController {
             mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             mapper.setSerializationInclusion(Include.NON_EMPTY);
             String json = mapper.writeValueAsString(msg);
-            
-            String pluginId = info.getPluginId();
-            if(pluginId == null) {
-                log.error("No plugin found");
-                throw new Exception("No plugin associated with resource");
+
+            SessionInfo sessionInfo = sessionsRepo.findBySspId(info.getSspIdResource());
+            String pluginUrl = sessionInfo.getPluginURL();
+            if(pluginUrl == null) {
+                log.error("No plugin url found");
+                throw new Exception("No plugin url associated with resource");
             }            
-            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
-            if(lst == null || !lst.isPresent()) {
-                log.error("No plugin registered with id " + pluginId);
-                throw new Exception("No plugin registered with id " + pluginId);
-            }
-            String pluginUrl = lst.get().getPluginURL();
             log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
@@ -183,18 +179,13 @@ public class NorthboundRestController {
             mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             mapper.setSerializationInclusion(Include.NON_EMPTY);
             String json = mapper.writeValueAsString(msg);
-            
-            String pluginId = info.getPluginId();
-            if(pluginId == null) {
-                log.error("No plugin found");
-                throw new Exception("No plugin associated with resource");
-            }            
-            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
-            if(lst == null || !lst.isPresent()) {
-                log.error("No plugin registered with id " + pluginId);
-                throw new Exception("No plugin registered with id " + pluginId);
+
+            SessionInfo sessionInfo = sessionsRepo.findBySspId(info.getSspIdResource());
+            String pluginUrl = sessionInfo.getPluginURL();
+            if(pluginUrl == null) {
+                log.error("No plugin url found");
+                throw new Exception("No plugin url associated with resource");
             }
-            String pluginUrl = lst.get().getPluginURL();
             log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
@@ -266,18 +257,13 @@ public class NorthboundRestController {
             mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             mapper.setSerializationInclusion(Include.NON_EMPTY);
             String json = mapper.writeValueAsString(msg);
-            
-            String pluginId = info.getPluginId();
-            if(pluginId == null) {
-                log.error("No plugin found");
-                throw new Exception("No plugin associated with resource");
-            }            
-            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
-            if(lst == null || !lst.isPresent()) {
-                log.error("No plugin registered with id " + pluginId);
-                throw new Exception("No plugin registered with id " + pluginId);
+
+            SessionInfo sessionInfo = sessionsRepo.findBySspId(info.getSspIdResource());
+            String pluginUrl = sessionInfo.getPluginURL();
+            if(pluginUrl == null) {
+                log.error("No plugin url found");
+                throw new Exception("No plugin url associated with resource");
             }
-            String pluginUrl = lst.get().getPluginURL();
             log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
@@ -316,10 +302,20 @@ public class NorthboundRestController {
     }
     
     private ResourceInfo getResourceInfo(String resourceId) {
-        Optional<ResourceInfo> resInfo = resourcesRepo.findById(resourceId);
-        if(!resInfo.isPresent())
-            throw new EntityNotFoundException("Resource " + resourceId + " not found");
-        
+        // first search by symbioteId (global)
+        Optional<ResourceInfo> resInfo = resourcesRepo.findBySymIdResource(resourceId);
+        // if not present, search by sspId (local)
+        if(!resInfo.isPresent()) {
+            Optional<ResourceInfo> tmp = resourcesRepo.findById(resourceId);
+            if(tmp != null && tmp.isPresent()) {
+                // check if symbioteId is empty, otherwise using sspId is not valid (it could be a mismatch)
+                String symId = tmp.get().getSymIdResource();
+                if(symId == null && symId.length()<1)
+                    resInfo = tmp;
+                else
+                    throw new EntityNotFoundException("Resource " + resourceId + " not found");
+            }
+        }
         return resInfo.get();
     }
     

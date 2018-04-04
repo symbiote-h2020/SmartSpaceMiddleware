@@ -5,19 +5,13 @@
  */
 package eu.h2020.symbiote.ssp.rap;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.interfaces.NorthboundEdmController;
 import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
 import eu.h2020.symbiote.ssp.rap.managers.AuthorizationResult;
-import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +23,6 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.http.HttpHeaders;
@@ -240,7 +233,7 @@ public class TestODataController {
         if(obsProperties != null)
             resourceInfo.setObservedProperties(obsProperties);
         if(pluginId != null && pluginId.length()>0)
-            resourceInfo.setPluginId(pluginId);
+            resourceInfo.setPluginUrl(pluginId);
         
         ResourceInfo resourceInfoResult = resourcesRepository.save(resourceInfo);
         return resourceInfoResult;

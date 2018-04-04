@@ -47,7 +47,7 @@ public class ResourceInfo {
 	@JsonIgnore
 	private List<String> sessionIdList;
 	@JsonIgnore
-	private String pluginId;
+	private String pluginUrl;
 
 	@Field
 	@Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
@@ -61,7 +61,7 @@ public class ResourceInfo {
 		this.internalIdResource="";
 		this.symIdParent ="";
 		this.sspIdParent ="";
-		this.pluginId = null;
+		this.pluginUrl = null;
 		this.observedProperties = null;
 		this.sessionIdList = null;       
 		this.type = null;
@@ -79,7 +79,7 @@ public class ResourceInfo {
 		this.internalIdResource=internalIdResource;
 		this.symIdParent =symIdParent;
 		this.sspIdParent = sspIdParent;
-		this.pluginId = null;
+		this.pluginUrl = null;
 		this.observedProperties = null;
 		this.sessionIdList = null;       
 		this.type = null;
@@ -99,7 +99,7 @@ public class ResourceInfo {
 		this.internalIdResource=internalIdResource;
 		this.symIdParent =symIdParent;
 		this.sspIdParent = sspIdParent;
-		this.pluginId = null;
+		this.pluginUrl = null;
 		this.observedProperties = null;
 		this.sessionIdList = null;       
 		this.type = null;
@@ -187,13 +187,13 @@ public class ResourceInfo {
 	}
 
 	@JsonIgnore
-	public String getPluginId() {
-		return pluginId;
+	public String getPluginUrl() {
+		return pluginUrl;
 	}
 
 	@JsonIgnore
-	public void setPluginId(String pluginId) {
-		this.pluginId = pluginId;
+	public void setPluginUrl(String pluginUrl) {
+		this.pluginUrl = pluginUrl;
 	}
 
 	@JsonProperty("session_expiration")

@@ -14,13 +14,14 @@ import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.rap.resources.query.Query;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
@@ -63,7 +64,7 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     private ResourcesRepository resourcesRepo;
     
     @Autowired
-    private PluginRepository pluginRepo;
+    private SessionsRepository sessionsRepo;
     
     @Autowired
     private RapCommunicationHandler communicationHandler;
@@ -78,7 +79,7 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     public void init(OData odata, ServiceMetadata sm) {
     //    this.odata = odata;
     //    this.serviceMetadata = sm;
-        storageHelper = new StorageHelper(resourcesRepo, pluginRepo, communicationHandler,
+        storageHelper = new StorageHelper(resourcesRepo, sessionsRepo, communicationHandler,
                                         restTemplate, RapConfig.JSON_PROPERTY_CLASS_NAME);
     }
 

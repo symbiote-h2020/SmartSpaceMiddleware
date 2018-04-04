@@ -1,13 +1,8 @@
 package eu.h2020.symbiote.ssp.rap;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.interfaces.NorthboundRestController;
 import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
 import eu.h2020.symbiote.ssp.rap.managers.AuthorizationResult;
-import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import java.nio.charset.Charset;
@@ -28,7 +23,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import static org.mockito.Mockito.*;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Value;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 import org.springframework.test.context.ActiveProfiles;
@@ -212,7 +207,7 @@ public class TestRestController {
         if(obsProperties != null)
             resourceInfo.setObservedProperties(obsProperties);
         if(pluginId != null && pluginId.length()>0)
-            resourceInfo.setPluginId(pluginId);
+            resourceInfo.setPluginUrl(pluginId);
         
         ResourceInfo resourceInfoResult = resourcesRepository.save(resourceInfo);
         return resourceInfoResult;

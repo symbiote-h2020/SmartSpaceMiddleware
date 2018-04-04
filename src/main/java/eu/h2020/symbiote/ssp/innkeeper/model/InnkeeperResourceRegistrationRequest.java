@@ -301,7 +301,7 @@ public class InnkeeperResourceRegistrationRequest {
 		if(obsProperties != null)
 			resourceInfo.setObservedProperties(obsProperties);
 		if(pluginId != null && pluginId.length()>0)
-			resourceInfo.setPluginId(pluginId);
+			resourceInfo.setPluginUrl(pluginId);
 		resourcesRepository.save(resourceInfo);
 
 		try {
