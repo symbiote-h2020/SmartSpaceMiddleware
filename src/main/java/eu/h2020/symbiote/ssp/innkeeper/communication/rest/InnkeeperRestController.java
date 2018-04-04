@@ -68,11 +68,27 @@ public class InnkeeperRestController {
 	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
-	public ResponseEntity<Object> join(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException, InvalidArgumentsException {
+	public ResponseEntity<Object> join(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 
-		if (isLwspEnabled) {
-			//LWSP TODO: implement here
-			return null;
+		if (isLwspEnabled) {					
+			lwsp.setData(payload);
+			lwsp.setAllowedCipher("0x008c");
+			String outputMessage = lwsp.processMessage();
+			log.info(outputMessage);
+			log.info("MTI:"+lwsp.get_mti());
+			HttpHeaders responseHeaders = new HttpHeaders();
+			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+			switch (lwsp.get_mti()) {
+			case LwspConstants.REGISTRY:
+				String decoded_message = lwsp.get_response();
+				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
+				String encodedResponse = lwsp.send_data(res.getBody().toString());
+				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
+			default:
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+
 		}else{	
 			// NO encryption
 			return innkeeperResourceRegistrationRequest.SspJoinResource(payload);
@@ -102,7 +118,7 @@ public class InnkeeperRestController {
 			case LwspConstants.SDEV_AuthN:
 				return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
 
-			case LwspConstants.SDEV_REGISTRY:
+			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
@@ -125,25 +141,20 @@ public class InnkeeperRestController {
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			lwsp.processMessage();
-			String encodedResponse=null;
+			String outputMessage = lwsp.processMessage();
+			log.info(outputMessage);
+			log.info("MTI:"+lwsp.get_mti());
+			HttpHeaders responseHeaders = new HttpHeaders();
+			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+
 			switch (lwsp.get_mti()) {
-			case LwspConstants.SDEV_REGISTRY:
-
-				//TODO: DEBUG
+			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspDelete(decoded_message);
-				encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
+				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
+				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
-
 			default:
-				HttpHeaders responseHeaders = new HttpHeaders();
-				responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-				InnkeeperSDEVRegistrationResponse errorResponse =new InnkeeperSDEVRegistrationResponse();
-				errorResponse.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);				
-				encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(errorResponse));
-				return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.BAD_REQUEST);
-
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 			// LWSP DISABLED
 		} else { 
@@ -158,26 +169,23 @@ public class InnkeeperRestController {
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			lwsp.processMessage();
-			String encodedResponse=null;
+			String outputMessage = lwsp.processMessage();
+			log.info(outputMessage);
+			log.info("MTI:"+lwsp.get_mti());
+			HttpHeaders responseHeaders = new HttpHeaders();
+			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+
 			switch (lwsp.get_mti()) {
-			case LwspConstants.SDEV_REGISTRY:
-
-				//TODO: DEBUG
+			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspKeepAlive(decoded_message);
-				encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
+				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
+				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
-
 			default:
-				HttpHeaders responseHeaders = new HttpHeaders();
-				responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-				InnkeeperSDEVRegistrationResponse errorResponse =new InnkeeperSDEVRegistrationResponse();
-				errorResponse.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);				
-				encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(errorResponse));
-				return new ResponseEntity<Object>(encodedResponse,responseHeaders,HttpStatus.BAD_REQUEST);
-
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
 			}
+
+
 			// LWSP DISABLED
 		} else { 
 			return innkeeperSDEVRegistrationRequest.SspKeepAlive(payload);
@@ -185,7 +193,7 @@ public class InnkeeperRestController {
 		}
 	}
 
-				
+
 
 	private ResponseEntity<Object>setCoreOnline(Boolean v){
 		HttpHeaders responseHeaders = new HttpHeaders();
