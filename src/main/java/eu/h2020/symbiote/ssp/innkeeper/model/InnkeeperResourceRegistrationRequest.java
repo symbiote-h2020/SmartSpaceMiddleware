@@ -77,10 +77,10 @@ public class InnkeeperResourceRegistrationRequest {
 
 		SspResource sspResource =  new ObjectMapper().readValue(msg, SspResource.class);
 
-		SessionInfo s=sessionsRepository.findBySymId(sspResource.getSymId());
+		SessionInfo s=sessionsRepository.findBySymId(sspResource.getSymIdParent());
 		// found Symbiote Id in Session Repository
 		if (s != null) {			
-			Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymId()).getSessionExpiration();					
+			Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymIdParent()).getSessionExpiration();
 			InnkeeperResourceRegistrationResponse respSspResource = this.joinResource(sspResource,sessionExpiration);
 			switch (respSspResource.getResult()) {
 			case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
@@ -97,7 +97,7 @@ public class InnkeeperResourceRegistrationRequest {
 			log.info("SymId not found, check with SSP ID...");
 		}
 
-		s= sessionsRepository.findBySspId(sspResource.getSspId());
+		s= sessionsRepository.findBySspId(sspResource.getSspIdParent());
 
 		if (s != null) {			
 			Date sessionExpiration = s.getSessionExpiration();					
@@ -137,8 +137,8 @@ public class InnkeeperResourceRegistrationRequest {
 		res = new InnkeeperResourceRegistrationResponse(
 				msg.getSemanticDescription().getId(), 	//symIdResource
 				msg.getSspIdResource(),					//sspIdResource
-				msg.getSymId(),							//symId (SDEV)
-				msg.getSspId(),							//sspId (SDEV)
+				msg.getSymIdParent(),							//symId (SDEV)
+				msg.getSspIdParent(),							//sspId (SDEV)
 				results,								//Result
 				0									//registration expiration
 				);
@@ -151,8 +151,8 @@ public class InnkeeperResourceRegistrationRequest {
 			return res;
 		}
 
-		if (sessionsRepository.findBySspId(msg.getSspId())==null) {
-			log.info("REJECTED: symIdResource=null SspId="+msg.getSspId()+" not found");
+		if (sessionsRepository.findBySspId(msg.getSspIdParent())==null) {
+			log.info("REJECTED: symIdResource=null SspId="+msg.getSspIdParent()+" not found");
 			results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED; 
 			return res;
 		}
@@ -167,16 +167,16 @@ public class InnkeeperResourceRegistrationRequest {
 			log.info(newSspIdResource);
 			msg.setSspIdResource(newSspIdResource);
 			msg.setSemanticDesciption(r);
-			msg.setSymId(sessionsRepository.findBySspId(msg.getSspId()).getSymId());
-			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspId()).getSessionExpiration());
+			msg.setSymIdParent(sessionsRepository.findBySspId(msg.getSspIdParent()).getSymId());
+			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspIdParent()).getSessionExpiration());
 
 			results=InnkeeperRestControllerConstants.REGISTRATION_OFFLINE;
 
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 
 					msg.getSspIdResource(),
-					msg.getSymId(),
-					msg.getSspId(),
+					msg.getSymIdParent(),
+					msg.getSspIdParent(),
 					results,
 					DbConstants.EXPIRATION_TIME);
 		}  
@@ -184,38 +184,38 @@ public class InnkeeperResourceRegistrationRequest {
 		// ONLINE
 
 		// request symId and sspId not match in SessionRepository
-		SessionInfo s = sessionsRepository.findBySymId(msg.getSymId());
+		SessionInfo s = sessionsRepository.findBySymId(msg.getSymIdParent());
 		if( s==null ) {
-			if (msg.getSymId()==null)
+			if (msg.getSymIdParent()==null)
 				log.info("REJECTED: Join ONLINE: SymId is null");
 			else {
-				log.info("REJECTED: Join ONLINE: SymId="+msg.getSymId()+" Not found");
+				log.info("REJECTED: Join ONLINE: SymId="+msg.getSymIdParent()+" Not found");
 			}
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 								//symIdResource
 					msg.getSspIdResource(),												//sspIdResource
-					msg.getSymId(),														//symId (SDEV)
-					msg.getSspId(),														//sspId (SDEV)
+					msg.getSymIdParent(),														//symId (SDEV)
+					msg.getSspIdParent(),														//sspId (SDEV)
 					InnkeeperRestControllerConstants.REGISTRATION_REJECTED,				//Result
 					0																	//registration expiration
 					);
 
 		}
 
-		if ( !(s.getSspId().equals(msg.getSspId())) ) {
-			log.info("REJECTED: symIdResource=null SspId"+msg.getSymId()+" not matched in Session Repository");
+		if ( !(s.getSspId().equals(msg.getSspIdParent())) ) {
+			log.info("REJECTED: symIdResource=null SspId"+msg.getSymIdParent()+" not matched in Session Repository");
 
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 								//symIdResource
 					msg.getSspIdResource(),												//sspIdResource
-					msg.getSymId(),														//symId (SDEV)
-					msg.getSspId(),														//sspId (SDEV)
+					msg.getSymIdParent(),														//symId (SDEV)
+					msg.getSspIdParent(),														//sspId (SDEV)
 					InnkeeperRestControllerConstants.REGISTRATION_REJECTED,				//Result
 					0																	//registration expiration
 					);
 		}
 
-		if (symIdResource != "" && !msg.getSymId().equals(symIdResource)) { //REGISTER!
+		if (symIdResource != "" && !msg.getSymIdParent().equals(symIdResource)) { //REGISTER!
 
 			log.info("NEW REGISTRATION symIdResource="+symIdResource);
 			Resource r=msg.getSemanticDescription();
@@ -223,27 +223,27 @@ public class InnkeeperResourceRegistrationRequest {
 			msg.setSspIdResource(new SspIdUtils(resourcesRepository).createSspId());
 			msg.setSemanticDesciption(r);
 
-			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspId()).getSessionExpiration());
+			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspIdParent()).getSessionExpiration());
 
 			results=InnkeeperRestControllerConstants.REGISTRATION_OK;						
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 
 					msg.getSspIdResource(),
-					msg.getSymId(),
-					msg.getSspId(),
+					msg.getSymIdParent(),
+					msg.getSspIdParent(),
 					results,
 					0);
 
 		}	
 
-		if (symIdResource != "" && msg.getSymId().equals(symIdResource)) { //Already exists
+		if (symIdResource != "" && msg.getSymIdParent().equals(symIdResource)) { //Already exists
 			log.info("ALREADY REGISTERED symIdResource="+symIdResource);
 			results=InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED;
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 
 					msg.getSspIdResource(),
-					msg.getSymId(),
-					msg.getSspId(),
+					msg.getSymIdParent(),
+					msg.getSspIdParent(),
 					results,
 					0);
 
@@ -255,7 +255,7 @@ public class InnkeeperResourceRegistrationRequest {
 
 	private void saveResource(SspResource msg,Date currTime) throws InvalidArgumentsException {
 		Resource resource = msg.getSemanticDescription();
-		String pluginId = sessionsRepository.findBySspId(msg.getSspId()).getPluginId(); 
+		String pluginId = sessionsRepository.findBySspId(msg.getSspIdParent()).getPluginId();
 		String symbioteIdResource = resource.getId();
 		List<String> props = null;
 		if(resource instanceof StationarySensor) {
@@ -274,8 +274,8 @@ public class InnkeeperResourceRegistrationRequest {
 				msg.getSemanticDescription().getId(), //symbioteId Resource
 				msg.getSspIdResource(),				//sspId resource
 				msg.getInternalIdResource(),		//internal Id resource
-				msg.getSymId(),						//symbiote Id of SDEV
-				msg.getSspId(),						//sspId of SDEV  
+				msg.getSymIdParent(),						//symbiote Id of SDEV
+				msg.getSspIdParent(),						//sspId of SDEV
 				props, pluginId,currTime);	
 	}
 

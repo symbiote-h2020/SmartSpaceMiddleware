@@ -15,12 +15,12 @@ public class SspResource {
     @JsonProperty("sspIdResource")
     private String sspIdResource; // Resource SSP Id
     
-    @JsonProperty("sspId")
-    private String sspId; // SDEV SSP Id
+    @JsonProperty("sspIdParent")
+    private String sspIdParent; // SDEV SSP Id
     
-    @JsonProperty("symId") 
+    @JsonProperty("symIdParent")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String symId;  // SDEV Symbiote ID  
+    private String symIdParent;  // SDEV Symbiote ID
     
     @JsonProperty("accessPolicy")
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -53,20 +53,20 @@ public class SspResource {
 
     
     
-    public String getSspId() {
-        return this.sspId;
+    public String getSspIdParent() {
+        return this.sspIdParent;
     }
 
-    public void setSspId(String sspId) {
-        this.sspId = sspId;
+    public void setSspIdParent(String sspIdParent) {
+        this.sspIdParent = sspIdParent;
     }
 
-    public String getSymId() {
-        return this.symId;
+    public String getSymIdParent() {
+        return this.symIdParent;
     }
 
-    public void setSymId(String symId) {
-        this.symId = symId;
+    public void setSymIdParent(String symIdParent) {
+        this.symIdParent = symIdParent;
     }
    
     public IAccessPolicySpecifier getAccessPolicy() {

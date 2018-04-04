@@ -37,7 +37,7 @@ public class TestReadPim {
     public void readBim(){
         //map
         HashMap<String,HashMap<String,String>> owlMap = owlApiHelp.getMap();
-        assert(owlMap != null);/*
+        assert(owlMap != null);
         assert(!owlMap.isEmpty());
         String entityName = "Actuator";
         Optional<String> classLongName = owlMap.keySet().stream().filter(str -> (getShortClassName(str)).equalsIgnoreCase(entityName)).findFirst();
@@ -64,7 +64,7 @@ public class TestReadPim {
         for(String key: classOfDevice.keySet()){
             assert(classOfActuator.containsKey(key));
             assert(classOfActuator.get(key).equals(classOfDevice.get(key)));
-        }*/
+        }
     }
     
     private String getShortClassName(String type) {
