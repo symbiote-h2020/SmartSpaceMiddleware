@@ -82,7 +82,7 @@ public class InnkeeperRestController {
 			switch (lwsp.get_mti()) {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
+				ResponseEntity<Object> res = innkeeperResourceRegistrationRequest.SspJoinResource(decoded_message);
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
@@ -150,7 +150,7 @@ public class InnkeeperRestController {
 			switch (lwsp.get_mti()) {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
+				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspDelete(decoded_message);
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
@@ -178,7 +178,7 @@ public class InnkeeperRestController {
 			switch (lwsp.get_mti()) {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
+				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspKeepAlive(decoded_message);
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
