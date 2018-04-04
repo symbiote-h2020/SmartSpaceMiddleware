@@ -28,7 +28,7 @@ public class SspResource {
     @JsonProperty("filteringPolicy")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private IAccessPolicySpecifier filteringPolicy;
-    @JsonProperty("semanticDescription")
+    @JsonProperty("resource")
     private Resource resource; //Sensor, Actuator...
 
 

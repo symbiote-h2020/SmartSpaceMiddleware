@@ -271,8 +271,8 @@ public class InnkeeperResourceRegistrationRequest {
 		}
 		log.info("ADD RESOURCE:");
 		addResource(
-				msg.getSemanticDescription().getId(), //symbioteId Resource
 				msg.getSspIdResource(),				//sspId resource
+				msg.getSemanticDescription().getId(), //symbioteId Resource
 				msg.getInternalIdResource(),		//internal Id resource
 				msg.getSymIdParent(),						//symbiote Id of SDEV
 				msg.getSspIdParent(),						//sspId of SDEV
@@ -288,8 +288,8 @@ public class InnkeeperResourceRegistrationRequest {
 		}
 	}
 	private void addResource(
-			String symIdResource,
 			String sspIdResource,
+			String symIdResource,
 			String internalIdResource,
 			String symId, // of SDEV/Plat
 			String sspId,
@@ -297,7 +297,7 @@ public class InnkeeperResourceRegistrationRequest {
 			String pluginId, 
 			Date currTime) {
 
-		ResourceInfo resourceInfo = new ResourceInfo(symIdResource, sspIdResource,internalIdResource,symId,sspId, currTime);
+		ResourceInfo resourceInfo = new ResourceInfo(sspIdResource,symIdResource, internalIdResource,symId,sspId, currTime);
 		if(obsProperties != null)
 			resourceInfo.setObservedProperties(obsProperties);
 		if(pluginId != null && pluginId.length()>0)

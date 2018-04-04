@@ -105,7 +105,7 @@ public class InnkeeperRestController {
 			case LwspConstants.SDEV_REGISTRY:
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
-				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
+				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
 				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
