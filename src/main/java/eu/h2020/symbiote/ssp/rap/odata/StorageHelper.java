@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.ssp.rap.exceptions.EntityNotFoundException;
+import eu.h2020.symbiote.ssp.rap.exceptions.RapPluginException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import eu.h2020.symbiote.ssp.rap.messages.plugin.RapPluginErrorResponse;
 import eu.h2020.symbiote.ssp.rap.messages.plugin.RapPluginOkResponse;
@@ -168,72 +169,78 @@ public class StorageHelper {
             }
 
             RapPluginResponse response = extractRapPluginResponse(responseEntity.getBody());
-            if(response instanceof RapPluginOkResponse) {
-                RapPluginOkResponse okResponse = (RapPluginOkResponse) response;
-                if (okResponse.getBody() != null) {
-                    try {
-                        // need to clean up response if top 1 is used and RAP plugin does not support filtering
-                        if (top == 1) {
-                            Observation internalObservation;
-                            if (okResponse.getBody() instanceof List) {
-                                List<?> list = (List<?>) okResponse.getBody();
-                                if (list.size() != 0 && list.get(0) instanceof Observation) {
-                                    @SuppressWarnings("unchecked")
-                                    List<Observation> observations = (List<Observation>) list;
-                                    internalObservation = observations.get(0);
-                                    Observation observation = new Observation(symbioteId, internalObservation.getLocation(),
-                                            internalObservation.getResultTime(), internalObservation.getSamplingTime(),
-                                            internalObservation.getObsValues());
-                                    okResponse.setBody(Arrays.asList(observation));
-                                }
-                            } else if (okResponse.getBody() instanceof Observation) {
-                                internalObservation = (Observation) okResponse.getBody();
-                                Observation observation = new Observation(symbioteId, internalObservation.getLocation(),
-                                        internalObservation.getResultTime(), internalObservation.getSamplingTime(),
-                                        internalObservation.getObsValues());
-                                okResponse.setBody(Arrays.asList(observation));
-                            } else if (okResponse.getBody() instanceof Map) {
-                                String jsonBody = mapper.writeValueAsString(okResponse.getBody());
-                                try {
-                                    internalObservation = mapper.readValue(jsonBody, Observation.class);
-                                    Observation observation = new Observation(symbioteId, internalObservation.getLocation(),
-                                            internalObservation.getResultTime(), internalObservation.getSamplingTime(),
-                                            internalObservation.getObsValues());
-                                    okResponse.setBody(Arrays.asList(observation));
-                                } catch (Exception e) { /* do nothing*/ }
-                            }
-                        } else {
-                            // top is not 1
-                            if (okResponse.getBody() instanceof List) {
-                                List<?> list = (List<?>) okResponse.getBody();
-                                if (list.size() != 0 && list.get(0) instanceof Observation) {
-                                    @SuppressWarnings("unchecked")
-                                    List<Observation> internalObservations = (List<Observation>) list;
-
-                                    List<Observation> observationsList = new ArrayList<>();
-                                    int i = 0;
-                                    for (Observation o : internalObservations) {
-                                        i++;
-                                        if (i > top) {
-                                            break;
-                                        }
-                                        Observation ob = new Observation(symbioteId, o.getLocation(), o.getResultTime(), o.getSamplingTime(), o.getObsValues());
-                                        observationsList.add(ob);
+            if(response!=null) {
+                if (response instanceof RapPluginOkResponse) {
+                    RapPluginOkResponse okResponse = (RapPluginOkResponse) response;
+                    if (okResponse.getBody() != null) {
+                        try {
+                            // need to clean up response if top 1 is used and RAP plugin does not support filtering
+                            if (top == 1) {
+                                Observation internalObservation;
+                                if (okResponse.getBody() instanceof List) {
+                                    List<?> list = (List<?>) okResponse.getBody();
+                                    if (list.size() != 0 && list.get(0) instanceof Observation) {
+                                        @SuppressWarnings("unchecked")
+                                        List<Observation> observations = (List<Observation>) list;
+                                        internalObservation = observations.get(0);
+                                        Observation observation = new Observation(symbioteId, internalObservation.getLocation(),
+                                                internalObservation.getResultTime(), internalObservation.getSamplingTime(),
+                                                internalObservation.getObsValues());
+                                        okResponse.setBody(Arrays.asList(observation));
                                     }
-                                    okResponse.setBody(observationsList);
+                                } else if (okResponse.getBody() instanceof Observation) {
+                                    internalObservation = (Observation) okResponse.getBody();
+                                    Observation observation = new Observation(symbioteId, internalObservation.getLocation(),
+                                            internalObservation.getResultTime(), internalObservation.getSamplingTime(),
+                                            internalObservation.getObsValues());
+                                    okResponse.setBody(Arrays.asList(observation));
+                                } else if (okResponse.getBody() instanceof Map) {
+                                    String jsonBody = mapper.writeValueAsString(okResponse.getBody());
+                                    try {
+                                        internalObservation = mapper.readValue(jsonBody, Observation.class);
+                                        Observation observation = new Observation(symbioteId, internalObservation.getLocation(),
+                                                internalObservation.getResultTime(), internalObservation.getSamplingTime(),
+                                                internalObservation.getObsValues());
+                                        okResponse.setBody(Arrays.asList(observation));
+                                    } catch (Exception e) { /* do nothing*/ }
+                                }
+                            } else {
+                                // top is not 1
+                                if (okResponse.getBody() instanceof List) {
+                                    List<?> list = (List<?>) okResponse.getBody();
+                                    if (list.size() != 0 && list.get(0) instanceof Observation) {
+                                        @SuppressWarnings("unchecked")
+                                        List<Observation> internalObservations = (List<Observation>) list;
+
+                                        List<Observation> observationsList = new ArrayList<>();
+                                        int i = 0;
+                                        for (Observation o : internalObservations) {
+                                            i++;
+                                            if (i > top) {
+                                                break;
+                                            }
+                                            Observation ob = new Observation(symbioteId, o.getLocation(), o.getResultTime(), o.getSamplingTime(), o.getObsValues());
+                                            observationsList.add(ob);
+                                        }
+                                        okResponse.setBody(observationsList);
+                                    }
                                 }
                             }
+                        } catch (Exception e) {
+                            throw new ODataApplicationException("Can not parse returned object from RAP plugin.\nCause: " + e.getMessage(),
+                                    HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(),
+                                    Locale.ROOT,
+                                    e);
                         }
-                    } catch (Exception e) {
-                        throw new ODataApplicationException("Can not parse returned object from RAP plugin.\nCause: " + e.getMessage(),
-                                HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(),
-                                Locale.ROOT,
-                                e);
                     }
+                } else {
+                    return response;
                 }
+            } else {
+                response = new RapPluginOkResponse(200, responseEntity.getBody());
             }
 
-            return responseEntity;
+            return response;
         } catch (Exception e) {
             String err = "Unable to read resource " + symbioteId;
             err += "\n Error: " + e.getMessage();
@@ -298,9 +305,14 @@ public class StorageHelper {
                 throw new Exception("Error response from plugin");
             }
             RapPluginResponse rpResponse = extractRapPluginResponse(obj.getBody());
-            if(rpResponse instanceof RapPluginErrorResponse) {
-                RapPluginErrorResponse errorResponse = (RapPluginErrorResponse) rpResponse;
-                throw new ODataApplicationException(errorResponse.getMessage(), errorResponse.getResponseCode(), null);
+            if(rpResponse != null) {
+                if (rpResponse instanceof RapPluginErrorResponse){
+                    RapPluginErrorResponse errorResponse = (RapPluginErrorResponse) rpResponse;
+                    throw new ODataApplicationException(errorResponse.getMessage(), errorResponse.getResponseCode(), null);
+                }
+
+            } else {
+                rpResponse = new RapPluginOkResponse(200, obj.getBody());
             }
             return rpResponse;
         } catch (Exception e) {
@@ -322,7 +334,7 @@ public class StorageHelper {
         String rawObj;
         if (obj instanceof byte[]) {
             rawObj = new String((byte[]) obj, "UTF-8");
-        } else if (obj instanceof String){
+        } else if (obj instanceof String) {
             rawObj = (String) obj;
         } else {
             throw new ODataApplicationException("Can not parse response from RAP plugin. Expected byte[] or String but got " + obj.getClass().getName(),
@@ -331,13 +343,15 @@ public class StorageHelper {
         }
 
         try {
-            RapPluginResponse resp = mapper.readValue(rawObj, RapPluginResponse.class);
-            String content = resp.getContent();
-            if(content != null && content.length() > 0) {
-                JsonNode jsonObj = mapper.readTree(content);
-                if (!jsonObj.has(jsonPropertyClassName)) {
-                    log.error("Field " + jsonPropertyClassName + " is mandatory");
-                }
+            JsonNode jsonObj = mapper.readTree(rawObj);
+            if (!jsonObj.has(jsonPropertyClassName)) {
+                log.error("Field " + jsonPropertyClassName + " is mandatory");
+            }
+            RapPluginResponse resp = null;
+            try {
+                resp = mapper.readValue(rawObj, RapPluginResponse.class);
+            } catch (Exception ex) {
+                log.warn("Can not parse response from RAP to RapPluginResponse.\n Cause: " + ex.getMessage());
             }
             return resp;
         } catch (Exception e) {
