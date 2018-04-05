@@ -112,26 +112,34 @@ public class StorageHelper {
         try {
             top = (top == null) ? TOP_LIMIT : top;
             ResourceAccessMessage msg;
-            
-            String sspIdParent = null;
+
+            SessionInfo sessionInfo = null;
             for(ResourceInfo resourceInfo: resourceInfoList) {
                 log.info("resourceInfo:\n" + new ObjectMapper().writeValueAsString(resourceInfo));
                 String symbioteIdTemp = resourceInfo.getSymIdResource();
-                if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
+                if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
                     symbioteId = symbioteIdTemp;
-                String sspIdParentTemp = resourceInfo.getSspIdParent();
-                if(sspIdParent != null && !sspIdParent.isEmpty())
-                    sspIdParent = sspIdParentTemp;
+                } else {
+                    String sspIdRes = resourceInfo.getSspIdResource();
+                    if (sspIdRes != null && !sspIdRes.isEmpty()) {
+                        symbioteId = sspIdRes;
+                    }
+                }
+                String sspIdParent = resourceInfo.getSspIdParent();
+                if(sspIdParent != null && !sspIdParent.isEmpty()) {
+                    sessionInfo = sessionsRepo.findBySspId(sspIdParent);
+                } else {
+                    String symIdPar = resourceInfo.getSymIdParent();
+                    if (symIdPar != null && !symIdPar.isEmpty()) {
+                        sessionInfo = sessionsRepo.findBySymId(symIdPar);
+                    } else {
+                        log.error("No parent id associated to resource " + symbioteId);
+                    }
+                }
             }
-            
-            if(sspIdParent == null) {
-                log.error("No SSP parent id associated with resource");
-                throw new Exception("No SSP parent id associated with resource");
-            }
-            SessionInfo sessionInfo = sessionsRepo.findBySspId(sspIdParent);
             if(sessionInfo == null) {
-                log.error("No session associated to resource owner with id " + sspIdParent);
-                throw new Exception("No session associated to resource owner with id " + sspIdParent);
+                log.error("No session associated to resource with id " + symbioteId);
+                throw new Exception("No session associated to resource with id " + symbioteId);
             }
             String pluginUrl = sessionInfo.getPluginURL();
             
@@ -187,24 +195,36 @@ public class StorageHelper {
     }
 
     public ResponseEntity<?> setService(ArrayList<ResourceInfo> resourceInfoList, String requestBody) throws ODataApplicationException {
-        ResponseEntity<?> responseEntity = new ResponseEntity("Unknown error", HttpStatus.INTERNAL_SERVER_ERROR);
+        String symbioteId = null;
         try {
             ResourceAccessMessage msg;
-            String sspIdParent = null;
-            for(ResourceInfo resourceInfo: resourceInfoList){
-                sspIdParent = resourceInfo.getSspIdParent();
-                if(sspIdParent != null)
-                    break;
+            SessionInfo sessionInfo = null;
+            for(ResourceInfo resourceInfo: resourceInfoList) {
+                log.info("resourceInfo:\n" + new ObjectMapper().writeValueAsString(resourceInfo));
+                String symbioteIdTemp = resourceInfo.getSymIdResource();
+                if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
+                    symbioteId = symbioteIdTemp;
+                } else {
+                    String sspIdRes = resourceInfo.getSspIdResource();
+                    if (sspIdRes != null && !sspIdRes.isEmpty()) {
+                        symbioteId = sspIdRes;
+                    }
+                }
+                String sspIdParent = resourceInfo.getSspIdParent();
+                if(sspIdParent != null && !sspIdParent.isEmpty()) {
+                    sessionInfo = sessionsRepo.findBySspId(sspIdParent);
+                } else {
+                    String symIdPar = resourceInfo.getSymIdParent();
+                    if (symIdPar != null && !symIdPar.isEmpty()) {
+                        sessionInfo = sessionsRepo.findBySymId(symIdPar);
+                    } else {
+                        log.error("No parent id associated to resource " + symbioteId);
+                    }
+                }
             }
-            if(sspIdParent == null) {
-                log.error("No plugin url associated with resource");
-                throw new Exception("No plugin url associated with resource");
-            }
-
-            SessionInfo sessionInfo = sessionsRepo.findBySspId(sspIdParent);
             if(sessionInfo == null) {
-                log.error("No session associated to SDEV " + sspIdParent);
-                throw new Exception("No session associated to SDEV " + sspIdParent);
+                log.error("No session associated to resource with id " + symbioteId);
+                throw new Exception("No session associated to resource with id " + symbioteId);
             }
             String pluginUrl = sessionInfo.getPluginURL();
             msg = new ResourceAccessSetMessage(resourceInfoList, requestBody);            
@@ -223,7 +243,7 @@ public class StorageHelper {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
+            ResponseEntity<?> responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
             if (responseEntity.getStatusCode() != HttpStatus.ACCEPTED && responseEntity.getStatusCode() != HttpStatus.OK) {
                 log.error("Error response from plugin: " + responseEntity.getStatusCodeValue() + " " + responseEntity.getStatusCode().toString());
                 log.error("Body:\n" + responseEntity.getBody());
@@ -246,11 +266,14 @@ public class StorageHelper {
                     throw new Exception("Response from plugin is not a valid json");
                 }
             }
+
+            return responseEntity;
         } catch (Exception e) {
-            log.error(e.getMessage(),e);
+            String err = "Unable to write resource " + symbioteId;
+            err += "\n Error: " + e.getMessage();
+            log.error(err, e);
             throw new ODataApplicationException("Internal Error", HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ROOT);
         }
-        return responseEntity;
     }
     
     public static Query calculateFilter(Expression expression) throws ODataApplicationException {
