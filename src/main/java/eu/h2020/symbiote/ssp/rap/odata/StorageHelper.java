@@ -115,6 +115,7 @@ public class StorageHelper {
             
             String sspIdParent = null;
             for(ResourceInfo resourceInfo: resourceInfoList) {
+                log.info("resourceInfo:\n" + new ObjectMapper().writeValueAsString(resourceInfo));
                 String symbioteIdTemp = resourceInfo.getSymIdResource();
                 if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
                     symbioteId = symbioteIdTemp;
@@ -124,8 +125,8 @@ public class StorageHelper {
             }
             
             if(sspIdParent == null) {
-                log.error("No plugin url associated with resource");
-                throw new Exception("No plugin url associated with resource");
+                log.error("No SSP parent id associated with resource");
+                throw new Exception("No SSP parent id associated with resource");
             }
             SessionInfo sessionInfo = sessionsRepo.findBySspId(sspIdParent);
             if(sessionInfo == null) {

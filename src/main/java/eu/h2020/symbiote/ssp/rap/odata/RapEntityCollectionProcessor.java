@@ -182,6 +182,12 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
                     if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
                         symbioteId = symbioteIdTemp;
                         break;
+                    } else {
+                        symbioteIdTemp = resourceInfo.getSspIdResource();
+                        if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
+                            symbioteId = symbioteIdTemp;
+                            break;
+                        }
                     }
                 }
             } catch(ODataApplicationException odataExc){
