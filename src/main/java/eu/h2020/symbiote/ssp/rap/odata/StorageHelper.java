@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import eu.h2020.symbiote.ssp.rap.exceptions.EntityNotFoundException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessGetMessage;
@@ -149,7 +150,7 @@ public class StorageHelper {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            ResponseEntity<?> responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity<?> responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
             if (responseEntity == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
@@ -221,7 +222,7 @@ public class StorageHelper {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
+            responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
             if (responseEntity.getStatusCode() != HttpStatus.ACCEPTED && responseEntity.getStatusCode() != HttpStatus.OK) {
                 log.error("Error response from plugin: " + responseEntity.getStatusCodeValue() + " " + responseEntity.getStatusCode().toString());
                 log.error("Body:\n" + responseEntity.getBody());
@@ -369,11 +370,22 @@ public class StorageHelper {
                 try {
                     if (keyName.equalsIgnoreCase("id")) {
                         resInfo.setSymIdResource(keyText);
-                        Optional<ResourceInfo> resInfoOptional = resourcesRepo.findById(keyText);
-                        if (resInfoOptional.isPresent()) {
-                            noResourceFound = false;
-                            resInfo.setInternalIdResource(resInfoOptional.get().getInternalIdResource());
+                        Optional<ResourceInfo> resInfoOptional = resourcesRepo.findBySymIdResource(keyText);
+                        if (resInfoOptional== null || !resInfoOptional.isPresent()) {
+                            Optional<ResourceInfo> tmp = resourcesRepo.findById(keyText);
+                            if(tmp != null && tmp.isPresent()) {
+                                // check if symbioteId is empty, otherwise using sspId is not valid (it could be a mismatch)
+                                String symId = tmp.get().getSymIdResource();
+                                if(symId == null || symId.length()<1) {
+                                    resInfoOptional = tmp;
+                                } else {
+                                    log.error("Resource with local id " + keyText + " has a valid symbioteId");
+                                    throw new EntityNotFoundException(keyText);
+                                }
+                            }
                         }
+                        noResourceFound = false;
+                        resInfo.setInternalIdResource(resInfoOptional.get().getInternalIdResource());
                     }
                 } catch (Exception e) {
                 }

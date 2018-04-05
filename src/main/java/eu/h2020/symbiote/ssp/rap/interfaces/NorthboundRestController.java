@@ -24,8 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
-import org.apache.olingo.commons.api.http.HttpStatusCode;
-import org.apache.olingo.server.api.ODataApplicationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,10 +113,10 @@ public class NorthboundRestController {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
             if (obj == null) {
                 log.error("No response from plugin");
-                throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
+                throw new Exception("No response from plugin");
             }
             if (obj.getStatusCode() != HttpStatus.ACCEPTED && obj.getStatusCode() != HttpStatus.OK) {
                 log.error("Error response from plugin: " + obj.getStatusCodeValue() + " " + obj.getStatusCode().toString());
@@ -196,11 +194,10 @@ public class NorthboundRestController {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
             if (obj == null) {
                 log.error("No response from plugin");
-                throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
-            }
+                throw new Exception("No response from plugin");            }
             if (obj.getStatusCode() != HttpStatus.ACCEPTED && obj.getStatusCode() != HttpStatus.OK) {
                 log.error("Error response from plugin: " + obj.getStatusCodeValue() + " " + obj.getStatusCode().toString());
                 log.error("Body:\n" + obj.getBody());
@@ -280,7 +277,7 @@ public class NorthboundRestController {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
             if(obj != null) {
                 if (obj.getStatusCode() != HttpStatus.ACCEPTED && obj.getStatusCode() != HttpStatus.OK) {
                     log.error("Error response from plugin: " + obj.getStatusCodeValue() + " " + obj.getStatusCode().toString());
