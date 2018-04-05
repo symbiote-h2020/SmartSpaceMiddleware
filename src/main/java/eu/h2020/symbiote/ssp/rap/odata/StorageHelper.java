@@ -157,6 +157,7 @@ public class StorageHelper {
 
             Object obj = responseEntity.getBody();
             String responseString = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+            log.info("response:\n" + responseString);
             // checking if plugin response is a valid json
             try {
                 JsonNode jsonObj = mapper.readTree(responseString);
@@ -220,6 +221,7 @@ public class StorageHelper {
             Object obj = responseEntity.getBody();
             if(obj != null) {
                 String responseString = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+                log.info("response:\n" + responseString);
                 // checking if plugin response is a valid json
                 try {
                     ObjectMapper mapper = new ObjectMapper();

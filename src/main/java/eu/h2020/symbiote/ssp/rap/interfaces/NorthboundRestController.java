@@ -122,6 +122,7 @@ public class NorthboundRestController {
             }
 
             String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+            log.info("response:\n" + resp);
             // checking if plugin response is a valid json
             try {
                 JsonNode jsonObj = mapper.readTree(resp.toString());
@@ -198,6 +199,7 @@ public class NorthboundRestController {
             }
 
             String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+            log.info("response:\n" + resp);
             // checking if plugin response is a valid json
             try {
                 JsonNode jsonObj = mapper.readTree(resp.toString());
@@ -272,6 +274,7 @@ public class NorthboundRestController {
             Object obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             if(obj != null) {
                 String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+                log.info("response:\n" + resp);
                 // checking if plugin response is a valid json
                 try {
                     JsonNode jsonObj = mapper.readTree(resp.toString());
