@@ -115,13 +115,17 @@ public class NorthboundRestController {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            Object obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             if (obj == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
             }
-
-            String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
+            if (obj.getStatusCode() != HttpStatus.ACCEPTED || obj.getStatusCode() != HttpStatus.OK) {
+                log.error("Error response from plugin: ", obj.getStatusCodeValue() + " " + obj.getStatusCode().toString());
+                log.error("Body:\n" + obj.getBody());
+                throw new Exception("Error response from plugin");
+            }
+            String resp = (obj.getBody() instanceof byte[]) ? new String((byte[]) obj.getBody(), "UTF-8") : obj.getBody().toString();
             log.info("response:\n" + resp);
             // checking if plugin response is a valid json
             try {
@@ -192,13 +196,18 @@ public class NorthboundRestController {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            Object obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             if (obj == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
             }
+            if (obj.getStatusCode() != HttpStatus.ACCEPTED || obj.getStatusCode() != HttpStatus.OK) {
+                log.error("Error response from plugin: ", obj.getStatusCodeValue() + " " + obj.getStatusCode().toString());
+                log.error("Body:\n" + obj.getBody());
+                throw new Exception("Error response from plugin");
+            }
+            String resp = (obj.getBody() instanceof byte[]) ? new String((byte[]) obj.getBody(), "UTF-8") : obj.getBody().toString();
 
-            String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
             log.info("response:\n" + resp);
             // checking if plugin response is a valid json
             try {
@@ -271,21 +280,29 @@ public class NorthboundRestController {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            Object obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
             if(obj != null) {
-                String resp = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
-                log.info("response:\n" + resp);
-                // checking if plugin response is a valid json
-                try {
-                    JsonNode jsonObj = mapper.readTree(resp.toString());
-                    if (!jsonObj.has(RapConfig.JSON_PROPERTY_CLASS_NAME)) {
-                        log.error("Field " + RapConfig.JSON_PROPERTY_CLASS_NAME + " is mandatory in plugin response");
-                        //    throw new Exception("Field " + JSON_PROPERTY_CLASS_NAME + " is mandatory in plugin response");
+                if (obj.getStatusCode() != HttpStatus.ACCEPTED || obj.getStatusCode() != HttpStatus.OK) {
+                    log.error("Error response from plugin: ", obj.getStatusCodeValue() + " " + obj.getStatusCode().toString());
+                    log.error("Body:\n" + obj.getBody());
+                    throw new Exception("Error response from plugin");
+                }
+                if(obj.getBody() != null) {
+                    String resp = (obj.getBody() instanceof byte[]) ? new String((byte[]) obj.getBody(), "UTF-8") : obj.getBody().toString();
+
+                    log.info("response:\n" + resp);
+                    // checking if plugin response is a valid json
+                    try {
+                        JsonNode jsonObj = mapper.readTree(resp.toString());
+                        if (!jsonObj.has(RapConfig.JSON_PROPERTY_CLASS_NAME)) {
+                            log.error("Field " + RapConfig.JSON_PROPERTY_CLASS_NAME + " is mandatory in plugin response");
+                            //    throw new Exception("Field " + JSON_PROPERTY_CLASS_NAME + " is mandatory in plugin response");
+                        }
+                        response = jsonObj;
+                    } catch (Exception ex) {
+                        log.error("Response from plugin is not a valid json", ex);
+                        throw new Exception("Response from plugin is not a valid json");
                     }
-                    response = jsonObj;
-                } catch (Exception ex) {
-                    log.error("Response from plugin is not a valid json", ex);
-                    throw new Exception("Response from plugin is not a valid json");
                 }
             }
             communicationHandler.sendSuccessfulAccessMessage(resourceId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
