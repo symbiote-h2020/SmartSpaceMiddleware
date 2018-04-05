@@ -129,7 +129,7 @@ public class InnkeeperSDEVRegistrationRequest {
 			// registration injection workaround: check sspSDEVInfo.getSspIdParent() value, multiple registration for the same SDEV
 			if (checkRegistrationInjection(sspSDEVInfo)) {
 				// Got some duplicate fields in Session, suspect on registration,found other registration, reject.
-				log.info("REGISTRATION REJECTED AS SUSPECT DUPLICATED SDEVOInfo="+new ObjectMapper().writeValueAsString(sspSDEVInfo));
+				log.error("REGISTRATION REJECTED AS SUSPECT DUPLICATED SDEVOInfo="+new ObjectMapper().writeValueAsString(sspSDEVInfo));
 				return new InnkeeperSDEVRegistrationResponse(
 						sspSDEVInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);				
 			}
@@ -158,7 +158,7 @@ public class InnkeeperSDEVRegistrationRequest {
 			return	 new InnkeeperSDEVRegistrationResponse(
 					symIdFromCore,new SspIdUtils(sessionsRepository).createSspId(),InnkeeperRestControllerConstants.REGISTRATION_OK,DbConstants.EXPIRATION_TIME);
 		}
-		System.out.println("SDEV REGISTARTION DEFAULT REJECTED");
+		log.error("SDEV REGISTARTION DEFAULT REJECTED");
 		return new InnkeeperSDEVRegistrationResponse(
 				sspSDEVInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
 
@@ -193,7 +193,7 @@ public class InnkeeperSDEVRegistrationRequest {
 		InnkeeperSDEVRegistrationResponse response =new InnkeeperSDEVRegistrationResponse();
 
 		if (s==null) {			
-			log.info("ERROR1 - no session found");
+			log.error("ERROR1 - no session found");
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		
 			httpStatus=HttpStatus.BAD_REQUEST;
 			return new ResponseEntity<Object>(
@@ -202,8 +202,8 @@ public class InnkeeperSDEVRegistrationRequest {
 		}
 		if (	!s.getSspId().equals(sspSdevInfo.getSspId()) && 
 				!s.getSymId().equals(sspSdevInfo.getSymId())){
-			log.info("ERROR2 - no match Ids");
-			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		
+			log.error("ERROR2 - no match Ids");
+			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);
 			httpStatus=HttpStatus.BAD_REQUEST;
 			return new ResponseEntity<Object>(
 					new ObjectMapper().writeValueAsString(response),
@@ -215,7 +215,7 @@ public class InnkeeperSDEVRegistrationRequest {
 
 		if (	( !isCoreOnline && (s.getSspId()!="" && !s.getSspId().equals(sspSdevInfo.getSspId())) )
 				) {
-			log.info("ERROR3 - SSP online and SymId not match or SSP offline and SspId not match");
+			log.error("ERROR3 - SSP online and SymId not match or SSP offline and SspId not match");
 			//DEFAULT: ERROR
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		
 			httpStatus=HttpStatus.BAD_REQUEST;

@@ -35,8 +35,8 @@ public class RapConfig {
     {
         RestTemplateBuilder builder = new RestTemplateBuilder();
         return builder
-                .setConnectTimeout(10)
-                .setReadTimeout(10)
+                .setConnectTimeout(10000)
+                .setReadTimeout(10000)
                 .build();
     }
 }

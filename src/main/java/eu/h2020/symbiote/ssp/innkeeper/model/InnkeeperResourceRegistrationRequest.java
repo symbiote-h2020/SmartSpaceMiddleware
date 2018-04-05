@@ -93,8 +93,8 @@ public class InnkeeperResourceRegistrationRequest {
 			responseEntity = new  ResponseEntity<Object>(respSspResource,responseHeaders,httpStatus);
 			return responseEntity;
 
-		}else {
-			log.info("SymId not found, check with SSP ID...");
+		} else {
+			log.warn("SymId not found, check with SSP ID...");
 		}
 
 		s= sessionsRepository.findBySspId(sspResource.getSspIdParent());
@@ -110,10 +110,10 @@ public class InnkeeperResourceRegistrationRequest {
 				break;
 			default:
 				httpStatus = HttpStatus.OK;
-			}			
+			}
 			return new ResponseEntity<Object>(respSspResource,responseHeaders,httpStatus);
-		}else { 
-			log.info("sspId not found, registration Failed");
+		} else {
+			log.error("sspId not found, registration Failed");
 		}
 
 		//DEFAULT: ERROR
@@ -145,14 +145,14 @@ public class InnkeeperResourceRegistrationRequest {
 
 		//assign internal a new Id to the resource (R4)		
 		if (symIdResource == null) { //REJECTED
-			log.info("REJECTED: symIdResource=null");
+			log.error("REJECTED: symIdResource=null");
 			results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
 
 			return res;
 		}
 
 		if (sessionsRepository.findBySspId(msg.getSspIdParent())==null) {
-			log.info("REJECTED: symIdResource=null SspId="+msg.getSspIdParent()+" not found");
+			log.error("REJECTED: symIdResource=null SspId="+msg.getSspIdParent()+" not found");
 			results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED; 
 			return res;
 		}
@@ -187,9 +187,9 @@ public class InnkeeperResourceRegistrationRequest {
 		SessionInfo s = sessionsRepository.findBySymId(msg.getSymIdParent());
 		if( s==null ) {
 			if (msg.getSymIdParent()==null)
-				log.info("REJECTED: Join ONLINE: SymId is null");
+				log.error("REJECTED: Join ONLINE: SymId is null");
 			else {
-				log.info("REJECTED: Join ONLINE: SymId="+msg.getSymIdParent()+" Not found");
+				log.error("REJECTED: Join ONLINE: SymId="+msg.getSymIdParent()+" Not found");
 			}
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 								//symIdResource
@@ -203,7 +203,7 @@ public class InnkeeperResourceRegistrationRequest {
 		}
 
 		if ( !(s.getSspId().equals(msg.getSspIdParent())) ) {
-			log.info("REJECTED: symIdResource=null SspId"+msg.getSymIdParent()+" not matched in Session Repository");
+			log.error("REJECTED: symIdResource=null SspId"+msg.getSymIdParent()+" not matched in Session Repository");
 
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 								//symIdResource
@@ -237,7 +237,7 @@ public class InnkeeperResourceRegistrationRequest {
 		}	
 
 		if (symIdResource != "" && msg.getSymIdParent().equals(symIdResource)) { //Already exists
-			log.info("ALREADY REGISTERED symIdResource="+symIdResource);
+			log.error("ALREADY REGISTERED symIdResource="+symIdResource);
 			results=InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED;
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getSemanticDescription().getId(), 
@@ -248,7 +248,7 @@ public class InnkeeperResourceRegistrationRequest {
 					0);
 
 		}	
-		log.info("RESOURCE REGISTARTION DEFAULT REJECTED");
+		log.error("RESOURCE REGISTARTION DEFAULT REJECTED");
 		return res;
 
 	}
