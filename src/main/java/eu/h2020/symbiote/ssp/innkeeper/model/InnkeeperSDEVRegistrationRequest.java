@@ -41,6 +41,8 @@ public class InnkeeperSDEVRegistrationRequest {
 	
 	@Value("${innk.core.enabled:true}")
 	Boolean isCoreOnline;
+	@Value("${innk.lwsp.enabled:true}")
+	Boolean isLwspEnabled;
 	@Autowired
 	SessionsRepository sessionsRepository;
 	
@@ -62,32 +64,36 @@ public class InnkeeperSDEVRegistrationRequest {
 		return plgIdLst.size()!=0 && plgURLLst.size()!=0 && dk1Lst.size()!=0; 
 	}
 
-	public ResponseEntity<Object> SspRegistry(String msg) throws IOException {
+	public ResponseEntity<Object> SspRegistry(String sessionId, String msg) throws IOException {
 
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-		HttpStatus httpStatus = HttpStatus.OK;		
-
-		Date currTime = new Timestamp(System.currentTimeMillis());
-		String sessionId = new Lwsp().generateSessionId();
-		SessionInfo s = new SessionInfo();
-
+		HttpStatus httpStatus = HttpStatus.OK;
+		
 		SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(msg, SspSDEVInfo.class);
 
 		InnkeeperSDEVRegistrationResponse respSDEV = registry(sspSDEVInfo);
 
-		//DEBUG: MOCK
 		switch (respSDEV.getResult()) {
 		case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
-		case InnkeeperRestControllerConstants.REGISTRATION_OK:					
+		case InnkeeperRestControllerConstants.REGISTRATION_OK:		
+			
+			SessionInfo s = new SessionInfo();	
+			if (!isLwspEnabled) {
+				sessionId = new Lwsp().generateSessionId();				
+				s.setsessionId(sessionId);
+				s.setSessionExpiration(new Timestamp(System.currentTimeMillis()));
+			} else {
+				s=sessionsRepository.findBySessionId(sessionId);
+			}
+
 			httpStatus=HttpStatus.OK;
-			s.setsessionId(sessionId);
-			s.setdk1(sspSDEVInfo.getDerivedKey1());
+			
 			s.setSspId(respSDEV.getSspId());
 			s.setSymId(respSDEV.getSymId());						
 			s.setPluginId(sspSDEVInfo.getPluginId());
 			s.setPluginURL(sspSDEVInfo.getPluginURL());
-			s.setSessionExpiration(currTime);				
+							
 			sessionsRepository.save(s);				
 			break;
 

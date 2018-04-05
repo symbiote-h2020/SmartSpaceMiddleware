@@ -123,7 +123,7 @@ public class InnkeeperRestController {
 			case LwspConstants.REGISTRY:
 				
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(decoded_message);
+				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(lwsp.getSessionId(),decoded_message);
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
@@ -131,7 +131,7 @@ public class InnkeeperRestController {
 			}
 
 		}else{
-			return innkeeperSDEVRegistrationRequest.SspRegistry(payload);
+			return innkeeperSDEVRegistrationRequest.SspRegistry(null,payload);
 		}
 
 	}
