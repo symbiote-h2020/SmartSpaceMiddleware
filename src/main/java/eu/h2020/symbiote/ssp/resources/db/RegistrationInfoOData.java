@@ -5,6 +5,7 @@
  */
 package eu.h2020.symbiote.ssp.resources.db;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.h2020.symbiote.ssp.rap.odata.CustomField;
 import java.util.ArrayList;
@@ -31,6 +32,10 @@ public class RegistrationInfoOData {
     @JsonProperty("symbioteId")
     private String symbioteId;
     
+    @JsonProperty("sspId")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String sspId;
+    
     @JsonProperty("className")
     private String className;
     
@@ -52,6 +57,16 @@ public class RegistrationInfoOData {
         this.parameters = parameters;
     }
 
+    public RegistrationInfoOData(String sspId, String symbioteId, String className, String superClass, Set parameters) {
+    		this.id=sspId;
+    		this.sspId = sspId;
+        this.symbioteId = symbioteId;
+        this.className = className;
+        this.superClass = superClass;
+        this.parameters = parameters;
+    }
+
+    
     public String getId() {
         return id;
     }
@@ -68,6 +83,16 @@ public class RegistrationInfoOData {
         this.symbioteId = symbioteId;
     }
 
+    public String getSspId() {
+        return sspId;
+    }
+
+    public void setSspId(String sspId) {
+        this.sspId = sspId;
+    }
+
+    
+    
     public String getClassName() {
         return className;
     }

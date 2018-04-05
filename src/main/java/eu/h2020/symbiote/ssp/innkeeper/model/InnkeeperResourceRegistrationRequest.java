@@ -2,7 +2,10 @@ package eu.h2020.symbiote.ssp.innkeeper.model;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyFactory;
 import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 import org.apache.commons.logging.Log;
@@ -13,7 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -21,8 +24,16 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
+import eu.h2020.symbiote.model.cim.Actuator;
+import eu.h2020.symbiote.model.cim.Capability;
+import eu.h2020.symbiote.model.cim.ComplexDatatype;
+import eu.h2020.symbiote.model.cim.Datatype;
+import eu.h2020.symbiote.model.cim.Device;
 import eu.h2020.symbiote.model.cim.MobileSensor;
+import eu.h2020.symbiote.model.cim.Parameter;
+import eu.h2020.symbiote.model.cim.PrimitiveDatatype;
 import eu.h2020.symbiote.model.cim.Resource;
+import eu.h2020.symbiote.model.cim.Service;
 import eu.h2020.symbiote.model.cim.StationarySensor;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
@@ -32,6 +43,9 @@ import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
 import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
+import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
+import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
+import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
@@ -39,7 +53,7 @@ import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import eu.h2020.symbiote.ssp.utils.CheckCoreUtility;
 import eu.h2020.symbiote.ssp.utils.SspIdUtils;
 
-@Service
+@Component
 public class InnkeeperResourceRegistrationRequest {
 
 	private static Log log = LogFactory.getLog(InnkeeperResourceRegistrationRequest.class);
@@ -56,8 +70,9 @@ public class InnkeeperResourceRegistrationRequest {
 	@Autowired
 	AccessPolicyRepository accessPolicyRepository;
 
+
 	@Autowired
-	OwlApiHelper owlApiHelp;
+	private RegistrationInfoODataRepository infoODataRepo;
 
 	public void setIsCoreOnline(Boolean v) {
 		this.isCoreOnline=v;
@@ -122,9 +137,7 @@ public class InnkeeperResourceRegistrationRequest {
 
 
 	}
-	
-	
-	
+
 	public InnkeeperResourceRegistrationResponse joinResource(SspResource msg, Date currTime) throws InvalidArgumentsException, JsonProcessingException {
 		InnkeeperResourceRegistrationResponse res= null;
 		log.info(new ObjectMapper().writeValueAsString(msg));
@@ -277,16 +290,81 @@ public class InnkeeperResourceRegistrationRequest {
 				msg.getSymIdParent(),						//symbiote Id of SDEV
 				msg.getSspIdParent(),						//sspId of SDEV
 				props, pluginId,currTime);	
+
+		//ADD OData
+		log.info("ADD OData:");
+		addInfoForOData(msg);
 	}
 
-	private void addCloudResourceInfoForOData(List<CloudResource> cloudResourceList) {
-		try{
-			owlApiHelp.addCloudResourceList(cloudResourceList);
-		}
-		catch(Exception e){
-			log.error("Error add info registration for OData\n"+e.getMessage());
-		}
+	private RegistrationInfoOData addInfoForOData(SspResource sspResource){
+		RegistrationInfoOData result = null;
+		List<Parameter> parameters;
+		Resource r = sspResource.getSemanticDescription();
+		if (r.getClass().equals(Actuator.class)) {
+			log.info("Save Device for Resource");
+			log.info("sspResource.getSspIdResource() = " + sspResource.getSspIdResource());
+			log.info("r.getId() = " + r.getId());
+			Actuator actuator = (Actuator) r;
+			for (Capability capability : actuator.getCapabilities()) {
+				parameters = capability.getParameters();
+				//String className = "GenericCapability";
+				//String superClass = Capability.class.getSimpleName();
+				String className = Capability.class.getSimpleName();
+				String superClass = null;
+				result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(),r.getId(), className, superClass, parameters);
+			}
+		} else if (r.getClass().equals(Device.class)) {
+			log.info("Save Device for Resource");
+			log.info("sspResource.getSspIdResource() = " + sspResource.getSspIdResource());
+			log.info("r.getId() = " + r.getId());
+
+			Device device = (Device) r;
+			for ( Service service : device.getServices()) {
+				parameters = service.getParameters();
+				//String className = "GenericService";
+				//String superClass = Service.class.getSimpleName();
+				String className = Service.class.getSimpleName();
+				String superClass = null;
+				result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(), r.getId(), className, superClass, parameters);
+			}
+		} else if (r.getClass().equals(Service.class)) {
+
+			Service service = (Service) r;
+			parameters = service.getParameters();
+			String className = Service.class.getSimpleName();
+			String superClass = null;
+			result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(), r.getId(), className, superClass, parameters);
+		}	
+		return result;
+
+
 	}
+
+	private RegistrationInfoOData saveRegistrationInfoODataInDb(String sspIdResource, String id, String className, String superClass, List<Parameter> parameters) {
+		Set<ParameterInfo> parameterInfoList = new HashSet<>();
+		for (Parameter p : parameters) {
+			String type = "string";
+			Datatype datatype = p.getDatatype();
+			if (datatype.getClass().equals(ComplexDatatype.class)) {
+				type = ((ComplexDatatype) datatype).getBasedOnClass();
+			} else if (datatype.getClass().equals(PrimitiveDatatype.class)) {
+				type = ((PrimitiveDatatype) datatype).getBaseDatatype();
+			}
+			
+			log.info("Add parameter:");
+			log.info("type:"+type);
+			log.info("p.getName():"+p.getName());
+			log.info("p.isMandatory():"+p.isMandatory());
+			
+			ParameterInfo parameterInfo = new ParameterInfo(type, p.getName(), p.isMandatory());
+			parameterInfoList.add(parameterInfo);
+		}
+		RegistrationInfoOData infoOData = new RegistrationInfoOData(sspIdResource, id, className, superClass, parameterInfoList);
+		RegistrationInfoOData infoODataNew = infoODataRepo.insertNewSSP(infoOData);
+		return infoODataNew;
+	}
+
+
 	private void addResource(
 			String sspIdResource,
 			String symIdResource,
