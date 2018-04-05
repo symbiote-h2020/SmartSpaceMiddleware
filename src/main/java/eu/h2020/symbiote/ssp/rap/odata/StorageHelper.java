@@ -359,7 +359,6 @@ public class StorageHelper {
         ArrayList<ResourceInfo> resourceInfoList = new ArrayList();
         for(int i = 0; i< typeNameList.size(); i++){
             ResourceInfo resInfo = new ResourceInfo();
-            resInfo.setType(typeNameList.get(i));
             if(i < keyPredicates.size()){
                 UriParameter key = keyPredicates.get(i);
                 String keyName = key.getName();
@@ -385,11 +384,13 @@ public class StorageHelper {
                             }
                         }
                         noResourceFound = false;
-                        resInfo.setInternalIdResource(resInfoOptional.get().getInternalIdResource());
+                        //resInfo.setInternalIdResource(resInfoOptional.get().getInternalIdResource());
+                        resInfo = resInfoOptional.get();
                     }
                 } catch (Exception e) {
                 }
             }
+            resInfo.setType(typeNameList.get(i));   // DO NOT MOVE FROM HERE
             resourceInfoList.add(resInfo);
         }
         if(noResourceFound) {
