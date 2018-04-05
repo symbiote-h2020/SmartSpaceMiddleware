@@ -154,6 +154,11 @@ public class StorageHelper {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
             }
+            if (responseEntity.getStatusCode() != HttpStatus.ACCEPTED && responseEntity.getStatusCode() != HttpStatus.OK) {
+                log.error("Error response from plugin: " + responseEntity.getStatusCodeValue() + " " + responseEntity.getStatusCode().toString());
+                log.error("Body:\n" + responseEntity.getBody());
+                throw new Exception("Error response from plugin");
+            }
 
             Object obj = responseEntity.getBody();
             String responseString = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
@@ -217,7 +222,11 @@ public class StorageHelper {
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
             responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
-
+            if (responseEntity.getStatusCode() != HttpStatus.ACCEPTED && responseEntity.getStatusCode() != HttpStatus.OK) {
+                log.error("Error response from plugin: " + responseEntity.getStatusCodeValue() + " " + responseEntity.getStatusCode().toString());
+                log.error("Body:\n" + responseEntity.getBody());
+                throw new Exception("Error response from plugin");
+            }
             Object obj = responseEntity.getBody();
             if(obj != null) {
                 String responseString = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
