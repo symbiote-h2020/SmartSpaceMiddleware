@@ -277,13 +277,19 @@ public class InnkeeperSDEVRegistrationRequest {
 			r.setSessionExpiration(currTime);
 
 			resourcesRepository.save(r);
+			
+			
+			//Keep Alive for OData
+			List<RegistrationInfoOData> odataList= registrationInfoODataRepository.findBySspId(r.getSspIdResource());
+			for (RegistrationInfoOData odata : odataList) {
+				odata.setSessionExpiration(r.getSessionExpiration());
+				odata.setSymbioteId(r.getSymIdResource());
+				registrationInfoODataRepository.save(odata);
+			}
+		
 		}
 		response.setSymId(s.getSymId());
 		response.setSspId(s.getSspId());
-		
-		
-		//Keep Alive for OData
-		//TBD
 
 		if (isCoreOnline){
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);
@@ -328,21 +334,25 @@ public class InnkeeperSDEVRegistrationRequest {
 			//Delete session
 			sessionsRepository.delete(s);
 
+			
+			List<String> sspIdResourcesList = new ArrayList<String>();
+			
 			//Delete Resources
 			List<ResourceInfo> resList= resourcesRepository.findBySspIdParent(s.getSspId());
-
 			for (ResourceInfo r : resList) {
 				resourcesRepository.delete(r);
+				sspIdResourcesList.add(r.getSspIdResource());
 			}
 
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
 			httpStatus=HttpStatus.OK;
 
-			//Delete OData
-			List<RegistrationInfoOData> odataList= registrationInfoODataRepository.findBySspId(s.getSspId());
-
-			for (RegistrationInfoOData r : odataList) {
-				registrationInfoODataRepository.delete(r);
+			//Delete OData			
+			for (String sspIdCurr : sspIdResourcesList) {
+				List<RegistrationInfoOData> odataList= registrationInfoODataRepository.findBySspId(sspIdCurr);
+				for (RegistrationInfoOData r : odataList) {
+					registrationInfoODataRepository.delete(r);
+				}
 			}
 
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
