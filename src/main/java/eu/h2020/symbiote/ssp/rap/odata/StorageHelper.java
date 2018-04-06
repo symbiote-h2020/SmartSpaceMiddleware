@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.ssp.rap.exceptions.EntityNotFoundException;
-import eu.h2020.symbiote.ssp.rap.exceptions.RapPluginException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import eu.h2020.symbiote.ssp.rap.messages.plugin.RapPluginErrorResponse;
 import eu.h2020.symbiote.ssp.rap.messages.plugin.RapPluginOkResponse;
@@ -167,9 +166,11 @@ public class StorageHelper {
                 log.error("Body:\n" + responseEntity.getBody());
                 throw new Exception("Error response from plugin");
             }
-            log.info("response:\n" + new ObjectMapper().writeValueAsString(responseEntity.getBody()));
-            RapPluginResponse response = extractRapPluginResponse(responseEntity.getBody());
-            if(response!=null) {
+            Object response = extractResponse(responseEntity.getBody());
+            log.info("response:\n" + new ObjectMapper().writeValueAsString(response));
+            RapPluginResponse result;
+            if(response instanceof RapPluginResponse) {
+                result = (RapPluginResponse) response;
                 if (response instanceof RapPluginOkResponse) {
                     RapPluginOkResponse okResponse = (RapPluginOkResponse) response;
                     if (okResponse.getBody() != null) {
@@ -233,13 +234,14 @@ public class StorageHelper {
                                     e);
                         }
                     }
+                    result = okResponse;
                 }
             } else {
-                response = new RapPluginOkResponse(200, responseEntity.getBody());
+                result = new RapPluginOkResponse(200, response);
             }
+            log.info("RapPluginResponse object:\n" + new ObjectMapper().writeValueAsString(result));
 
-            log.info("RapPluginResponse object:\n" + new ObjectMapper().writeValueAsString(response.getContent()));
-            return response;
+            return result;
         } catch (Exception e) {
             String err = "Unable to read resource " + symbioteId;
             err += "\n Error: " + e.getMessage();
@@ -303,17 +305,18 @@ public class StorageHelper {
                 log.error("Body:\n" + obj.getBody());
                 throw new Exception("Error response from plugin");
             }
-            RapPluginResponse rpResponse = extractRapPluginResponse(obj.getBody());
-            if(rpResponse != null) {
-                if (rpResponse instanceof RapPluginErrorResponse){
-                    RapPluginErrorResponse errorResponse = (RapPluginErrorResponse) rpResponse;
+            Object response = extractResponse(obj.getBody());
+            RapPluginResponse result;
+            if(response instanceof RapPluginResponse) {
+                if (response instanceof RapPluginErrorResponse){
+                    RapPluginErrorResponse errorResponse = (RapPluginErrorResponse) response;
                     throw new ODataApplicationException(errorResponse.getMessage(), errorResponse.getResponseCode(), null);
                 }
-
+                result = (RapPluginResponse)response;
             } else {
-                rpResponse = new RapPluginOkResponse(200, obj.getBody());
+                result = new RapPluginOkResponse(200, response);
             }
-            return rpResponse;
+            return result;
         } catch (Exception e) {
             String err = "Unable to write resource " + symbioteId;
             err += "\n Error: " + e.getMessage();
@@ -322,8 +325,9 @@ public class StorageHelper {
         }
     }
 
-    private RapPluginResponse extractRapPluginResponse(Object obj)
+    private Object extractResponse(Object obj)
             throws ODataApplicationException, UnsupportedEncodingException {
+        Object responseObj = null;
         ObjectMapper mapper = new ObjectMapper();
         if (obj == null) {
             log.error("No response from plugin");
@@ -340,19 +344,20 @@ public class StorageHelper {
                     HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(),
                     Locale.ROOT);
         }
-
         try {
             JsonNode jsonObj = mapper.readTree(rawObj);
             if (!jsonObj.has(jsonPropertyClassName)) {
                 log.error("Field " + jsonPropertyClassName + " is mandatory");
             }
-            RapPluginResponse resp = null;
+            responseObj = jsonObj;
             try {
-                resp = mapper.readValue(rawObj, RapPluginResponse.class);
+                RapPluginResponse resp = mapper.readValue(rawObj, RapPluginResponse.class);
+                responseObj = resp;
             } catch (Exception ex) {
                 log.warn("Can not parse response from RAP to RapPluginResponse.\n Cause: " + ex.getMessage());
             }
-            return resp;
+
+            return responseObj;
         } catch (Exception e) {
             throw new ODataApplicationException("Can not parse response from RAP to JSON.\n Cause: " + e.getMessage(),
                     HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(),
