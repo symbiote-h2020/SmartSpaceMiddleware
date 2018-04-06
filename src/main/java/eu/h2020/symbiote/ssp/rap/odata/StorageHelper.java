@@ -283,10 +283,12 @@ public class StorageHelper {
                 throw new Exception("No session associated to resource with id " + symbioteId);
             }
             String pluginUrl = sessionInfo.getPluginURL();
-            msg = new ResourceAccessSetMessage(resourceInfoList, requestBody);            
+            ObjectMapper mapper = new ObjectMapper();
+
+            JsonNode jsonBody =  mapper.readTree(requestBody);
+            msg = new ResourceAccessSetMessage(resourceInfoList, jsonBody);
             String json = "";
             try {
-                ObjectMapper mapper = new ObjectMapper();
                 mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
                 mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
 
@@ -295,8 +297,7 @@ public class StorageHelper {
                 log.error("JSon processing exception: " + ex.getMessage());
             }
             log.info("Sending POST request to " + pluginUrl);
-            log.debug("Message: ");
-            log.debug(json);
+            log.info("Message:\n ", json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
             ResponseEntity<?> obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);

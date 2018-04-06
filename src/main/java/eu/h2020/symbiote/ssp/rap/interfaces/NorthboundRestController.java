@@ -259,9 +259,10 @@ public class NorthboundRestController {
             ResourceInfo info = getResourceInfo(resourceId);
             List<ResourceInfo> infoList = new ArrayList();
             infoList.add(info);
-            
-            ResourceAccessSetMessage msg = new ResourceAccessSetMessage(infoList, body);            
+
             ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonBody =  mapper.readTree(body);
+            ResourceAccessSetMessage msg = new ResourceAccessSetMessage(infoList, jsonBody);
             mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             mapper.setSerializationInclusion(Include.NON_EMPTY);
             String json = mapper.writeValueAsString(msg);
