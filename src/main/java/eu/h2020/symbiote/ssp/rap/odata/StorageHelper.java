@@ -140,7 +140,7 @@ public class StorageHelper {
                 throw new Exception("No session associated to resource with id " + symbioteId);
             }
             String pluginUrl = sessionInfo.getPluginURL();
-            
+
             if (top == 1) {
                 msg = new ResourceAccessGetMessage(resourceInfoList);
             } else {
@@ -285,9 +285,7 @@ public class StorageHelper {
             }
             String pluginUrl = sessionInfo.getPluginURL();
             ObjectMapper mapper = new ObjectMapper();
-
-            JSONObject jsonBody =  new JSONObject(requestBody);
-            msg = new ResourceAccessSetMessage(resourceInfoList, jsonBody);
+            msg = new ResourceAccessSetMessage(resourceInfoList, mapper.readTree(requestBody));
             String json = "";
             try {
                 mapper.configure(SerializationFeature.INDENT_OUTPUT, true);

@@ -252,7 +252,6 @@ public class NorthboundRestController {
         String path = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         try {        
             log.info("Received write resource request for ID = " + resourceId + " with values " + body);
-            
             // checking access policies
             if(!communicationHandler.checkAccessPolicies(request, resourceId))
                 throw new Exception("Auhtorization refused");
@@ -262,22 +261,24 @@ public class NorthboundRestController {
             infoList.add(info);
 
             ObjectMapper mapper = new ObjectMapper();
-            JSONObject jsonBody = new JSONObject(body);
-            ResourceAccessSetMessage msg = new ResourceAccessSetMessage(infoList, jsonBody);
-            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+            ResourceAccessSetMessage msg = new ResourceAccessSetMessage(infoList, mapper.readTree(body));
+            //mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             mapper.setSerializationInclusion(Include.NON_EMPTY);
             String json = mapper.writeValueAsString(msg);
+            log.info("Message: " + json);
 
             SessionInfo sessionInfo = sessionsRepo.findBySspId(info.getSspIdResource());
+            if(sessionInfo == null) {
+                log.error("No session associated with resource " + resourceId);
+                throw new Exception("No session associated with resource " + resourceId);
+            }
             String pluginUrl = sessionInfo.getPluginURL();
             if(pluginUrl == null) {
-                log.error("No plugin url found");
-                throw new Exception("No plugin url associated with resource");
+                log.error("No plugin url found for resource " + resourceId);
+                throw new Exception("No plugin url associated with resource " + resourceId);
             }
             log.info("Sending POST request to " + pluginUrl);
-            log.debug("Message: ");
-            log.debug(json);
-            
+
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
             ResponseEntity obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
             if(obj != null) {

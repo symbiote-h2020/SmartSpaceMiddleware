@@ -22,7 +22,7 @@ public class ResourceAccessSetMessage extends ResourceAccessMessage{
     private final List<ResourceInfo> resInfo;
     
     @JsonProperty("body")
-    private final JSONObject body;
+    private final JsonNode body;
     
     /**
      * JSON Constructor
@@ -31,14 +31,14 @@ public class ResourceAccessSetMessage extends ResourceAccessMessage{
      */
     @JsonCreator
     public ResourceAccessSetMessage(@JsonProperty("resourceInfo") List<ResourceInfo> resInfo, 
-                                    @JsonProperty("body") JSONObject body) {
+                                    @JsonProperty("body") JsonNode body) {
         this.accessType = ResourceAccessMessage.AccessType.SET;
         this.resInfo = resInfo;
         this.body = body;
     }
     
     @JsonProperty("body")
-    public JSONObject getBody() {
+    public JsonNode getBody() {
         return body;
     }
     
