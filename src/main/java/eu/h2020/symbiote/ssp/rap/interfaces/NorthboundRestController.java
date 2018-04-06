@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -261,7 +262,7 @@ public class NorthboundRestController {
             infoList.add(info);
 
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonBody =  mapper.readTree(body);
+            JSONObject jsonBody = new JSONObject(body);
             ResourceAccessSetMessage msg = new ResourceAccessSetMessage(infoList, jsonBody);
             mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             mapper.setSerializationInclusion(Include.NON_EMPTY);

@@ -47,6 +47,7 @@ import org.apache.olingo.server.api.uri.queryoption.expression.BinaryOperatorKin
 import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
 import org.apache.olingo.server.api.uri.queryoption.expression.Literal;
 import org.apache.olingo.server.api.uri.queryoption.expression.Member;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -285,7 +286,7 @@ public class StorageHelper {
             String pluginUrl = sessionInfo.getPluginURL();
             ObjectMapper mapper = new ObjectMapper();
 
-            JsonNode jsonBody =  mapper.readTree(requestBody);
+            JSONObject jsonBody =  new JSONObject(requestBody);
             msg = new ResourceAccessSetMessage(resourceInfoList, jsonBody);
             String json = "";
             try {
