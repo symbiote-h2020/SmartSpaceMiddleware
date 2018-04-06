@@ -105,7 +105,7 @@ public class StorageHelper {
         return resInfo;
     }
 
-    public Object getRelatedObject(ArrayList<ResourceInfo> resourceInfoList, Integer top, Query filterQuery) throws ODataApplicationException {
+    public RapPluginResponse getRelatedObject(ArrayList<ResourceInfo> resourceInfoList, Integer top, Query filterQuery) throws ODataApplicationException {
         String symbioteId = null;
         try {
             top = (top == null) ? TOP_LIMIT : top;
@@ -167,7 +167,7 @@ public class StorageHelper {
                 log.error("Body:\n" + responseEntity.getBody());
                 throw new Exception("Error response from plugin");
             }
-
+            log.info("response:\n" + responseEntity.getBody());
             RapPluginResponse response = extractRapPluginResponse(responseEntity.getBody());
             if(response!=null) {
                 if (response instanceof RapPluginOkResponse) {
@@ -240,6 +240,7 @@ public class StorageHelper {
                 response = new RapPluginOkResponse(200, responseEntity.getBody());
             }
 
+            log.info("RapPluginResponse object:\n" + response);
             return response;
         } catch (Exception e) {
             String err = "Unable to read resource " + symbioteId;
@@ -298,7 +299,7 @@ public class StorageHelper {
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            ResponseEntity<?> obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, RapPluginResponse.class);
+            ResponseEntity<?> obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
             if (obj.getStatusCode() != HttpStatus.ACCEPTED && obj.getStatusCode() != HttpStatus.OK) {
                 log.error("Error response from plugin: " + obj.getStatusCodeValue() + " " + obj.getStatusCode().toString());
                 log.error("Body:\n" + obj.getBody());
