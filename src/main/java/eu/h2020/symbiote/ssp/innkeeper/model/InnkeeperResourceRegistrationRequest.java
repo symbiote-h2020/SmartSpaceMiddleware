@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyFactory;
@@ -293,6 +294,7 @@ public class InnkeeperResourceRegistrationRequest {
 
 		//ADD OData
 		log.info("ADD OData:");
+		log.info("msg.getSemanticDescription().getId()="+msg.getSemanticDescription().getId());
 		addInfoForOData(msg);
 	}
 
@@ -300,6 +302,13 @@ public class InnkeeperResourceRegistrationRequest {
 		RegistrationInfoOData result = null;
 		List<Parameter> parameters;
 		Resource r = sspResource.getSemanticDescription();
+		
+		Date session_expiration=null; 
+		Optional<ResourceInfo> rInfo = resourcesRepository.findById(sspResource.getSspIdResource());
+		if (rInfo != null) {
+			session_expiration=rInfo.get().getSessionExpiration();
+		}
+		
 		if (r.getClass().equals(Actuator.class)) {
 			log.info("Save Device for Resource");
 			log.info("sspResource.getSspIdResource() = " + sspResource.getSspIdResource());
@@ -311,7 +320,8 @@ public class InnkeeperResourceRegistrationRequest {
 				//String superClass = Capability.class.getSimpleName();
 				String className = Capability.class.getSimpleName();
 				String superClass = null;
-				result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(),r.getId(), className, superClass, parameters);
+				
+				result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(),r.getId(), className, superClass, parameters,session_expiration);
 			}
 		} else if (r.getClass().equals(Device.class)) {
 			log.info("Save Device for Resource");
@@ -325,7 +335,7 @@ public class InnkeeperResourceRegistrationRequest {
 				//String superClass = Service.class.getSimpleName();
 				String className = Service.class.getSimpleName();
 				String superClass = null;
-				result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(), r.getId(), className, superClass, parameters);
+				result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(), r.getId(), className, superClass, parameters,session_expiration);
 			}
 		} else if (r.getClass().equals(Service.class)) {
 
@@ -333,14 +343,15 @@ public class InnkeeperResourceRegistrationRequest {
 			parameters = service.getParameters();
 			String className = Service.class.getSimpleName();
 			String superClass = null;
-			result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(), r.getId(), className, superClass, parameters);
+			result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(), r.getId(), className, superClass, parameters,session_expiration);
 		}	
 		return result;
 
 
 	}
 
-	private RegistrationInfoOData saveRegistrationInfoODataInDb(String sspIdResource, String id, String className, String superClass, List<Parameter> parameters) {
+	private RegistrationInfoOData saveRegistrationInfoODataInDb(String sspIdResource, String id, String className, String superClass, List<Parameter> parameters, Date session_expiration) {
+		log.info("RegistrationInfoOData, id:"+id);
 		Set<ParameterInfo> parameterInfoList = new HashSet<>();
 		for (Parameter p : parameters) {
 			String type = "string";
@@ -350,16 +361,16 @@ public class InnkeeperResourceRegistrationRequest {
 			} else if (datatype.getClass().equals(PrimitiveDatatype.class)) {
 				type = ((PrimitiveDatatype) datatype).getBaseDatatype();
 			}
-			
+
 			log.info("Add parameter:");
 			log.info("type:"+type);
 			log.info("p.getName():"+p.getName());
 			log.info("p.isMandatory():"+p.isMandatory());
-			
+
 			ParameterInfo parameterInfo = new ParameterInfo(type, p.getName(), p.isMandatory());
 			parameterInfoList.add(parameterInfo);
 		}
-		RegistrationInfoOData infoOData = new RegistrationInfoOData(sspIdResource, id, className, superClass, parameterInfoList);
+		RegistrationInfoOData infoOData = new RegistrationInfoOData(sspIdResource, id, className, superClass, parameterInfoList,session_expiration);
 		RegistrationInfoOData infoODataNew = infoODataRepo.insertNewSSP(infoOData);
 		return infoODataNew;
 	}
