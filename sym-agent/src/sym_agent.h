@@ -23,7 +23,6 @@
 #endif
 
 #define DEBUG_SYM_CLASS 1
-//#ifndef DEBUG_SYM_CLASS
 #if DEBUG_SYM_CLASS == 1
   // Print debug with carriege return
   #define P(__VA_ARGS__) Serial.println(__VA_ARGS__);
@@ -33,10 +32,9 @@
   #define P(__VA_ARGS__)
   #define PI(__VA_ARGS__)
 #endif
-//#endif
 
 #define FLASH_MEMORY_RESERVATION_AGENT  512
-#define FLASH_LSP_START_ADDR    0
+//#define FLASH_LSP_START_ADDR    0
 // thought to be a 4 bytes identifier and 12 HEX byte
 // like this: sym-00112233445566778899aabb
 #define FLASH_LSP_START_SSPID   0
@@ -47,19 +45,17 @@
 
 #define FLASH_AGENT_START_SYMID 48
   // 12 HEX bytes for sym-Id -> mapped to 24 ascii char
-//#define FLASH_AGENT_END_SYMID   60
 #define FLASH_AGENT_END_SYMID   72
 
-//#define FLASH_AGENT_START_RESOURCE_SYMID 61
-#define FLASH_AGENT_START_RESOURCE_SYMID 73
+#define FLASH_AGENT_START_SENSOR_RESOURCE_SYMID 73
   // 12 HEX bytes for sym-Id -> mapped to 24 ascii char
-//#define FLASH_AGENT_END_RESOURCE_SYMID 73
-#define FLASH_AGENT_END_RESOURCE_SYMID 97
+#define FLASH_AGENT_END_SENSOR_RESOURCE_SYMID 97
 
 #define MAX_JSON_SIZE 2500
-#define JOIN_URL "innkeeper.symbiote.org"
+#define JOIN_URL "10.20.30.1"
 //#define RAP_URL "192.168.97.105"
-#define JOIN_PATH "/innkeeper/registry"
+#define REGISTRY_PATH "/innkeeper/registry"
+#define JOIN_PATH "/innkeeper/join"
 #define RAP_PATH "/rap/v1/request"
 #define KEEPALIVE_PATH "/innkeeper/keep_alive"
 
@@ -91,18 +87,14 @@
 
 void keepAliveISR(void);
 
-//String dummyFunctionSensor();
-//boolean dummyFunctionActuator(int value);
-
-
 
 class symAgent
 {
   public:
     symAgent();
       //TODO please remember to add parameter for class BLE in the constructor
-    symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming);
-    symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming, Semantic* semantic);
+    symAgent(unsigned long keep_alive, String description, bool isRoaming);
+    symAgent(unsigned long keep_alive, String description, bool isRoaming, Semantic* semantic);
     /* This second constructor instantiate also the value for field comment inside obsProperty
     */
     ~symAgent();
@@ -113,6 +105,7 @@ class symAgent
 
     String getSymIdFromFlash();
     void saveIdInFlash();
+    void forceSymIdInFlash(String value);
 
     void saveSymIdResourceInFlash();
     String getSymIdResourceFromFlash();
@@ -132,7 +125,8 @@ class symAgent
       //join the ssp, return  status code of the request and do side effect of the response from the innkeeper into the join_resp struct
     int registry();
     int join();
-    String createSemanticDescription();
+    String createSensorSemanticDescription();
+    String createActuatorSemanticDescription();
       //set the keep alive interval for the agent
     void setKeepAlive(unsigned long keep_alive);
       //get back the keep alive interval for the agent
@@ -176,11 +170,20 @@ class symAgent
     String _sspId;
       //this is the agent identifier
     String _symId;
-    String _symIdResource;
+    //String _symIdResource;
+      // valid as internal id for both sensor and actuator
     String _internalId;
-    String _description;
+      // this is the sspId of the SDEV
+    String _symIdInternal;
 
-    //String _obsPropertyComment[RES_NUMBER];
+    String _sspIdSensorResource;
+    String _symIdSensorResource;
+
+    String _sspIdActuatorResource;
+    String _symIdActuatorResource;
+
+    bool _firstTimeEverConnect;
+    String _description;
 
     unsigned long _keep_alive;
     bool _roaming;
@@ -194,7 +197,6 @@ class symAgent
     StaticJsonBuffer<MAX_JSON_SIZE> _jsonBuff;
 
     RestClient* _rest_client;
-    //RestClient* _RapClient;
     ESP8266WebServer* _server;
 
     lsp* _security;

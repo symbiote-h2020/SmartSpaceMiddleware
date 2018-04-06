@@ -33,21 +33,13 @@ void keepAliveISR(void){
 	interrupts();
 }
 
-//String dummyFunctionSensor(){
-//	return "NA";
-//}
-
-//boolean dummyFunctionActuator(int value){
-//	return true;
-//}
-
 symAgent::symAgent()
 {
 		//create the json object, refers to https://github.com/bblanchon/ArduinoJson/blob/master/examples/JsonGeneratorExample/JsonGeneratorExample.ino
 		// calculate the ssp-id based on the WiFi MAC. TODO: maybe this is possible only when it is connected by wifi, or maybe is better to create this
 }
 
-symAgent::symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming)
+symAgent::symAgent(unsigned long keep_alive, String description, bool isRoaming)
 {
 	pinMode(JOIN_LED, OUTPUT);
 	pinMode(KEEPALIVE_LED, OUTPUT);
@@ -57,16 +49,16 @@ symAgent::symAgent(unsigned long keep_alive, String internalId, String descripti
 	_keep_alive = keep_alive * TICK_MILLISECONDS;
 		// change the value of the global variable keep_alive_interval accordingly
 	keep_alive_interval = _keep_alive;
-	_internalId = internalId;
 	_description = description;
 	_security = new lsp(TLS_PSK_WITH_AES_128_CBC_SHA ,"PBKDF2", ppsk, HMAC_DIGEST_SIZE);
 	_roaming = isRoaming;
 	_server = new ESP8266WebServer();
 	_regExpiration = 0; 
 	_subscribe = false;
+	_firstTimeEverConnect = true;
 }
 
-symAgent::symAgent(unsigned long keep_alive, String internalId, String description, bool isRoaming, Semantic* semantic)
+symAgent::symAgent(unsigned long keep_alive, String description, bool isRoaming, Semantic* semantic)
 {
 	pinMode(JOIN_LED, OUTPUT);
 	pinMode(KEEPALIVE_LED, OUTPUT);
@@ -76,7 +68,6 @@ symAgent::symAgent(unsigned long keep_alive, String internalId, String descripti
 	_keep_alive = keep_alive * TICK_MILLISECONDS;
 		// change the value of the global variable keep_alive_interval accordingly
 	keep_alive_interval = _keep_alive;
-	_internalId = internalId;
 	_description = description;
 	_security = new lsp(TLS_PSK_WITH_AES_128_CBC_SHA ,"PBKDF2", ppsk, HMAC_DIGEST_SIZE);
 	_roaming = isRoaming;
@@ -84,6 +75,7 @@ symAgent::symAgent(unsigned long keep_alive, String internalId, String descripti
 	_semantic = semantic;
 	_regExpiration = 0; 
 	_subscribe = false;
+	_firstTimeEverConnect = true;
 }
 
 
@@ -93,13 +85,10 @@ String symAgent::getSymIdFromFlash() {
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
 	for (uint8_t i = FLASH_AGENT_START_SYMID; i < FLASH_AGENT_END_SYMID; i++) {
 		tmpID += String((char)EEPROM.read(i));
-		///tmpID += String(EEPROM.read(i), HEX);
 	}
 	PI("Read this SYM-ID from flash: ");
 	P(tmpID);
 	EEPROM.end();
-				//ffffffffffffffffffffffff
-	///if (tmpID != "ffffffffffffffffffffffff") {
 	if (tmpID != "ffffffffffffffffffffffffffffffffffffffffffffffff") {
 		//valid sym-id
 		P("Valid sym-id!");
@@ -110,17 +99,16 @@ String symAgent::getSymIdFromFlash() {
 	}
 }
 
+/*
 String symAgent::getSymIdResourceFromFlash() {
 	String tmpID = "";
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
-	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
+	for (uint8_t i = FLASH_AGENT_START_SENSOR_RESOURCE_SYMID; i < FLASH_AGENT_END_SENSOR_RESOURCE_SYMID; i++) {
 		tmpID += String((char)EEPROM.read(i));
 	}
 	PI("Read this ResourceSymId from flash: ");
 	P(tmpID);
 	EEPROM.end();
-				//ffffffffffffffffffffffff
-	//if (tmpID != "ffffffffffffffffffffffff") {
 	if (tmpID != "ffffffffffffffffffffffffffffffffffffffffffffffff") {
 		//valid sym-id
 		P("Valid sym-id!");
@@ -138,7 +126,7 @@ String symAgent::getSymIdResourceFromFlash() {
 String symAgent::TestgetSymIdResourceFromFlash() {
 	String tmpID = "";
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
-	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
+	for (uint8_t i = FLASH_AGENT_START_SENSOR_RESOURCE_SYMID; i < FLASH_AGENT_END_SENSOR_RESOURCE_SYMID; i++) {
 		//tmpID += String(EEPROM.read(i), HEX);
 		tmpID += String((char)EEPROM.read(i));
 	}
@@ -160,13 +148,7 @@ void symAgent::TestsaveSymIdResourceInFlash(String symId) {
 	P("SAVE SYM-ID-RESOURCE IN FLASH");
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
 	uint8_t j = 0;
-	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
-		//PI((String(symId[j]) + String(symId[j+1])));
-		//PI( " => " );
-		//Serial.println((String(symId[j]) + String(symId[j+1])).toInt(), HEX);
-		//PI((String(symId[j]) + String(symId[j+1])));
-		//PI( " => " );
-		//P((String(symId[j], HEX) + String(symId[j+1], HEX)).toInt());
+	for (uint8_t i = FLASH_AGENT_START_SENSOR_RESOURCE_SYMID; i < FLASH_AGENT_END_SENSOR_RESOURCE_SYMID; i++) {
 		EEPROM.write(i, symId[j]);
 		j++;
 	}
@@ -176,7 +158,7 @@ void symAgent::TestsaveSymIdResourceInFlash(String symId) {
 	String tmpID = "";
 	j = 0;
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
-	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
+	for (uint8_t i = FLASH_AGENT_START_SENSOR_RESOURCE_SYMID; i < FLASH_AGENT_END_SENSOR_RESOURCE_SYMID; i++) {
 		//tmpID += String(EEPROM.read(i), HEX);
 		tmpID += String((char)EEPROM.read(i));
 		//tmpID.setCharAt(j, (char)EEPROM.read(i));
@@ -191,6 +173,7 @@ void symAgent::TestsaveSymIdResourceInFlash(String symId) {
 }
 
 //////////////////////
+*/
 
 void symAgent::saveIdInFlash() {
 	P("SAVE SYM-ID IN FLASH");
@@ -216,12 +199,12 @@ void symAgent::saveIdInFlash() {
 #endif
 }
 
-void symAgent::saveSymIdResourceInFlash() {
-	P("SAVE SYM-ID-RESOURCE IN FLASH");
+void symAgent::forceSymIdInFlash(String value) {
+	P("FORCE A VALUE SYM-ID in flash");
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
 	uint8_t j = 0;
-	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
-		EEPROM.write(i, _symIdResource[j]);
+	for (uint8_t i = FLASH_AGENT_START_SYMID; i < FLASH_AGENT_END_SYMID; i++) {
+		EEPROM.write(i, value[j]);
 		j++;
 	}
 	EEPROM.commit();
@@ -229,17 +212,17 @@ void symAgent::saveSymIdResourceInFlash() {
 #ifdef DEBUG_SYM_CLASS
 	String tmpID = "";
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
-	for (uint8_t i = FLASH_AGENT_START_RESOURCE_SYMID; i < FLASH_AGENT_END_RESOURCE_SYMID; i++) {
-		//tmpID += String(EEPROM.read(i), HEX);
-		tmpID += String((char)EEPROM.read(i));
+	for (uint8_t i = FLASH_AGENT_START_SYMID; i < FLASH_AGENT_END_SYMID; i++) {
+		tmpID += String(EEPROM.read(i), HEX);
 	}
-	PI("Read back SYM-ID-RESOURCE from flash: ");
+	PI("Read back SYM-ID from flash: ");
 	P(tmpID);
 	PI("What I expect:");
-	P(_symIdResource);
+	P(_symId);
 	EEPROM.end();
 #endif
 }
+
 
 symAgent::~symAgent()
 {
@@ -282,16 +265,21 @@ boolean symAgent::elaborateQuery()
 			Parse a JSON like this:
 			== GET ==
 			{
-  				"resourceInfo" : [ {
-			    "symbioteId" : "abcdefgh",
-			    "internalId" : "123456",
-			    "type" : "Light"
-
-			  }, {
-			    "type" : "Observation"
-			  } ],
-			  "type" : "GET"
-			}
+			  "resourceInfo": [
+			    {
+			      "sspIdResource": "1",
+			      "internalIdResource": "5c:cf:7f:3a:6b:76",
+			      "symIdParent": "pippo",
+			      "sspIdParent": "1",
+			      "session_expiration": 1522854128610,
+			      "observedProperties": [
+			        "temperature",
+			        "pressure"
+			      ]
+			    }
+			  ],
+			  "type": "GET"
+			} 
 
 			== SET ==
 			{
@@ -353,7 +341,8 @@ boolean symAgent::elaborateQuery()
 			}
 		*/
 		String type = _root["type"].as<String>();
-		if (_root["symbioteId"] == _symId) {
+		//if (_root["symbioteId"] == _symIdActuatorResource || _root["symbioteId"] == _symIdSensorResource) {
+		if (_root["resourceInfo"][0]["internalIdResource"] == _internalId ) {
 			if (type == "SET") setResource(resp);
 			else if (type == "GET") getResource();
 			else if (type == "HISTORY") getResource();
@@ -481,6 +470,7 @@ boolean symAgent::TestelaborateQuery(String resp)
 	return true;
 }
 
+/*
 void symAgent::setResource(String rapRequest) {
 	P("TEST-SET RESOURCE");
 	_jsonBuff.clear();
@@ -493,7 +483,8 @@ void symAgent::setResource(String rapRequest) {
 		_root.prettyPrintTo(Serial);
 		P(" ");
 #endif
-		if (_root["resourceInfo"][0]["symbioteId"] == _symId && _root["resourceInfo"][0]["internalId"] == _internalId) {
+		//if (_root["resourceInfo"][0]["symbioteId"] == _symId && _root["resourceInfo"][0]["internalId"] == _internalId) {
+		if (_root["resourceInfo"][0]["internalId"] == _internalId) {
 			// check only the first if the array, because the other should be the same
 			for (uint8_t i = 0; i < _semantic->getCapabilityNum(); i++) {
 				//check if any of my resources should be changed
@@ -507,7 +498,7 @@ void symAgent::setResource(String rapRequest) {
 					P(arraySize);
 					for (uint8_t j = 0; j < _semantic-> getParamNum(i); j++) {
 						if (j < arraySize) {
-													// ex: root["body"][RGBCapability][0]
+								// ex: root["body"][RGBCapability][0]
 							JsonObject& restriction = _root["body"][_semantic->getCapabilityName(i)][j];
 								// return somwthing like "RGB"
 							String restrictionNameString = restriction.begin()->key;
@@ -534,11 +525,110 @@ void symAgent::setResource(String rapRequest) {
 				}
 			}
 		} else {
-			PI("Mismatch in symId.\nWhat I got:\nSym-Id:\t");
+			PI("Mismatch in symId.\n*What I got*\nSym-Id:\t");
 			P(_root["resourceInfo"][0]["symbioteId"].as<String>());
 			PI("InternalId:\t");
 			P(_root["resourceInfo"][0]["internalId"].as<String>());
-			PI("What I expect:\nSym-Id:\t");
+			PI("*What I expect*\nSym-Id:\t");
+			P(_symId);
+			PI("InternalId:\t");
+			P(_internalId);
+			return;
+		}
+	return;
+}
+*/
+void symAgent::setResource(String rapRequest) {
+	P("SET RESOURCE");
+	_jsonBuff.clear();
+		JsonObject& _root = _jsonBuff.parseObject(rapRequest);
+		if (!_root.success()) {
+    		P("parseObject() failed");
+    		return;
+		}
+#if DEBUG_SYM_CLASS == 1
+		_root.prettyPrintTo(Serial);
+		P(" ");
+#endif
+		if (_root["resourceInfo"][0]["internalId"] == _internalId) {
+			JsonObject& capNameJson = _root["body"];
+					// return somwthing like "RGBCapability"
+			String capNameString = capNameJson.begin()->key;
+			uint8_t capabilityIndex = 0;
+				//now search the index of the capability with that name
+			for (uint8_t i = 0; i < _semantic->getCapabilityNum(); i++) {
+				if (_semantic->getCapabilityName(i) == capNameString) capabilityIndex = i;
+			}
+			for( uint8_t j = 0; j< 3; j++) {
+				JsonObject& insideCapabilityJSON = _root["body"][capNameString][j];
+				JsonObject::iterator it = insideCapabilityJSON.begin();
+				String propName = it->key;
+				uint8_t propValue = it->value;
+					PI("Actuating: ");
+					PI(capNameString);
+					PI(" => ");
+					PI(propName);
+					PI(" : ");
+					PI(propValue);
+				if (_semantic->actuateParameterOfCapability(capabilityIndex, propName, propValue)) {
+					P(" OK");
+				} else {
+					P("KO");
+				}
+			}
+/*
+	// check only the first if the array, because the other should be the same
+			for (uint8_t i = 0; i < _semantic->getCapabilityNum(); i++) {
+				//check if any of my resources should be changed
+				JsonObject& capNameJson = _root["body"];
+								// return somwthing like "RGB"
+				String capNameString = capNameJson.begin()->key;
+
+
+
+				String tmpString = _root["body"][_semantic->getCapabilityName(i)].as<String>();
+				PI("READ this capability:");
+				P(tmpString);
+				if ( tmpString != "" ) {
+					JsonArray& body = _root["body"][_semantic->getCapabilityName(i)];
+					int arraySize = body.size();
+					PI("Size of the array:\t");
+					P(arraySize);
+					for (uint8_t j = 0; j < _semantic-> getParamNum(i); j++) {
+						if (j < arraySize) {
+								// ex: root["body"][RGBCapability][0]
+							JsonObject& restriction = _root["body"][_semantic->getCapabilityName(i)][j];
+								// return somwthing like "RGB"
+							String restrictionNameString = restriction.begin()->key;
+							if (restrictionNameString != "") {
+								PI("Actuating: ");
+								PI(_semantic->getCapabilityName(i));
+								PI(" => ");
+								PI(restrictionNameString);
+								int value = restriction[restrictionNameString].as<int>();
+								PI(" : ");
+								PI(value);
+								if (_semantic->actuateParameterOfCapability(i, restrictionNameString, value)) {
+									P(" OK");
+								} else {
+									P("KO");
+								} 
+							} else {
+								PI("No restriction found at:\t");
+								P(j);
+							}
+						}
+						
+					}
+				}
+			}
+			*/
+		} else {
+			PI("Mismatch in symId.\n*What I got*\nSym-Id:\t");
+			P(_root["resourceInfo"][0]["symbioteId"].as<String>());
+			PI("InternalId:\t");
+			P(_root["resourceInfo"][0]["internalId"].as<String>());
+			PI("*What I expect*\nSym-Id:\t");
 			P(_symId);
 			PI("InternalId:\t");
 			P(_internalId);
@@ -591,11 +681,13 @@ void symAgent::getResource() {
 			String resp = "";
 			root.printTo(resp);
 			resp = "\r\n" + resp;
-			P("\n*************+\nPACKET SENT TO RAP:");
+			P("\n*************\nPACKET SENT TO RAP:");
 #if DEBUG_SYM_CLASS == 1
 		root.prettyPrintTo(Serial);
 		P(" ");
 #endif
+			//P("Print packet as plain-text:");
+			//P(resp);
 			_server->send(200, "application/json", resp);
 			dinamicJsonBuffer.clear();
 }
@@ -701,24 +793,29 @@ int symAgent::registry()
  		}
 	*/
  		//read from flash if there is stored a valid symId
-	_symId = getSymIdFromFlash();
-	//_root["symIdSDEV"] = _internalId;
-	_root["symIdSDEV"] = _symId;
-	//_semantic->setSymId(_symId);
+	//_symId = getSymIdFromFlash();
+ 	_symId = ""; ///// TODO FIXME
+	if (_symId == "") _firstTimeEverConnect = true;
+	else _firstTimeEverConnect = false;
+	//_firstTimeEverConnect = false;
+	_root["symId"] = _symId;
 	_root["pluginId"] = _mac;
-	//_root["pluginURL"] = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) + ":80";
+	_root["sspId"] = "";
+	_root["roaming"] = false;
+	_internalId = _mac;
+	String urlString = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) + "/rap/v1/request";
+	_root["pluginURL"] = urlString;
+	_semantic->setURL(urlString);
 	_root["dk1"] = _security->getDK1();
 		//Regarding the hashField could be (i) all 0 when the SDEV joins for the first time
 		// or (ii) hashField = H(sym-id || previous dk1)
 	_root["hashField"] = _security->getHashOfIdentity(_symId);
-	//_root["semanticDescription"] = createSemanticDescription();
-
 	String tempClearData = "";
 	String tempCryptData = "";
 	String tempJsonPacket = "";
 	String resp = "";
 	_root.printTo(tempClearData);
-	P("Join message (CLEAR-DATA): ");
+	P("Registry message (CLEAR-DATA): ");
 #if DEBUG_SYM_CLASS == 1
 	_root.prettyPrintTo(Serial);
 	P(" ");
@@ -744,8 +841,8 @@ int symAgent::registry()
 
 	tempJsonPacket = "\r\n" + tempJsonPacket;
 	_rest_client->setContentType("application/encrypted");
-	int statusCode = _rest_client->post(JOIN_PATH, tempJsonPacket.c_str(), &resp);
-	P("Join message (SDEVP): ");
+	int statusCode = _rest_client->post(REGISTRY_PATH, tempJsonPacket.c_str(), &resp);
+	P("Registry message (SDEVP): ");
 #if DEBUG_SYM_CLASS == 1
 	jsonCrypt.prettyPrintTo(Serial);
 	P(" ");
@@ -780,21 +877,23 @@ int symAgent::registry()
 		P("");
 #endif
 		 if ((_rootClearResp["result"].as<String>() == "REJECTED")) {
-			//kick away fro the SSP
+			//kick away from the SSP
 			P("JOIN REJECTED");
 			return ERR_KICKED_OUT_FROM_JOIN;
-		} else if (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED") {
+		} else if (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED" || _rootClearResp["result"].as<String>() == "OFFLINE") {
 			P("JOIN OK");
 			_regExpiration = _rootClearResp["registrationExpiration"].as<unsigned int>();
-			if (_symId == "" || _symId == _rootClearResp["symIdSDEV"].as<String>()) {
+			if (_symId == "" || _symId == _rootClearResp["symId"].as<String>()) {
 				// everything ok
 				P("JOIN SYMID OK");
-				_symId = _rootClearResp["symIdSDEV"].as<String>();
+				_symId = _rootClearResp["symId"].as<String>();
+				_symIdInternal = _rootClearResp["sspId"].as<String>();
 			} else {
 				P("JOIN MISMATCH");
 				return ERR_SYMID_MISMATCH_FROM_JOIN;
 			}
 		} else {
+			P("JOIN RESPONSE UNKNOWN");
 			return ERR_UNKNOWN_RESPONSE_FROM_JOIN;
 		}
 	} else {
@@ -836,139 +935,271 @@ int symAgent::registry()
 int symAgent::join()
 {
 	P("JOIN");
-	_jsonBuff.clear();
-	JsonObject& _root = _jsonBuff.createObject();
-	/*
-		Create a JSON like this:
-		{
-		   String symIdResources,
-		   String semanticDescription
- 		}
-	*/
- 		//read from flash if there is stored a valid symId
-	_symIdResource = getSymIdResourceFromFlash();
-	_root["symIdResource"] = _symIdResource;
-	_root["internalId"] = _internalId;
-	_semantic->setSymId(_symIdResource);
-	//_root["pluginId"] = _mac;
-	//_root["pluginURL"] = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) + ":80";
-	//_root["dk1"] = _security->getDK1();
-		//Regarding the hashField could be (i) all 0 when the SDEV joins for the first time
-		// or (ii) hashField = H(sym-id || previous dk1)
-	//_root["hashField"] = _security->getHashOfIdentity(_symId);
-	_root["semanticDescription"] = createSemanticDescription();
+	if (_firstTimeEverConnect) {
 
-	String tempClearData = "";
-	String tempCryptData = "";
-	String tempJsonPacket = "";
-	String resp = "";
-	_root.printTo(tempClearData);
-	P("Join message (CLEAR-DATA): ");
-#if DEBUG_SYM_CLASS == 1
-	_root.prettyPrintTo(Serial);
-	P(" ");
-#endif
+		if (_semantic->isAnActuator()) {
+			P("JOIN-ACTUATOR");
+			// send the join request only if first time connected to a SSP
+			// join the actuator resource to the SSP
+			_jsonBuff.clear();
+			JsonObject& _root = _jsonBuff.createObject();
+					
+		 		//read from flash if there is stored a valid symId
+			//_symIdResource = getSymIdResourceFromFlash();
+			//_symIdResource = "";
+		 	_root["internalIdResource"] = _internalId;
+		 	_root["sspIdResource"] = "";
+			_root["sspIdParent"] = _symIdInternal;
+			_root["symIdParent"] = _symId;
+			_root["accessPolicy"] = (char*)NULL;
+			_root["filteringPolicy"] = (char*)NULL;
 
-	/*
-		create a JSON like this:
-		{
-			"mti": 0x50,
-			"sessionId": <value>,
-			"data": "encryptJoinJSON"
-		}
-	*/
-			// crypt the data using the cryptosuite from lightweightsecurity protocol
-	_security->cryptData(tempClearData, tempCryptData);
+			String tmpSemanticJsonString = createActuatorSemanticDescription();
+			DynamicJsonBuffer dinamicJsonBuffer; 
+			JsonObject& dinamicRoot = dinamicJsonBuffer.parseObject(tmpSemanticJsonString);
+			if (!dinamicRoot.success()) {
+		    		P("parseObject() failed");
+		    		return ERR_PARSE_JSON;
+				}
+			_root["resource"] = dinamicRoot;
 
-	_jsonBuff.clear();
-	JsonObject& jsonCrypt = _jsonBuff.createObject();
-	jsonCrypt["mti"] = STRING_MTI_SDEV_DATA_UPLINK;
-	jsonCrypt["sessionId"] = _security->getSessionId();
-	jsonCrypt["data"] = tempCryptData;
-	jsonCrypt.printTo(tempJsonPacket);
+			String tempClearData = "";
+			String tempCryptData = "";
+			String tempJsonPacket = "";
+			String resp = "";
+			_root.printTo(tempClearData);
+			P("Join message (CLEAR-DATA): ");
+		#if DEBUG_SYM_CLASS == 1
+			_root.prettyPrintTo(Serial);
+			P(" ");
+		#endif
 
-	tempJsonPacket = "\r\n" + tempJsonPacket;
-	_rest_client->setContentType("application/encrypted");
-	int statusCode = _rest_client->post(JOIN_PATH, tempJsonPacket.c_str(), &resp);
-	P("Join message (SDEVP): ");
-#if DEBUG_SYM_CLASS == 1
-	jsonCrypt.prettyPrintTo(Serial);
-	P(" ");
-#endif
-	PI("Status code from server: ");
-  	P(statusCode);
-	if (statusCode < 300 and statusCode >= 200){
-		//got a valid response
-		_jsonBuff.clear();
-		//remove any additional byte from response like dimension of the buffer
-		resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
-		JsonObject& _rootCryptResp = _jsonBuff.parseObject(resp);
-		if (!_rootCryptResp.success()) {
-    		P("parseObject() failed");
-    		return ERR_PARSE_JSON;
-		}
-#if DEBUG_SYM_CLASS == 1
-		_rootCryptResp.prettyPrintTo(Serial);
-		P("");
-#endif
-		_security->decryptData( _rootCryptResp["data"].as<String>(), tempClearData);
+			/*
+				create a JSON like this:
+				{
+					"mti": 0x50,
+					"sessionId": <value>,
+					"data": "encryptJoinJSON"
+				}
+			*/
+					// crypt the data using the cryptosuite from lightweightsecurity protocol
+			_security->cryptData(tempClearData, tempCryptData);
 
-		_jsonBuff.clear();
-		JsonObject& _rootClearResp = _jsonBuff.parseObject(tempClearData);
-		if (!_rootCryptResp.success()) {
-    		P("parseObject() failed");
-    		return ERR_PARSE_JSON;
-		}
-#if DEBUG_SYM_CLASS == 1
-		P("Decrypted JSON");
-		_rootClearResp.prettyPrintTo(Serial);
-		P("");
-#endif
-		 if ((_rootClearResp["result"].as<String>() == "REJECTED")) {
-			//kick away fro the SSP
-			P("JOIN REJECTED");
-			return ERR_KICKED_OUT_FROM_JOIN;
-		} else if (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED") {
-			P("JOIN OK");
-			//_regExpiration = _rootClearResp["registrationExpiration"].as<unsigned int>();
-			if (_symIdResource == "" || _symIdResource == _rootClearResp["symIdResource"].as<String>()) {
-				// everything ok
-				P("JOIN SYMID OK");
-				_symIdResource = _rootClearResp["symIdResource"].as<String>();
+			_jsonBuff.clear();
+			JsonObject& jsonCrypt = _jsonBuff.createObject();
+			jsonCrypt["mti"] = STRING_MTI_SDEV_DATA_UPLINK;
+			jsonCrypt["sessionId"] = _security->getSessionId();
+			jsonCrypt["data"] = tempCryptData;
+			jsonCrypt.printTo(tempJsonPacket);
+
+			tempJsonPacket = "\r\n" + tempJsonPacket;
+			_rest_client->setContentType("application/encrypted");
+			int statusCode = _rest_client->post(JOIN_PATH, tempJsonPacket.c_str(), &resp);
+			P("Join message (SDEVP): ");
+		#if DEBUG_SYM_CLASS == 1
+			jsonCrypt.prettyPrintTo(Serial);
+			P(" ");
+		#endif
+			PI("Status code from server: ");
+		  	P(statusCode);
+			if (statusCode < 300 and statusCode >= 200){
+				//got a valid response
+				_jsonBuff.clear();
+				//remove any additional byte from response like dimension of the buffer
+				resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
+				JsonObject& _rootCryptResp = _jsonBuff.parseObject(resp);
+				if (!_rootCryptResp.success()) {
+		    		P("parseObject() failed");
+		    		return ERR_PARSE_JSON;
+				}
+		#if DEBUG_SYM_CLASS == 1
+				_rootCryptResp.prettyPrintTo(Serial);
+				P("");
+		#endif
+				_security->decryptData( _rootCryptResp["data"].as<String>(), tempClearData);
+				_jsonBuff.clear();
+				JsonObject& _rootClearResp = _jsonBuff.parseObject(tempClearData);
+				if (!_rootCryptResp.success()) {
+		    		P("parseObject() failed");
+		    		return ERR_PARSE_JSON;
+				}
+		#if DEBUG_SYM_CLASS == 1
+				P("Decrypted JSON");
+				_rootClearResp.prettyPrintTo(Serial);
+				P("");
+		#endif
+				 if ((_rootClearResp["result"].as<String>() == "REJECTED")) {
+					//kick away fro the SSP
+					P("JOIN REJECTED");
+					return ERR_KICKED_OUT_FROM_JOIN;
+				} else if (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED" || _rootClearResp["result"].as<String>() == "OFFLINE") {
+					P("JOIN OK");
+						_sspIdActuatorResource = _rootClearResp["symIdResource"].as<String>();
+						_symIdActuatorResource = _rootClearResp["symIdResource"].as<String>();
+				} else {
+					return ERR_UNKNOWN_RESPONSE_FROM_JOIN;
+				}
 			} else {
-				P("JOIN MISMATCH");
-				return ERR_SYMID_MISMATCH_FROM_JOIN;
+					//error response from server
+					P("GOT http error code from INNK");
+					_jsonBuff.clear();
+					//remove any additional byte from response like dimension of the buffer
+					resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
+					JsonObject& _root2 = _jsonBuff.parseObject(resp);
+					if (!_root2.success()) {
+			    		P("parseObject() failed");
+			    		return ERR_PARSE_JSON;
+					}
+		#if DEBUG_SYM_CLASS == 1
+					_root2.prettyPrintTo(Serial);
+					P("");
+		#endif
 			}
-		} else {
-			return ERR_UNKNOWN_RESPONSE_FROM_JOIN;
+			dinamicJsonBuffer.clear();
+			//return statusCode;
+		}
+
+		if (_semantic->isASensor()) {
+			P("JOIN-SENSOR");
+			// join the sensor resource to the SSP
+			// send the join request only if first time connected to a SSP
+			_jsonBuff.clear();
+			JsonObject& _root = _jsonBuff.createObject();
+			/*
+				Create a JSON like this:
+				{
+				   String sspId, // internal Id valid for the SSP, look at this as a "local" symId
+				   String symId, // symId of the container SDEV class
+				   String internalIdResource,
+				   String semanticDescription
+		 		}
+			*/
+		 		//read from flash if there is stored a valid symId
+			//_symIdResource = getSymIdResourceFromFlash();
+			//_symIdResource = "";
+		 	_root["internalIdResource"] = _internalId;
+		 	_root["sspIdResource"] = "";
+			_root["sspIdParent"] = _symIdInternal;
+			_root["symIdParent"] = _symId;
+			_root["accessPolicy"] = (char*)NULL;
+			_root["filteringPolicy"] = (char*)NULL;
+
+			String tmpSemanticJsonString = createSensorSemanticDescription();
+			DynamicJsonBuffer dinamicJsonBuffer; 
+			JsonObject& dinamicRoot = dinamicJsonBuffer.parseObject(tmpSemanticJsonString);
+			if (!dinamicRoot.success()) {
+		    		P("parseObject() failed");
+		    		return ERR_PARSE_JSON;
+				}
+			_root["resource"] = dinamicRoot;
+
+			String tempClearData = "";
+			String tempCryptData = "";
+			String tempJsonPacket = "";
+			String resp = "";
+			_root.printTo(tempClearData);
+			P("Join message (CLEAR-DATA): ");
+		#if DEBUG_SYM_CLASS == 1
+			_root.prettyPrintTo(Serial);
+			P(" ");
+		#endif
+
+			/*
+				create a JSON like this:
+				{
+					"mti": 0x50,
+					"sessionId": <value>,
+					"data": "encryptJoinJSON"
+				}
+			*/
+					// crypt the data using the cryptosuite from lightweightsecurity protocol
+			_security->cryptData(tempClearData, tempCryptData);
+
+			_jsonBuff.clear();
+			JsonObject& jsonCrypt = _jsonBuff.createObject();
+			jsonCrypt["mti"] = STRING_MTI_SDEV_DATA_UPLINK;
+			jsonCrypt["sessionId"] = _security->getSessionId();
+			jsonCrypt["data"] = tempCryptData;
+			jsonCrypt.printTo(tempJsonPacket);
+
+			tempJsonPacket = "\r\n" + tempJsonPacket;
+			_rest_client->setContentType("application/encrypted");
+			int statusCode = _rest_client->post(JOIN_PATH, tempJsonPacket.c_str(), &resp);
+			P("Join message (SDEVP): ");
+		#if DEBUG_SYM_CLASS == 1
+			jsonCrypt.prettyPrintTo(Serial);
+			P(" ");
+		#endif
+			PI("Status code from server: ");
+		  	P(statusCode);
+			if (statusCode < 300 and statusCode >= 200){
+				//got a valid response
+				_jsonBuff.clear();
+				//remove any additional byte from response like dimension of the buffer
+				resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
+				JsonObject& _rootCryptResp = _jsonBuff.parseObject(resp);
+				if (!_rootCryptResp.success()) {
+		    		P("parseObject() failed");
+		    		return ERR_PARSE_JSON;
+				}
+		#if DEBUG_SYM_CLASS == 1
+				_rootCryptResp.prettyPrintTo(Serial);
+				P("");
+		#endif
+				_security->decryptData( _rootCryptResp["data"].as<String>(), tempClearData);
+				_jsonBuff.clear();
+				JsonObject& _rootClearResp = _jsonBuff.parseObject(tempClearData);
+				if (!_rootCryptResp.success()) {
+		    		P("parseObject() failed");
+		    		return ERR_PARSE_JSON;
+				}
+		#if DEBUG_SYM_CLASS == 1
+				P("Decrypted JSON");
+				_rootClearResp.prettyPrintTo(Serial);
+				P("");
+		#endif
+				 if ((_rootClearResp["result"].as<String>() == "REJECTED")) {
+					//kick away fro the SSP
+					P("JOIN REJECTED");
+					return ERR_KICKED_OUT_FROM_JOIN;
+				} else if (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED" || _rootClearResp["result"].as<String>() == "OFFLINE") {
+					P("JOIN OK");
+						_sspIdSensorResource = _rootClearResp["sspIdResource"].as<String>();
+						_symIdSensorResource = _rootClearResp["symIdResource"].as<String>();
+				} else {
+					return ERR_UNKNOWN_RESPONSE_FROM_JOIN;
+				}
+			} else {
+					//error response from server
+					P("GOT http error code from INNK");
+					_jsonBuff.clear();
+					//remove any additional byte from response like dimension of the buffer
+					resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
+					JsonObject& _root2 = _jsonBuff.parseObject(resp);
+					if (!_root2.success()) {
+			    		P("parseObject() failed");
+			    		return ERR_PARSE_JSON;
+					}
+		#if DEBUG_SYM_CLASS == 1
+					_root2.prettyPrintTo(Serial);
+					P("");
+		#endif
+			}
+			dinamicJsonBuffer.clear();
+			return statusCode;
 		}
 	} else {
-			//error response from server
-			P("GOT http error code from INNK");
-			_jsonBuff.clear();
-			//remove any additional byte from response like dimension of the buffer
-			resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
-			JsonObject& _root2 = _jsonBuff.parseObject(resp);
-			if (!_root2.success()) {
-	    		P("parseObject() failed");
-	    		return ERR_PARSE_JSON;
-			}
-#if DEBUG_SYM_CLASS == 1
-			_root2.prettyPrintTo(Serial);
-			P("");
-#endif
+		P("NO JOIN REQUIRED, RESOURCE ALREADY IN CORE");
+		return 200;
 	}
-	if (_roaming) {
-		P("ROAMING SDEV, SAVE CONTEXT IN FLASH");
-		//_security->saveContextInFlash();
-			// save the symbiote-ID of resource in flash
-		saveSymIdResourceInFlash();
-	}
-	return statusCode;
 }
 
-String symAgent::createSemanticDescription() {
-	return _semantic->returnSemanticString();
+String symAgent::createSensorSemanticDescription() {
+	return _semantic->returnSensorSemanticString();
+}
+
+String symAgent::createActuatorSemanticDescription() {
+	return _semantic->returnActuatorSemanticString();
 }
 
       //set the keep alive interval for the agent

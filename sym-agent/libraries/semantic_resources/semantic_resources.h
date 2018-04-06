@@ -20,6 +20,7 @@
 #include <Arduino.h>
 //#include <sym_agent.h>
 #include <lsp.h>
+#include <ArduinoJson.h>
 
 /*
 
@@ -176,7 +177,8 @@ class Capability {
 class Semantic {
   public:
     Semantic(String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property);
-    String returnSemanticString();
+    String returnSensorSemanticString();
+    String returnActuatorSemanticString();
     String getName();
     String getInternalId();
     String getURL();
@@ -189,6 +191,11 @@ class Semantic {
     String getCapabilityName(uint8_t capNum);
     bool actuateParameterOfCapability(uint8_t capNum, uint8_t propertyNum, int in);
     bool actuateParameterOfCapability(uint8_t capNum, String paramName, int in);
+
+    bool isASensor();
+    bool isAnActuator();
+
+    void setURL(String url);
 
     String getObsPropertyName(uint8_t propertyNumber);
     uint8_t getObsPropertyNum();

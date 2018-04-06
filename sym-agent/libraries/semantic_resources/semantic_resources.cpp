@@ -26,29 +26,53 @@ Semantic::Semantic(String name, String url, uint8_t capNum, Capability* cap, uin
 	_url = url;
 }
 
-String Semantic::returnSemanticString()
+String Semantic::returnSensorSemanticString()
 {
 	String tmpString = "";
-	tmpString += "{\"@c\":\".SmartDevice\",\"connectedTo\":\"*tba*\",\"available\":\"True\",\"hasResource\":{\"@c\":\".Resource\",\"symId\":\"";
-	tmpString += _symId;
-	tmpString += "\",\"name\":\"";
+	tmpString += "{\"@c\":\".StationarySensor\",\"id\":\"\",\"name\":\"SENS-";
 	tmpString += _name;
-	tmpString += "\",\"description\":\"NA\",\"labels\":\"NA\",\"interworkingServiceURL\":\"";
+	tmpString += "\",\"description\":null,\"interworkingServiceURL\":\"";
 	tmpString += _url;
-	tmpString += "/rap/v1/request\",\"locatedAt\":\"*tba*\",\"services\":null},\"capabilities\":[";
-	for (uint8_t i = 0; i < _capabilityNumber-1; i++) {
+	tmpString += "\",\"locatedAt\":null,\"services\":null,\"observesProperty\":";
+	if (_obsPropertyNumber > 0) {
+		// handle the case if no obsProperty available (e.g. is only an actuator)
+		tmpString += "[";
+		for (uint8_t i = 0; i < _obsPropertyNumber-1; i++) {
+			tmpString += "\"";
+			tmpString += _obsProperty[i].getName();
+			tmpString += "\",";
+		}
+		tmpString += "\"";
+		tmpString += _obsProperty[_obsPropertyNumber-1].getName();
+		tmpString += "\"]";
+	} else {
+		tmpString += "null";
+	}
+	tmpString += "}";
+	return tmpString;
+}
+
+String Semantic::returnActuatorSemanticString()
+{
+	String tmpString = "";
+	tmpString += "{\"@c\":\".Actuator\",\"id\":\"\",\"name\":\"ACT-";
+	tmpString += _name;
+	tmpString += "\",\"description\":null,\"interworkingServiceURL\":\"";
+	tmpString += _url;
+	tmpString += "\",\"locatedAt\":null,\"services\":null,\"capabilities\":";
+	if (_capabilityNumber > 0) {
+		// handle the case if no obsProperty available (e.g. is only an actuator)
+		tmpString += "[";
+		for (uint8_t i = 0; i < _capabilityNumber-1; i++) {
 			tmpString += _capability[i].returnSemanticString();
 			tmpString += ",";
 		}
-	tmpString += _capability[_capabilityNumber-1].returnSemanticString();
-	tmpString += "],\"observesProperty\":[";
-	//tmpString += "\"observesProperty\":[";
-	for (uint8_t i = 0; i < _obsPropertyNumber-1; i++) {
-			tmpString += _obsProperty[i].returnSemanticString();
-			tmpString += ",";
-		}
-	tmpString += _obsProperty[_obsPropertyNumber-1].returnSemanticString();
-	tmpString += "]}";
+		tmpString += _capability[_capabilityNumber-1].returnSemanticString();
+		tmpString += "]";
+	} else {
+		tmpString += "null";
+	}
+	tmpString += "}";
 	return tmpString;
 }
 
@@ -56,11 +80,6 @@ String Semantic::getName()
 {
 	return _name;
 }
-
-//String Semantic::getSymId()
-//{
-	//return _symId;
-//}
 
 String Semantic::getURL()
 {
@@ -117,6 +136,23 @@ bool Semantic::actuateParameterOfCapability(uint8_t capNum, String paramName, in
 
 }
 
+bool Semantic::isASensor()
+{
+	if (_obsPropertyNumber > 0) return true;
+	else return false;
+}
+
+bool Semantic::isAnActuator()
+{
+	if (_capabilityNumber > 0) return true;
+	else return false;
+}
+
+void Semantic::setURL(String url)
+{
+	_url = url;
+}
+
 String Semantic::getObsPropertyName(uint8_t propertyNumber)
 {
 	if (propertyNumber < _obsPropertyNumber) {
@@ -145,22 +181,15 @@ Capability::Capability(String name, uint8_t param_num, Parameter* parameter)
 String Capability::returnSemanticString()
 {
 	String tmpString = "";
-	//tmpString += "\"capabilities\":[{\"name\":\"";
 	tmpString += "{\"name\":\"";
 	tmpString += _name;
-	tmpString += "\",\"@c\":\".Capability\",\"inputParameter\":[";
+	tmpString += "\",\"parameters\":[";
 	for (uint8_t i = 0; i < _paramNum-1; i++) {
 			tmpString += _param[i].returnSemanticString();
 			tmpString += ",";
 		}
 	tmpString += _param[_paramNum-1].returnSemanticString();
-	tmpString += "],\"actsOn\":\"*tba*\",\"affects\":[\"";
-	for (uint8_t i = 0; i < _paramNum-1; i++) {
-			tmpString += _param[i].getName();
-			tmpString += "\",\"";
-		}
-	tmpString += _param[_paramNum-1].getName();
-	tmpString += "\"]}";
+	tmpString += "],\"effects\":null}";
 	return tmpString;
 }
 
@@ -205,9 +234,12 @@ String Parameter::returnSemanticString()
 	String tmpString = "";
 	tmpString = "{\"name\":\"";
 	tmpString += _name;
-	tmpString += "\",\"@c\":\".Parameter\",\"isArray\":false,\"datatype\":\"";
+	tmpString += "\",\"datatype\":{\"@c\":\".PrimitiveDatatype\",\"baseDatatype\":\"";
 	tmpString += _dataType;
-	tmpString += "\",\"mandatory\":true,\"restrictions\":[{\"min\":";
+	tmpString += "\",\"isArray\":";
+	if (_isArray) tmpString += "true},";
+	else tmpString += "false},";
+	tmpString += "\"mandatory\":true,\"restrictions\":[{\"@c\":\".RangeRestriction\",\"min\":";
 	tmpString += _restrictionMin;
 	tmpString += ",\"max\":";
 	tmpString += _restrictionMax;
