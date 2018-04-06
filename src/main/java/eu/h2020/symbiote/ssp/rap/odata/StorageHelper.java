@@ -131,7 +131,7 @@ public class StorageHelper {
                     if (symIdPar != null && !symIdPar.isEmpty()) {
                         sessionInfo = sessionsRepo.findBySymId(symIdPar);
                     } else {
-                        log.error("No parent id associated to resource " + symbioteId);
+                        log.debug("No parent id associated to resource " + symbioteId + " with type " + resourceInfo.getType());
                     }
                 }
             }
@@ -167,7 +167,7 @@ public class StorageHelper {
                 log.error("Body:\n" + responseEntity.getBody());
                 throw new Exception("Error response from plugin");
             }
-            log.info("response:\n" + responseEntity.getBody());
+            log.info("response:\n" + new ObjectMapper().writeValueAsString(responseEntity.getBody()));
             RapPluginResponse response = extractRapPluginResponse(responseEntity.getBody());
             if(response!=null) {
                 if (response instanceof RapPluginOkResponse) {
@@ -233,14 +233,12 @@ public class StorageHelper {
                                     e);
                         }
                     }
-                } else {
-                    return response;
                 }
             } else {
                 response = new RapPluginOkResponse(200, responseEntity.getBody());
             }
 
-            log.info("RapPluginResponse object:\n" + response);
+            log.info("RapPluginResponse object:\n" + new ObjectMapper().writeValueAsString(response.getContent()));
             return response;
         } catch (Exception e) {
             String err = "Unable to read resource " + symbioteId;
