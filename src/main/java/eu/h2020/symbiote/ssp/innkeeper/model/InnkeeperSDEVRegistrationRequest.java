@@ -25,6 +25,8 @@ import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControlle
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
+import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
+import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
@@ -48,6 +50,9 @@ public class InnkeeperSDEVRegistrationRequest {
 	
 	@Autowired
 	ResourcesRepository resourcesRepository;
+	
+	@Autowired
+	RegistrationInfoODataRepository registrationInfoODataRepository; 
 
 	public void setIsCoreOnline(Boolean v) {
 		this.isCoreOnline=v;
@@ -255,7 +260,6 @@ public class InnkeeperSDEVRegistrationRequest {
 
 		//UPDATE Expiration time of Resources
 
-		//TODO: check also for Policies and ODATA?
 		List<ResourceInfo> resList= resourcesRepository.findBySspIdParent(s.getSspId());
 		List<Map<String, String>> updatedSymIdList = new ArrayList<Map<String,String>>();
 		for (ResourceInfo r : resList) {
@@ -276,6 +280,10 @@ public class InnkeeperSDEVRegistrationRequest {
 		}
 		response.setSymId(s.getSymId());
 		response.setSspId(s.getSspId());
+		
+		
+		//Keep Alive for OData
+		//TBD
 
 		if (isCoreOnline){
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);
@@ -321,7 +329,6 @@ public class InnkeeperSDEVRegistrationRequest {
 			sessionsRepository.delete(s);
 
 			//Delete Resources
-			//TODO: check also for Policies and ODATA?
 			List<ResourceInfo> resList= resourcesRepository.findBySspIdParent(s.getSspId());
 
 			for (ResourceInfo r : resList) {
@@ -331,9 +338,23 @@ public class InnkeeperSDEVRegistrationRequest {
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
 			httpStatus=HttpStatus.OK;
 
+			//Delete OData
+			List<RegistrationInfoOData> odataList= registrationInfoODataRepository.findBySspId(s.getSspId());
+
+			for (RegistrationInfoOData r : odataList) {
+				registrationInfoODataRepository.delete(r);
+			}
+
+			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
+			httpStatus=HttpStatus.OK;
+			
 			return new ResponseEntity<Object>(
 					new ObjectMapper().writeValueAsString(response), 
 					responseHeaders,httpStatus);
+			
+			
+			
+			
 		}
 
 		//DEFAULT: ERROR
