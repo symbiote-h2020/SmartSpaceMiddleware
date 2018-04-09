@@ -305,16 +305,20 @@ public class StorageHelper {
                 log.error("Body:\n" + obj.getBody());
                 throw new Exception("Error response from plugin");
             }
-            Object response = extractResponse(obj.getBody());
             RapPluginResponse result;
-            if(response instanceof RapPluginResponse) {
-                if (response instanceof RapPluginErrorResponse){
-                    RapPluginErrorResponse errorResponse = (RapPluginErrorResponse) response;
-                    throw new ODataApplicationException(errorResponse.getMessage(), errorResponse.getResponseCode(), null);
+            if(obj.getBody() != null) {
+                Object response = extractResponse(obj.getBody());
+                if (response instanceof RapPluginResponse) {
+                    if (response instanceof RapPluginErrorResponse) {
+                        RapPluginErrorResponse errorResponse = (RapPluginErrorResponse) response;
+                        throw new ODataApplicationException(errorResponse.getMessage(), errorResponse.getResponseCode(), null);
+                    }
+                    result = (RapPluginResponse) response;
+                } else {
+                    result = new RapPluginOkResponse(200, response);
                 }
-                result = (RapPluginResponse)response;
             } else {
-                result = new RapPluginOkResponse(200, response);
+                result = new RapPluginOkResponse(200, "");
             }
             return result;
         } catch (Exception e) {
