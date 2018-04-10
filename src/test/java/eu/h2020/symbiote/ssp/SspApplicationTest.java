@@ -11,7 +11,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest
 @TestConfiguration
 @ActiveProfiles("test")
-public class SspApplicationTests {
+public class SspApplicationTest {
 
 	@Test
 	public void contextLoads() {
