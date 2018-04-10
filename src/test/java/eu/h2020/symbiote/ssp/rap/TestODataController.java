@@ -5,18 +5,14 @@
  */
 package eu.h2020.symbiote.ssp.rap;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.interfaces.NorthboundEdmController;
 import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
 import eu.h2020.symbiote.ssp.rap.managers.AuthorizationResult;
-import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import java.nio.charset.Charset;
 import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,7 +23,6 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.http.HttpHeaders;
@@ -54,7 +49,7 @@ public class TestODataController {
     @InjectMocks
     @Autowired
     NorthboundEdmController controller;
-    
+
     private MockMvc mockMvc;
     
     @Autowired
@@ -101,15 +96,14 @@ public class TestODataController {
             //test get
             ResultActions res = mockMvc.perform(get("/rap/Sensor('"+resourceId+"')/Observation?$top="+top)
                 .headers(getHeader()));
-            
-            res.andExpect(status().isInternalServerError());           
+            res.andExpect(status().isInternalServerError());
             //test security
             res = mockMvc.perform(get("/rap/Sensor('"+resourceId+"')/Observation?$top="+top)
                 .headers(getHeader()));
             res.andExpect(status().isInternalServerError());
             //delete
             resourcesRepository.delete(resourceId);
-            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
+            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalIdResource(platformResourceId);
             assert(resourceInfoList == null || resourceInfoList.isEmpty());
         }catch(Exception e){
             log.error(e.getMessage(), e);
@@ -143,7 +137,6 @@ public class TestODataController {
             //test history
             ResultActions res = mockMvc.perform(get("/rap/Sensor('"+resourceId+"')/Observation?$top="+top)
                 .headers(getHeader()));
-            
             res.andExpect(status().isInternalServerError());
             //test security
             res = mockMvc.perform(get("/rap/Sensor('"+resourceId+"')/Observation?$top="+top)
@@ -151,7 +144,7 @@ public class TestODataController {
             res.andExpect(status().isInternalServerError());
             //delete
             resourcesRepository.delete(resourceId);
-            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
+            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalIdResource(platformResourceId);
             assert(resourceInfoList == null || resourceInfoList.isEmpty());
         }catch(Exception e){
             log.error(e.getMessage(), e);
@@ -192,9 +185,8 @@ public class TestODataController {
                 .content("{\"RGBCapability\": [{\"r\":0,\"g\":0,\"b\":0}]}"));
             res.andExpect(status().isOk());
             String content = res.andReturn().getResponse().getContentAsString();
-
             content = res.andReturn().getResponse().getContentAsString();
-            assert(content.equals(""));            
+            assert(content.equals(""));
             //actuate Dimmer
             res = mockMvc.perform(put("/rap/Light('"+resourceId+"')")
                 .headers(getHeader())
@@ -202,9 +194,7 @@ public class TestODataController {
                 .content("{\"DimmerCapability\": [{\"level\":0}]}"));
             res.andExpect(status().isOk());
             content = res.andReturn().getResponse().getContentAsString();
-
-            content = res.andReturn().getResponse().getContentAsString();
-            assert(content.equals(""));            
+            assert(content.equals(""));
             //actuate Curtain
             res = mockMvc.perform(put("/rap/Curtain('"+resourceId+"')")
                 .headers(getHeader())
@@ -212,9 +202,7 @@ public class TestODataController {
                 .content("{\"SetPositionCapability\": [{\"position\":0}]}"));
             res.andExpect(status().isOk());
             content = res.andReturn().getResponse().getContentAsString();
-            
-            content = res.andReturn().getResponse().getContentAsString();
-            assert(content.equals(""));            
+            assert(content.equals(""));
             //wrong actuation
             res = mockMvc.perform(put("/rap/Actuator('"+resourceId+"')")
                 .headers(getHeader())
@@ -229,25 +217,23 @@ public class TestODataController {
             res.andExpect(status().isInternalServerError());            
             //delete
             resourcesRepository.delete(resourceId);
-            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
+            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalIdResource(platformResourceId);
             assert(resourceInfoList == null || resourceInfoList.isEmpty());
         }catch(Exception e){
             log.error(e.getMessage(), e);
         }
     }
-    
-    
-    
+
     private HttpHeaders getHeader(){
         return authorizationManager.getServiceRequestHeaders().getServiceRequestHeaders();
     }
     
     private ResourceInfo addResource(String resourceId, String platformResourceId, List<String> obsProperties, String pluginId) {
-        ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId);
+        ResourceInfo resourceInfo = new ResourceInfo(resourceId, "", platformResourceId, "", "");
         if(obsProperties != null)
             resourceInfo.setObservedProperties(obsProperties);
         if(pluginId != null && pluginId.length()>0)
-            resourceInfo.setPluginId(pluginId);
+            resourceInfo.setPluginUrl(pluginId);
         
         ResourceInfo resourceInfoResult = resourcesRepository.save(resourceInfo);
         return resourceInfoResult;

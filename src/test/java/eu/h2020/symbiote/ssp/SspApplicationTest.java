@@ -7,14 +7,14 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-
 @RunWith(SpringRunner.class)
 @SpringBootTest
-@TestConfiguration 
+@TestConfiguration
 @ActiveProfiles("test")
-public class SspApplicationTest {
+public class SspApplicationTests {
 
-    @Test
-    public void contextLoads() {
-    }
+	@Test
+	public void contextLoads() {
+	}
+
 }

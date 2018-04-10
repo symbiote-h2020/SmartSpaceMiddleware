@@ -8,18 +8,20 @@ import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 
 public class SspResource {
     @org.springframework.data.annotation.Id
-    @JsonProperty("internalId")
-    private String internalId;
-    @JsonProperty("pluginId")
-    private String pluginId;
-    @JsonProperty("pluginUrl")
-    private String pluginUrl;
-    @JsonProperty("dk1")
+    
+    @JsonProperty("internalIdResource")
+    private String internalIdResource; //resource Internal Id
+    
+    @JsonProperty("sspIdResource")
+    private String sspIdResource; // Resource SSP Id
+    
+    @JsonProperty("sspIdParent")
+    private String sspIdParent; // SDEV SSP Id
+    
+    @JsonProperty("symIdParent")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String derivedKey1;
-    @JsonProperty("hashField")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String hashField;
+    private String symIdParent;  // SDEV Symbiote ID
+    
     @JsonProperty("accessPolicy")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private IAccessPolicySpecifier accessPolicy;
@@ -27,40 +29,46 @@ public class SspResource {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private IAccessPolicySpecifier filteringPolicy;
     @JsonProperty("resource")
-    Resource resource;
+    private Resource resource; //Sensor, Actuator...
 
 
     public SspResource() {
     }
 
-    public String getInternalId() {
-        return this.internalId;
+    public String getInternalIdResource() {
+        return this.internalIdResource;
     }
 
-    public void setInternalId(String internalId) {
-        this.internalId = internalId;
+    public void setInternalIdResource(String internalIdResource) {
+        this.internalIdResource = internalIdResource;
     }
 
-    public String getPluginId() {
-        return this.pluginId;
+    public String getSspIdResource() {
+        return this.sspIdResource;
     }
 
-    public void setPluginId(String pluginId) {
-        this.pluginId = pluginId;
+    public void setSspIdResource(String sspIdResource) {
+        this.sspIdResource = sspIdResource;
     }
 
-    public String getPluginUrl() { return pluginUrl; }
+    
+    
+    public String getSspIdParent() {
+        return this.sspIdParent;
+    }
 
-    public void setPluginUrl(String pluginUrl) { this.pluginUrl = pluginUrl; }
+    public void setSspIdParent(String sspIdParent) {
+        this.sspIdParent = sspIdParent;
+    }
 
-    public String getDerivedKey1() { return derivedKey1; }
+    public String getSymIdParent() {
+        return this.symIdParent;
+    }
 
-    public void setDerivedKey1(String derivedKey1) { this.derivedKey1 = derivedKey1; }
-
-    public String getHashField() { return hashField; }
-
-    public void setHashField(String hashField) { this.hashField = hashField; }
-
+    public void setSymIdParent(String symIdParent) {
+        this.symIdParent = symIdParent;
+    }
+   
     public IAccessPolicySpecifier getAccessPolicy() {
         return this.accessPolicy;
     }
@@ -77,11 +85,12 @@ public class SspResource {
         this.filteringPolicy = filteringPolicySpecifier;
     }
 
-    public Resource getResource() {
+    public Resource getSemanticDescription() {
         return this.resource;
     }
 
-    public void setResource(Resource resource) {
+    public void setSemanticDesciption(Resource resource) {
         this.resource = resource;
     }
+	
 }

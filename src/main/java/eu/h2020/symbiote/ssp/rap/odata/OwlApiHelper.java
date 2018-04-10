@@ -6,6 +6,7 @@
 package eu.h2020.symbiote.ssp.rap.odata;
 
 import com.google.common.collect.Multimap;
+import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import eu.h2020.symbiote.model.cim.Actuator;
 import eu.h2020.symbiote.model.cim.Capability;
 import eu.h2020.symbiote.model.cim.ComplexDatatype;
@@ -15,7 +16,6 @@ import eu.h2020.symbiote.model.cim.Parameter;
 import eu.h2020.symbiote.model.cim.PrimitiveDatatype;
 import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.model.cim.Service;
-import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -60,6 +59,7 @@ public class OwlApiHelper {
     private static final String BIM_FILE = "/bim.owl";
     //private static final String PIM_FILE = "/pim.owl";
     private static final String PIM_FILE = "/bim2.owl";
+    //private static final String PIM_FILE = "/core-v1.0.owl";
     private static final String PIM_PARTIAL_FILE = "/pim_partial.owl";
     
     @Autowired
@@ -77,7 +77,7 @@ public class OwlApiHelper {
     private static final String privateUri = "http://www.symbiote-h2020.eu/ontology/pim";
 
     public OwlApiHelper() throws Exception{
-        URL url = OwlApiHelper.class.getResource(PIM_FILE);        
+        URL url = OwlApiHelper.class.getResource(PIM_FILE);
         if(url == null)
             url = OwlApiHelper.class.getResource(BIM_FILE);            
         if(url == null)
@@ -130,12 +130,12 @@ public class OwlApiHelper {
     } 
     
     
-    public Boolean addSspResourceList(List<SspResource> sspResourceList){
+    public Boolean addCloudResourceList(List<CloudResource> cloudResourceList){
         Boolean result = false;
         try{
             List<RegistrationInfoOData> registrationInfoOdataList = new ArrayList();
-            for(SspResource sspResource: sspResourceList){
-                RegistrationInfoOData registrationInfoOdata = saveCloudResourceInDb(sspResource);
+            for(CloudResource cloudResource: cloudResourceList){
+                RegistrationInfoOData registrationInfoOdata = saveCloudResourceInDb(cloudResource);
                 if(registrationInfoOdata != null)
                     registrationInfoOdataList.add(registrationInfoOdata);
             }
@@ -168,9 +168,9 @@ public class OwlApiHelper {
         return infoODataNew;
     }
 
-    private RegistrationInfoOData saveCloudResourceInDb(SspResource sspResource) {
+    private RegistrationInfoOData saveCloudResourceInDb(CloudResource cloudResource) {
         RegistrationInfoOData result = null;
-        Resource r = sspResource.getResource();
+        Resource r = cloudResource.getResource();
         List<Parameter> parameters;
         if (r.getClass().equals(Actuator.class)) {
             Actuator actuator = (Actuator) r;
@@ -315,7 +315,8 @@ public class OwlApiHelper {
                         }
                     }
                 }
-                else if(! StringUtils.isAllUpperCase(key)){
+                //else if(! StringUtils.isAllUpperCase(key)){
+                else if(key.compareTo(key.toUpperCase()) != 0){
                     attribute2type.put(key, value);
                 }
             }

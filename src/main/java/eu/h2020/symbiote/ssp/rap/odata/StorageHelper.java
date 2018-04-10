@@ -10,7 +10,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import eu.h2020.symbiote.model.cim.Observation;
+import eu.h2020.symbiote.ssp.rap.exceptions.EntityNotFoundException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
+import eu.h2020.symbiote.ssp.rap.messages.plugin.RapPluginErrorResponse;
+import eu.h2020.symbiote.ssp.rap.messages.plugin.RapPluginOkResponse;
+import eu.h2020.symbiote.ssp.rap.messages.plugin.RapPluginResponse;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessGetMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessHistoryMessage;
@@ -21,19 +26,17 @@ import eu.h2020.symbiote.ssp.rap.resources.query.Comparison;
 import eu.h2020.symbiote.ssp.rap.resources.query.Filter;
 import eu.h2020.symbiote.ssp.rap.resources.query.Operator;
 import eu.h2020.symbiote.ssp.rap.resources.query.Query;
-import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
+
+import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.server.api.ODataApplicationException;
 import org.apache.olingo.server.api.uri.UriParameter;
@@ -44,12 +47,10 @@ import org.apache.olingo.server.api.uri.queryoption.expression.BinaryOperatorKin
 import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
 import org.apache.olingo.server.api.uri.queryoption.expression.Literal;
 import org.apache.olingo.server.api.uri.queryoption.expression.Member;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -63,7 +64,7 @@ public class StorageHelper {
     
     private final RapCommunicationHandler communicationHandler;
     private final ResourcesRepository resourcesRepo;
-    private final PluginRepository pluginRepo;
+    private final SessionsRepository sessionsRepo;
     private final RestTemplate restTemplate;
     private final String jsonPropertyClassName;
     
@@ -72,13 +73,13 @@ public class StorageHelper {
             + "T\\p{Digit}{1,2}:\\p{Digit}{1,2}(?::\\p{Digit}{1,2})?"
             + "(Z|([-+]\\p{Digit}{1,2}:\\p{Digit}{2}))?");
 
-    public StorageHelper(ResourcesRepository resourcesRepository, PluginRepository pluginRepository,
+    public StorageHelper(ResourcesRepository resourcesRepository, SessionsRepository sessionsRepo,
                          RapCommunicationHandler communicationHandler, RestTemplate restTemplate,
                          String jsonPropertyClassName) {
         this.resourcesRepo = resourcesRepository;
-        this.pluginRepo = pluginRepository;
+        this.sessionsRepo = sessionsRepo;
         this.communicationHandler= communicationHandler;
-        this.restTemplate = restTemplate;        
+        this.restTemplate = restTemplate;
         this.jsonPropertyClassName = jsonPropertyClassName;
     }
 
@@ -104,31 +105,42 @@ public class StorageHelper {
         return resInfo;
     }
 
-    public Object getRelatedObject(ArrayList<ResourceInfo> resourceInfoList, Integer top, Query filterQuery) throws ODataApplicationException {
+    public RapPluginResponse getRelatedObject(ArrayList<ResourceInfo> resourceInfoList, Integer top, Query filterQuery) throws ODataApplicationException {
         String symbioteId = null;
         try {
             top = (top == null) ? TOP_LIMIT : top;
             ResourceAccessMessage msg;
-            
-            String pluginId = null;
+
+            SessionInfo sessionInfo = null;
             for(ResourceInfo resourceInfo: resourceInfoList) {
-                String symbioteIdTemp = resourceInfo.getSymbioteId();
-                if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
+                log.info("resourceInfo:\n" + new ObjectMapper().writeValueAsString(resourceInfo));
+                String symbioteIdTemp = resourceInfo.getSymIdResource();
+                if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
                     symbioteId = symbioteIdTemp;
-                String pluginIdTemp = resourceInfo.getPluginId();
-                if(pluginIdTemp != null && !pluginIdTemp.isEmpty())
-                    pluginId = pluginIdTemp;
+                } else {
+                    String sspIdRes = resourceInfo.getSspIdResource();
+                    if (sspIdRes != null && !sspIdRes.isEmpty()) {
+                        symbioteId = sspIdRes;
+                    }
+                }
+                String sspIdParent = resourceInfo.getSspIdParent();
+                if(sspIdParent != null && !sspIdParent.isEmpty()) {
+                    sessionInfo = sessionsRepo.findBySspId(sspIdParent);
+                } else {
+                    String symIdPar = resourceInfo.getSymIdParent();
+                    if (symIdPar != null && !symIdPar.isEmpty()) {
+                        sessionInfo = sessionsRepo.findBySymId(symIdPar);
+                    } else {
+                        log.debug("No parent id associated to resource " + symbioteId + " with type " + resourceInfo.getType());
+                    }
+                }
             }
-            
-            if(pluginId == null) {
-                log.error("No plugin associated with resource");
-                throw new Exception("No plugin associated with resource");
+            if(sessionInfo == null) {
+                log.error("No session associated to resource with id " + symbioteId);
+                throw new Exception("No session associated to resource with id " + symbioteId);
             }
-            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
-            if(lst == null || !lst.isPresent()) {
-                log.error("No plugin registered with id " + pluginId);
-                throw new Exception("No plugin registered with id " + pluginId);
-            }                        
+            String pluginUrl = sessionInfo.getPluginURL();
+
             if (top == 1) {
                 msg = new ResourceAccessGetMessage(resourceInfoList);
             } else {
@@ -140,33 +152,97 @@ public class StorageHelper {
             mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
             String json = mapper.writeValueAsString(msg);
             
-            String pluginUrl = lst.get().getPluginURL();
             log.info("Sending POST request to " + pluginUrl);
             log.debug("Message: ");
             log.debug(json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            ResponseEntity<?> responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
+            ResponseEntity<?> responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
             if (responseEntity == null) {
                 log.error("No response from plugin");
                 throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
             }
-
-            Object obj = responseEntity.getBody();
-            String responseString = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
-            // checking if plugin response is a valid json
-            try {
-                JsonNode jsonObj = mapper.readTree(responseString);
-                if(!jsonObj.has(jsonPropertyClassName)) {
-                    log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
-                    //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
-                }
-            } catch (Exception ex){
-                log.error("Response from plugin is not a valid json", ex);
-                throw new Exception("Response from plugin is not a valid json");
+            if (responseEntity.getStatusCode() != HttpStatus.ACCEPTED && responseEntity.getStatusCode() != HttpStatus.OK) {
+                log.error("Error response from plugin: " + responseEntity.getStatusCodeValue() + " " + responseEntity.getStatusCode().toString());
+                log.error("Body:\n" + responseEntity.getBody());
+                throw new Exception("Error response from plugin");
             }
-            
-            return responseEntity;
+            Object response = extractResponse(responseEntity.getBody());
+            log.info("response:\n" + new ObjectMapper().writeValueAsString(response));
+            RapPluginResponse result;
+            if(response instanceof RapPluginResponse) {
+                result = (RapPluginResponse) response;
+                if (response instanceof RapPluginOkResponse) {
+                    RapPluginOkResponse okResponse = (RapPluginOkResponse) response;
+                    if (okResponse.getBody() != null) {
+                        try {
+                            // need to clean up response if top 1 is used and RAP plugin does not support filtering
+                            if (top == 1) {
+                                Observation internalObservation;
+                                if (okResponse.getBody() instanceof List) {
+                                    List<?> list = (List<?>) okResponse.getBody();
+                                    if (list.size() != 0 && list.get(0) instanceof Observation) {
+                                        @SuppressWarnings("unchecked")
+                                        List<Observation> observations = (List<Observation>) list;
+                                        internalObservation = observations.get(0);
+                                        Observation observation = new Observation(symbioteId, internalObservation.getLocation(),
+                                                internalObservation.getResultTime(), internalObservation.getSamplingTime(),
+                                                internalObservation.getObsValues());
+                                        okResponse.setBody(Arrays.asList(observation));
+                                    }
+                                } else if (okResponse.getBody() instanceof Observation) {
+                                    internalObservation = (Observation) okResponse.getBody();
+                                    Observation observation = new Observation(symbioteId, internalObservation.getLocation(),
+                                            internalObservation.getResultTime(), internalObservation.getSamplingTime(),
+                                            internalObservation.getObsValues());
+                                    okResponse.setBody(Arrays.asList(observation));
+                                } else if (okResponse.getBody() instanceof Map) {
+                                    String jsonBody = mapper.writeValueAsString(okResponse.getBody());
+                                    try {
+                                        internalObservation = mapper.readValue(jsonBody, Observation.class);
+                                        Observation observation = new Observation(symbioteId, internalObservation.getLocation(),
+                                                internalObservation.getResultTime(), internalObservation.getSamplingTime(),
+                                                internalObservation.getObsValues());
+                                        okResponse.setBody(Arrays.asList(observation));
+                                    } catch (Exception e) { /* do nothing*/ }
+                                }
+                            } else {
+                                // top is not 1
+                                if (okResponse.getBody() instanceof List) {
+                                    List<?> list = (List<?>) okResponse.getBody();
+                                    if (list.size() != 0 && list.get(0) instanceof Observation) {
+                                        @SuppressWarnings("unchecked")
+                                        List<Observation> internalObservations = (List<Observation>) list;
+
+                                        List<Observation> observationsList = new ArrayList<>();
+                                        int i = 0;
+                                        for (Observation o : internalObservations) {
+                                            i++;
+                                            if (i > top) {
+                                                break;
+                                            }
+                                            Observation ob = new Observation(symbioteId, o.getLocation(), o.getResultTime(), o.getSamplingTime(), o.getObsValues());
+                                            observationsList.add(ob);
+                                        }
+                                        okResponse.setBody(observationsList);
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            throw new ODataApplicationException("Can not parse returned object from RAP plugin.\nCause: " + e.getMessage(),
+                                    HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(),
+                                    Locale.ROOT,
+                                    e);
+                        }
+                    }
+                    result = okResponse;
+                }
+            } else {
+                result = new RapPluginOkResponse(200, response);
+            }
+            log.info("RapPluginResponse object:\n" + new ObjectMapper().writeValueAsString(result));
+
+            return result;
         } catch (Exception e) {
             String err = "Unable to read resource " + symbioteId;
             err += "\n Error: " + e.getMessage();
@@ -175,30 +251,43 @@ public class StorageHelper {
         }
     }
 
-    public ResponseEntity<?> setService(ArrayList<ResourceInfo> resourceInfoList, String requestBody) throws ODataApplicationException {
-        ResponseEntity<?> responseEntity = new ResponseEntity("Unknown error", HttpStatus.INTERNAL_SERVER_ERROR);
+    public RapPluginResponse setService(ArrayList<ResourceInfo> resourceInfoList, String requestBody) throws ODataApplicationException {
+        String symbioteId = null;
         try {
             ResourceAccessMessage msg;
-            String pluginId = null;
-            for(ResourceInfo resourceInfo: resourceInfoList){
-                pluginId = resourceInfo.getPluginId();
-                if(pluginId != null)
-                    break;
-            }            
-
-            if(pluginId == null) {
-                log.error("No plugin associated with resource");
-                throw new Exception("No plugin associated with resource");
+            SessionInfo sessionInfo = null;
+            for(ResourceInfo resourceInfo: resourceInfoList) {
+                log.info("resourceInfo:\n" + new ObjectMapper().writeValueAsString(resourceInfo));
+                String symbioteIdTemp = resourceInfo.getSymIdResource();
+                if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
+                    symbioteId = symbioteIdTemp;
+                } else {
+                    String sspIdRes = resourceInfo.getSspIdResource();
+                    if (sspIdRes != null && !sspIdRes.isEmpty()) {
+                        symbioteId = sspIdRes;
+                    }
+                }
+                String sspIdParent = resourceInfo.getSspIdParent();
+                if(sspIdParent != null && !sspIdParent.isEmpty()) {
+                    sessionInfo = sessionsRepo.findBySspId(sspIdParent);
+                } else {
+                    String symIdPar = resourceInfo.getSymIdParent();
+                    if (symIdPar != null && !symIdPar.isEmpty()) {
+                        sessionInfo = sessionsRepo.findBySymId(symIdPar);
+                    } else {
+                        log.error("No parent id associated to resource " + symbioteId);
+                    }
+                }
             }
-            Optional<PluginInfo> lst = pluginRepo.findById(pluginId);
-            if(lst == null || !lst.isPresent()) {
-                log.error("No plugin registered with id " + pluginId);
-                throw new Exception("No plugin registered with id " + pluginId);
+            if(sessionInfo == null) {
+                log.error("No session associated to resource with id " + symbioteId);
+                throw new Exception("No session associated to resource with id " + symbioteId);
             }
-            msg = new ResourceAccessSetMessage(resourceInfoList, requestBody);            
+            String pluginUrl = sessionInfo.getPluginURL();
+            ObjectMapper mapper = new ObjectMapper();
+            msg = new ResourceAccessSetMessage(resourceInfoList, mapper.readTree(requestBody));
             String json = "";
             try {
-                ObjectMapper mapper = new ObjectMapper();
                 mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
                 mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
 
@@ -206,37 +295,81 @@ public class StorageHelper {
             } catch (JsonProcessingException ex) {
                 log.error("JSon processing exception: " + ex.getMessage());
             }
-            String pluginUrl = lst.get().getPluginURL();
             log.info("Sending POST request to " + pluginUrl);
-            log.debug("Message: ");
-            log.debug(json);
+            log.info("Message:\n ", json);
             
             HttpEntity<String> httpEntity = new HttpEntity<>(json);
-            responseEntity = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, Object.class);
-
-            Object obj = responseEntity.getBody();
-            if(obj != null) {
-                String responseString = (obj instanceof byte[]) ? new String((byte[]) obj, "UTF-8") : obj.toString();
-                // checking if plugin response is a valid json
-                try {
-                    ObjectMapper mapper = new ObjectMapper();
-                    JsonNode jsonObj = mapper.readTree(responseString);
-                    if (!jsonObj.has(jsonPropertyClassName)) {
-                        log.error("Field " + jsonPropertyClassName + " is mandatory in plugin response");
-                        //    throw new Exception("Field " + jsonProperty + " is mandatory in plugin response");
-                    }
-                } catch (Exception ex) {
-                    log.error("Response from plugin is not a valid json", ex);
-                    throw new Exception("Response from plugin is not a valid json");
-                }
+            ResponseEntity<?> obj = restTemplate.exchange(pluginUrl, HttpMethod.POST, httpEntity, byte[].class);
+            if (obj.getStatusCode() != HttpStatus.ACCEPTED && obj.getStatusCode() != HttpStatus.OK) {
+                log.error("Error response from plugin: " + obj.getStatusCodeValue() + " " + obj.getStatusCode().toString());
+                log.error("Body:\n" + obj.getBody());
+                throw new Exception("Error response from plugin");
             }
+            RapPluginResponse result;
+            if(obj.getBody() != null) {
+                Object response = extractResponse(obj.getBody());
+                if (response instanceof RapPluginResponse) {
+                    if (response instanceof RapPluginErrorResponse) {
+                        RapPluginErrorResponse errorResponse = (RapPluginErrorResponse) response;
+                        throw new ODataApplicationException(errorResponse.getMessage(), errorResponse.getResponseCode(), null);
+                    }
+                    result = (RapPluginResponse) response;
+                } else {
+                    result = new RapPluginOkResponse(200, response);
+                }
+            } else {
+                result = new RapPluginOkResponse(200, "");
+            }
+            return result;
         } catch (Exception e) {
-            log.error(e.getMessage(),e);
+            String err = "Unable to write resource " + symbioteId;
+            err += "\n Error: " + e.getMessage();
+            log.error(err, e);
             throw new ODataApplicationException("Internal Error", HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(), Locale.ROOT);
         }
-        return responseEntity;
     }
-    
+
+    private Object extractResponse(Object obj)
+            throws ODataApplicationException, UnsupportedEncodingException {
+        Object responseObj = null;
+        ObjectMapper mapper = new ObjectMapper();
+        if (obj == null) {
+            log.error("No response from plugin");
+            throw new ODataApplicationException("No response from plugin", HttpStatusCode.GATEWAY_TIMEOUT.getStatusCode(), Locale.ROOT);
+        }
+
+        String rawObj;
+        if (obj instanceof byte[]) {
+            rawObj = new String((byte[]) obj, "UTF-8");
+        } else if (obj instanceof String) {
+            rawObj = (String) obj;
+        } else {
+            throw new ODataApplicationException("Can not parse response from RAP plugin. Expected byte[] or String but got " + obj.getClass().getName(),
+                    HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(),
+                    Locale.ROOT);
+        }
+        try {
+            JsonNode jsonObj = mapper.readTree(rawObj);
+            if (!jsonObj.has(jsonPropertyClassName)) {
+                log.error("Field " + jsonPropertyClassName + " is mandatory");
+            }
+            responseObj = jsonObj;
+            try {
+                RapPluginResponse resp = mapper.readValue(rawObj, RapPluginResponse.class);
+                responseObj = resp;
+            } catch (Exception ex) {
+                log.warn("Can not parse response from RAP to RapPluginResponse.\n Cause: " + ex.getMessage());
+            }
+
+            return responseObj;
+        } catch (Exception e) {
+            throw new ODataApplicationException("Can not parse response from RAP to JSON.\n Cause: " + e.getMessage(),
+                    HttpStatusCode.INTERNAL_SERVER_ERROR.getStatusCode(),
+                    Locale.ROOT,
+                    e);
+        }
+    }
+
     public static Query calculateFilter(Expression expression) throws ODataApplicationException {
 
         if (expression instanceof Binary) {
@@ -344,7 +477,6 @@ public class StorageHelper {
         ArrayList<ResourceInfo> resourceInfoList = new ArrayList();
         for(int i = 0; i< typeNameList.size(); i++){
             ResourceInfo resInfo = new ResourceInfo();
-            resInfo.setType(typeNameList.get(i));
             if(i < keyPredicates.size()){
                 UriParameter key = keyPredicates.get(i);
                 String keyName = key.getName();
@@ -354,16 +486,29 @@ public class StorageHelper {
 
                 try {
                     if (keyName.equalsIgnoreCase("id")) {
-                        resInfo.setSymbioteId(keyText);
-                        Optional<ResourceInfo> resInfoOptional = resourcesRepo.findById(keyText);
-                        if (resInfoOptional.isPresent()) {
-                            noResourceFound = false;
-                            resInfo.setInternalId(resInfoOptional.get().getInternalId());
+                        resInfo.setSymIdResource(keyText);
+                        Optional<ResourceInfo> resInfoOptional = resourcesRepo.findBySymIdResource(keyText);
+                        if (resInfoOptional== null || !resInfoOptional.isPresent()) {
+                            Optional<ResourceInfo> tmp = resourcesRepo.findById(keyText);
+                            if(tmp != null && tmp.isPresent()) {
+                                // check if symbioteId is empty, otherwise using sspId is not valid (it could be a mismatch)
+                                String symId = tmp.get().getSymIdResource();
+                                if(symId == null || symId.length()<1) {
+                                    resInfoOptional = tmp;
+                                } else {
+                                    log.error("Resource with local id " + keyText + " has a valid symbioteId");
+                                    throw new EntityNotFoundException(keyText);
+                                }
+                            }
                         }
+                        noResourceFound = false;
+                        //resInfo.setInternalIdResource(resInfoOptional.get().getInternalIdResource());
+                        resInfo = resInfoOptional.get();
                     }
                 } catch (Exception e) {
                 }
             }
+            resInfo.setType(typeNameList.get(i));   // DO NOT MOVE FROM HERE
             resourceInfoList.add(resInfo);
         }
         if(noResourceFound) {

@@ -22,66 +22,82 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Document(collection="sessions")
 public class SessionInfo {
 
-    //@JsonProperty("sessionId")
-    @Id
-    @JsonProperty("sessionId")
-    private String sessionId;
-    @Field
-    @Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
-    private Date session_expiration;
-    
-    @JsonProperty("data")
-    private String data;
-    
-    @JsonProperty("OutBuffer")
-    private String OutBuffer;
+	//@JsonProperty("sessionId")
+	@Id
+	@JsonProperty("sessionId")
+	private String sessionId;
+	@Field
+	@Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
+	private Date session_expiration;
 
-    @JsonProperty("cipher")
-    private String cipher;
+	@JsonProperty("data")
+	private String data;
 
-    @JsonProperty("macaddress")
-    private String macaddress;
+	@JsonProperty("OutBuffer")
+	private String OutBuffer;
 
-    @JsonProperty("snonce")
-    private String snonce;
+	@JsonProperty("cipher")
+	private String cipher;
 
-    @JsonProperty("snonce2")
-    private String snonce2;
+	@JsonProperty("macaddress")
+	private String macaddress;
 
-    @JsonProperty("gnonce")
-    private String gnonce;
+	@JsonProperty("snonce")
+	private String snonce;
 
-    @JsonProperty("gnonce2")
-    private String gnonce2;
+	@JsonProperty("snonce2")
+	private String snonce2;
 
-    @JsonProperty("kdf")
-    private String kdf;
+	@JsonProperty("gnonce")
+	private String gnonce;
 
-    @JsonProperty("iv")
-    private String iv;
+	@JsonProperty("gnonce2")
+	private String gnonce2;
 
-    @JsonProperty("dk")
-    private String dk;
+	@JsonProperty("kdf")
+	private String kdf;
 
-    @JsonProperty("dk1")
-    private String dk1;
+	@JsonProperty("iv")
+	private String iv;
 
-    @JsonProperty("dk2")
-    private String dk2;
+	@JsonProperty("dk")
+	private String dk;
 
-    @JsonProperty("sn")
-    private String sn;
+	@JsonProperty("dk1")
+	private String dk1;
 
-    @JsonProperty("sign")
-    private String sign;
+	@JsonProperty("dk2")
+	private String dk2;
 
-    @JsonProperty("authn")
-    private String authn;
+	@JsonProperty("sn")
+	private String sn;
 
-    @JsonProperty("psk")
-    private byte[] psk;
-    
-    /* HOWTO read expiration time directly via mongoDB client
+	@JsonProperty("sign")
+	private String sign;
+
+	@JsonProperty("authn")
+	private String authn;
+
+	@JsonProperty("psk")
+	private byte[] psk;
+	
+	@JsonProperty("symId")
+	private String symId;
+
+	@JsonProperty("sspId")
+	private String sspId;
+	
+	@JsonProperty("pluginId")
+	private String pluginId;
+
+	@JsonProperty("pluginURL")
+	private String pluginURL;
+	
+	@JsonProperty("roaming")
+	private Boolean roaming;
+	
+
+	/* HOWTO read expiration time directly via mongoDB client
       db.sessions.aggregate(     
       	{ $project: {         
       		session_expiration: 1,         
@@ -90,241 +106,363 @@ public class SessionInfo {
       		}     
       	  }
      	} )
-     * */
+	 * */
+	public SessionInfo() {}
+
+	@JsonCreator
+	public SessionInfo( @JsonProperty("sessionId") String sessionId,
+			@JsonProperty("iv") String iv,
+			@JsonProperty("psk") byte[] psk,
+			@JsonProperty("dk") String dk,
+			@JsonProperty("dk1") String dk1,
+			@JsonProperty("dk2") String dk2,
+			@JsonProperty("sn") String sn,
+			@JsonProperty("sign") String sign,
+			@JsonProperty("authn") String authn,
+			@JsonProperty("data") String data,
+			@JsonProperty("OutBuffer") String OutBuffer,
+			@JsonProperty("cipher") String cipher,
+			@JsonProperty("macaddress") String macaddress,
+			@JsonProperty("snonce") String snonce,
+			@JsonProperty("snonce2") String snonce2,
+			@JsonProperty("gnonce") String gnonce,
+			@JsonProperty("gnonce2") String gnonce2,
+			@JsonProperty("kdf") String kdf,
+			@JsonProperty("session_expiration") Date session_expiration,
+			@JsonProperty("symId") String symId,
+			@JsonProperty("sspId") String sspId,
+			@JsonProperty("pluginId") String pluginId,
+			@JsonProperty("pluginURL") String pluginURL
+			) {
+		this.sessionId = sessionId;
+		this.session_expiration = session_expiration;
+		this.iv = iv;
+		this.psk = psk;
+		this.dk = dk;
+		this.dk1 = dk1;
+		this.dk2 = dk2;
+		this.sn = sn;
+		this.sign = sign;
+		this.authn = authn;
+		this.data = data;
+		this.OutBuffer = OutBuffer;
+		this.cipher = cipher;
+		this.macaddress = macaddress;
+		this.snonce = snonce;
+		this.snonce2 = snonce2;
+		this.gnonce = gnonce;
+		this.gnonce2 = gnonce2;
+		this.kdf = kdf;        
+		this.symId=symId;
+		this.sspId=sspId;
+		this.pluginId=pluginId;
+		this.pluginURL=pluginURL;
+	}
+
+	@JsonCreator
+	public SessionInfo( @JsonProperty("sessionId") String sessionId,
+			@JsonProperty("iv") String iv,
+			@JsonProperty("psk") byte[] psk,
+			@JsonProperty("dk") String dk,
+			@JsonProperty("dk1") String dk1,
+			@JsonProperty("dk2") String dk2,
+			@JsonProperty("sn") String sn,
+			@JsonProperty("sign") String sign,
+			@JsonProperty("authn") String authn,
+			@JsonProperty("data") String data,
+			@JsonProperty("OutBuffer") String OutBuffer,
+			@JsonProperty("cipher") String cipher,
+			@JsonProperty("macaddress") String macaddress,
+			@JsonProperty("snonce") String snonce,
+			@JsonProperty("snonce2") String snonce2,
+			@JsonProperty("gnonce") String gnonce,
+			@JsonProperty("gnonce2") String gnonce2,
+			@JsonProperty("kdf") String kdf,
+			@JsonProperty("session_expiration") Date session_expiration,
+			@JsonProperty("symId") String symId,
+			@JsonProperty("sspId") String sspId,
+			@JsonProperty("pluginId") String pluginId,
+			@JsonProperty("pluginURL") String pluginURL,
+			@JsonProperty("roaming") String roaming
+			
+			) {
+		this.sessionId = sessionId;
+		this.session_expiration = session_expiration;
+		this.iv = iv;
+		this.psk = psk;
+		this.dk = dk;
+		this.dk1 = dk1;
+		this.dk2 = dk2;
+		this.sn = sn;
+		this.sign = sign;
+		this.authn = authn;
+		this.data = data;
+		this.OutBuffer = OutBuffer;
+		this.cipher = cipher;
+		this.macaddress = macaddress;
+		this.snonce = snonce;
+		this.snonce2 = snonce2;
+		this.gnonce = gnonce;
+		this.gnonce2 = gnonce2;
+		this.kdf = kdf;        
+		this.symId=symId;
+		this.sspId=sspId;
+		this.pluginId=pluginId;
+		this.pluginURL=pluginURL;
+		this.roaming=Boolean.valueOf(roaming.toLowerCase());
+	}
+	
+	
+	
+	@JsonProperty("session_expiration")
+	public void setSessionExpiration(Date session_expiration) {
+		this.session_expiration = session_expiration;
+	}
+	public Date getSessionExpiration() {
+		return this.session_expiration;
+	}
 
 
-    @JsonCreator
-    public SessionInfo( @JsonProperty("sessionId") String sessionId,
-    					@JsonProperty("iv") String iv,
-    					@JsonProperty("psk") byte[] psk,
-    					@JsonProperty("dk") String dk,
-    					@JsonProperty("dk1") String dk1,
-    					@JsonProperty("dk2") String dk2,
-    					@JsonProperty("sn") String sn,
-    					@JsonProperty("sign") String sign,
-    					@JsonProperty("authn") String authn,
-    					@JsonProperty("data") String data,
-    					@JsonProperty("OutBuffer") String OutBuffer,
-    					@JsonProperty("cipher") String cipher,
-    					@JsonProperty("macaddress") String macaddress,
-    					@JsonProperty("snonce") String snonce,
-    					@JsonProperty("snonce2") String snonce2,
-    					@JsonProperty("gnonce") String gnonce,
-    					@JsonProperty("gnonce2") String gnonce2,
-    					@JsonProperty("kdf") String kdf,
-    					@JsonProperty("session_expiration") Date session_expiration
-                        
-                        
-                      ) {
-        this.sessionId = sessionId;
-        this.session_expiration = session_expiration;
-        this.iv = iv;
-        this.psk = psk;
-        this.dk = dk;
-        this.dk1 = dk1;
-        this.dk2 = dk2;
-        this.sn = sn;
-        this.sign = sign;
-        this.authn = authn;
-        this.data = data;
-        this.OutBuffer = OutBuffer;
-        this.cipher = cipher;
-        this.macaddress = macaddress;
-        this.snonce = snonce;
-        this.snonce2 = snonce2;
-        this.gnonce = gnonce;
-        this.gnonce2 = gnonce2;
-        this.kdf = kdf;        
-    }
-   
-    @JsonProperty("session_expiration")
-    public void setSessionExpiration(Date session_expiration) {
-        this.session_expiration = session_expiration;
-    }
-    public Date getSessionExpiration() {
-    	return this.session_expiration;
-    }
 
-    
-    
-    @JsonProperty("data")
-    public void setdata(String data) 
-      {
-       this.data = data;
-      }
-    public String getdata() 
-      {
-       return this.data;
-      }
+	@JsonProperty("data")
+	public void setdata(String data) 
+	{
+		this.data = data;
+	}
+	public String getdata() 
+	{
+		return this.data;
+	}
 
-    @JsonProperty("OutBuffer")
-    public void setOutBuffer(String OutBuffer) 
-      {
-       this.OutBuffer = OutBuffer;
-      }
-    public String getOutBuffer() 
-      {
-       return this.OutBuffer;
-      }
+	@JsonProperty("OutBuffer")
+	public void setOutBuffer(String OutBuffer) 
+	{
+		this.OutBuffer = OutBuffer;
+	}
+	public String getOutBuffer() 
+	{
+		return this.OutBuffer;
+	}
 
-    @JsonProperty("cipher")
-    public void setcipher(String cipher) 
-      {
-       this.cipher = cipher;
-      }
-    public String getcipher() 
-      {
-       return this.cipher;
-      }
+	@JsonProperty("cipher")
+	public void setcipher(String cipher) 
+	{
+		this.cipher = cipher;
+	}
+	public String getcipher() 
+	{
+		return this.cipher;
+	}
 
-    @JsonProperty("macaddress")
-    public void setmacaddress(String macaddress) 
-      {
-       this.macaddress = macaddress;
-      }
-    public String getmacaddress() 
-      {
-       return this.macaddress;
-      }
+	@JsonProperty("macaddress")
+	public void setmacaddress(String macaddress) 
+	{
+		this.macaddress = macaddress;
+	}
+	public String getmacaddress() 
+	{
+		return this.macaddress;
+	}
 
-    @JsonProperty("snonce")
-    public void setsnonce(String snonce) 
-      {
-       this.snonce = snonce;
-      }
-    public String getsnonce() 
-      {
-       return this.snonce;
-      }
+	@JsonProperty("snonce")
+	public void setsnonce(String snonce) 
+	{
+		this.snonce = snonce;
+	}
+	public String getsnonce() 
+	{
+		return this.snonce;
+	}
 
-    @JsonProperty("snonce2")
-    public void setsnonce2(String snonce2) 
-      {
-       this.snonce2 = snonce2;
-      }
-    public String getsnonce2() 
-      {
-       return this.snonce2;
-      }
+	@JsonProperty("snonce2")
+	public void setsnonce2(String snonce2) 
+	{
+		this.snonce2 = snonce2;
+	}
+	public String getsnonce2() 
+	{
+		return this.snonce2;
+	}
 
-    @JsonProperty("gnonce")
-    public void setgnonce(String gnonce) 
-      {
-       this.gnonce = gnonce;
-      }
-    public String getgnonce() 
-      {
-       return this.gnonce;
-      }
+	@JsonProperty("gnonce")
+	public void setgnonce(String gnonce) 
+	{
+		this.gnonce = gnonce;
+	}
+	public String getgnonce() 
+	{
+		return this.gnonce;
+	}
 
-    @JsonProperty("gnonce2")
-    public void setgnonce2(String gnonce2) 
-      {
-       this.gnonce2 = gnonce2;
-      }
-    public String getgnonce2() 
-      {
-       return this.gnonce2;
-      }
+	@JsonProperty("gnonce2")
+	public void setgnonce2(String gnonce2) 
+	{
+		this.gnonce2 = gnonce2;
+	}
+	public String getgnonce2() 
+	{
+		return this.gnonce2;
+	}
 
-    @JsonProperty("kdf")
-    public void setkdf(String kdf) 
-      {
-       this.kdf = kdf;
-      }
-    public String getkdf() 
-      {
-       return this.kdf;
-      }
+	@JsonProperty("kdf")
+	public void setkdf(String kdf) 
+	{
+		this.kdf = kdf;
+	}
+	public String getkdf() 
+	{
+		return this.kdf;
+	}
 
-    @JsonProperty("sessionId")
-    public void setsessionId(String sessionId) 
-      {
-       this.sessionId = sessionId;
-      }
-    public String getsessionId() 
-      {
-       return this.sessionId;
-      }
+	@JsonProperty("sessionId")
+	public void setsessionId(String sessionId) 
+	{
+		this.sessionId = sessionId;
+	}
+	public String getsessionId() 
+	{
+		return this.sessionId;
+	}
 
-    @JsonProperty("iv")
-    public void setiv(String iv) 
-      {
-       this.iv = iv;
-      }
-    public String getiv() 
-      {
-       return this.iv;
-      }
+	@JsonProperty("iv")
+	public void setiv(String iv) 
+	{
+		this.iv = iv;
+	}
+	public String getiv() 
+	{
+		return this.iv;
+	}
 
-    @JsonProperty("psk")
-    public void setpsk(byte[] psk) 
-      {
-       this.psk = psk;
-      }
-    public byte[] getpsk() 
-      {
-       return this.psk;
-      }
+	@JsonProperty("psk")
+	public void setpsk(byte[] psk) 
+	{
+		this.psk = psk;
+	}
+	public byte[] getpsk() 
+	{
+		return this.psk;
+	}
 
-    @JsonProperty("dk")
-    public void setdk(String dk) 
-      {
-       this.dk = dk;
-      }
-    public String getdk() 
-      {
-       return this.dk;
-      }
+	@JsonProperty("dk")
+	public void setdk(String dk) 
+	{
+		this.dk = dk;
+	}
+	public String getdk() 
+	{
+		return this.dk;
+	}
 
-    @JsonProperty("dk1")
-    public void setdk1(String dk1) 
-      {
-       this.dk1 = dk1;
-      }
-    public String getdk1() 
-      {
-       return this.dk1;
-      }
+	@JsonProperty("dk1")
+	public void setdk1(String dk1) 
+	{
+		this.dk1 = dk1;
+	}
+	public String getdk1() 
+	{
+		return this.dk1;
+	}
 
-    @JsonProperty("dk2")
-    public void setdk2(String dk2) 
-      {
-       this.dk2 = dk2;
-      }
-    public String getdk2() 
-      {
-       return this.dk2;
-      }
+	@JsonProperty("dk2")
+	public void setdk2(String dk2) 
+	{
+		this.dk2 = dk2;
+	}
+	public String getdk2() 
+	{
+		return this.dk2;
+	}
 
-    @JsonProperty("sn")
-    public void setsn(String sn) 
-      {
-       this.sn = sn;
-      }
-    public String getsn() 
-      {
-       return this.sn;
-      }
+	@JsonProperty("sn")
+	public void setsn(String sn) 
+	{
+		this.sn = sn;
+	}
+	public String getsn() 
+	{
+		return this.sn;
+	}
 
-    @JsonProperty("sign")
-    public void setsign(String sign) 
-      {
-       this.sign = sign;
-      }
-    public String getsign() 
-      {
-       return this.sign;
-      }
+	@JsonProperty("sign")
+	public void setsign(String sign) 
+	{
+		this.sign = sign;
+	}
+	public String getsign() 
+	{
+		return this.sign;
+	}
 
-    @JsonProperty("authn")
-    public void setauthn(String authn) 
-      {
-       this.authn = authn;
-      }
-    public String getauthn() 
-      {
-       return this.authn;
-      }
-    
+	@JsonProperty("authn")
+	public void setauthn(String authn) 
+	{
+		this.authn = authn;
+	}
+	public String getauthn() 
+	{
+		return this.authn;
+	}
+
+
+
+	@JsonProperty("symId")
+	public void setSymId(String symId) 
+	{
+		this.symId = symId;
+	}
+	public String getSymId() 
+	{
+		return this.symId;
+	}
+	
+	@JsonProperty("sspId")
+	public void setSspId(String sspId) 
+	{
+		this.sspId = sspId;
+	}
+	
+	public String getSspId() 
+	{
+		return this.sspId;
+	}
+	
+
+	@JsonProperty("pluginId")
+	public void setPluginId(String pluginId) 
+	{
+		this.pluginId = pluginId;
+	}
+	
+	public String getPluginId() 
+	{
+		return this.pluginId;
+	}
+	
+	
+	@JsonProperty("pluginURL")
+	public void setPluginURL(String pluginURL) 
+	{
+		this.pluginURL = pluginURL;
+	}
+	
+	public String getPluginURL() 
+	{
+		return this.pluginURL;
+	}
+	
+	
+	@JsonProperty("roaming")
+	public void setRoaming(Boolean roaming) 
+	{
+		this.roaming = roaming;
+	}
+	
+	public Boolean getRoaming() 
+	{
+		return this.roaming;
+	}
+	
+	
+	
 }

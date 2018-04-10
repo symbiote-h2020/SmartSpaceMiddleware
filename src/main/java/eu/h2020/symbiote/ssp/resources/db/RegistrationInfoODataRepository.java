@@ -20,8 +20,33 @@ import org.springframework.stereotype.Repository;
 public interface RegistrationInfoODataRepository extends MongoRepository<RegistrationInfoOData, String> {
     
     public List<RegistrationInfoOData> findByClassName(String className);
-    
+    public List<RegistrationInfoOData> findBySspId(String sspId);
     public List<RegistrationInfoOData> findAll();
+    
+    default public RegistrationInfoOData insertNewSSP(RegistrationInfoOData registrationInfoOData){
+        List<RegistrationInfoOData> rio = findBySspId(registrationInfoOData.getSspId());
+        if(rio != null && !rio.isEmpty()){
+            for(RegistrationInfoOData rioOfClass: rio){
+                if((rioOfClass.getSuperClass()== null && registrationInfoOData.getSuperClass()== null)
+                        || rioOfClass.getSuperClass().equals(registrationInfoOData.getSuperClass())){
+                    Set<ParameterInfo> piList = rioOfClass.getParameters();
+                    registrationInfoOData.getParameters().addAll(piList);
+                    registrationInfoOData.setId(rioOfClass.getId());
+                }
+            }
+            try{
+                registrationInfoOData = save(registrationInfoOData);
+            }
+            catch(DuplicateKeyException ex){
+                delete(registrationInfoOData);
+                registrationInfoOData = save(registrationInfoOData);
+            }
+        }
+        else{
+            registrationInfoOData = insert(registrationInfoOData);
+        }
+        return registrationInfoOData;
+    }
     
     default public RegistrationInfoOData insertNew(RegistrationInfoOData registrationInfoOData){
         List<RegistrationInfoOData> rio = findByClassName(registrationInfoOData.getClassName());

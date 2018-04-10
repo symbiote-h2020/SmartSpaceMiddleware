@@ -9,20 +9,19 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import eu.h2020.symbiote.ssp.rap.RapConfig;
 import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
-import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.rap.resources.query.Query;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
@@ -50,7 +49,6 @@ import org.springframework.stereotype.Component;
 import org.apache.olingo.server.api.uri.queryoption.FilterOption;
 import org.apache.olingo.server.api.uri.queryoption.TopOption;
 import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -66,7 +64,7 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     private ResourcesRepository resourcesRepo;
     
     @Autowired
-    private PluginRepository pluginRepo;
+    private SessionsRepository sessionsRepo;
     
     @Autowired
     private RapCommunicationHandler communicationHandler;
@@ -74,9 +72,6 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${rap.json.property.type}")
-    private String jsonPropertyClassName;
-    
     private StorageHelper storageHelper;
     
         
@@ -84,10 +79,8 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     public void init(OData odata, ServiceMetadata sm) {
     //    this.odata = odata;
     //    this.serviceMetadata = sm;
-        storageHelper = new StorageHelper(
-                resourcesRepo, pluginRepo, 
-                communicationHandler, restTemplate, 
-                jsonPropertyClassName);
+        storageHelper = new StorageHelper(resourcesRepo, sessionsRepo, communicationHandler,
+                                        restTemplate, RapConfig.JSON_PROPERTY_CLASS_NAME);
     }
 
     @Override
@@ -185,10 +178,16 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
             try {
                 resourceInfoList = storageHelper.getResourceInfoList(typeNameList,keyPredicates);
                 for(ResourceInfo resourceInfo: resourceInfoList){
-                    String symbioteIdTemp = resourceInfo.getSymbioteId();
+                    String symbioteIdTemp = resourceInfo.getSymIdResource();
                     if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
                         symbioteId = symbioteIdTemp;
                         break;
+                    } else {
+                        symbioteIdTemp = resourceInfo.getSspIdResource();
+                        if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
+                            symbioteId = symbioteIdTemp;
+                            break;
+                        }
                     }
                 }
             } catch(ODataApplicationException odataExc){

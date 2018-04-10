@@ -6,36 +6,25 @@
 package eu.h2020.symbiote.ssp.rap.pushNotificationService;
 
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
+import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessMessage;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessSubscribeMessage;
 import eu.h2020.symbiote.ssp.rap.exceptions.EntityNotFoundException;
 import eu.h2020.symbiote.ssp.rap.interfaces.conditions.NBInterfaceWebSocketCondition;
 import eu.h2020.symbiote.ssp.rap.messages.access.ResourceAccessUnSubscribeMessage;
-import eu.h2020.symbiote.ssp.rap.interfaces.ResourceAccessCramNotification;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
-import eu.h2020.symbiote.ssp.resources.db.PluginInfo;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
-import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
-import static eu.h2020.symbiote.security.commons.SecurityConstants.SECURITY_RESPONSE_HEADER;
-import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
-import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
 import eu.h2020.symbiote.ssp.rap.pushNotificationService.WebSocketMessage.Action;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,7 +32,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -72,9 +60,9 @@ public class WebSocketController extends TextWebSocketHandler {
 
     @Autowired
     ResourcesRepository resourcesRepo;
-    
+
     @Autowired
-    PluginRepository pluginRepo;
+    private SessionsRepository sessionsRepo;
 
     @Autowired
     private RapCommunicationHandler communicationHandler;
@@ -178,14 +166,14 @@ public class WebSocketController extends TextWebSocketHandler {
         HashMap<String, List> subscribeList = new HashMap();
         for (String resId : resourceIds) {
             // adding new resource info to subscribe map, with pluginUrl as key
-            ResourceInfo resInfo = getResourceInfo(resId);            
-            String pluginId = resInfo.getPluginId();
-            Optional<PluginInfo> plg = pluginRepo.findById(pluginId);
-            if(plg == null || !plg.isPresent())
-                throw new Exception("No plugin found");
-            
-            String pluginUrl = plg.get().getPluginURL();
-            log.debug("Found plugin with id " + pluginId + " - url: " + pluginUrl);
+            ResourceInfo resInfo = getResourceInfo(resId);
+            SessionInfo sessionInfo = sessionsRepo.findBySspId(resInfo.getSspIdResource());
+            String pluginUrl = sessionInfo.getPluginURL();
+            if(pluginUrl == null) {
+                log.error("No plugin url found");
+                throw new Exception("No plugin url associated with resource");
+            }
+            log.debug("Found plugin with url " + pluginUrl);
             
             List<ResourceInfo> rl = (subscribeList.containsKey(pluginUrl)) ? subscribeList.get(pluginUrl) : new ArrayList();
             rl.add(resInfo);
@@ -199,7 +187,7 @@ public class WebSocketController extends TextWebSocketHandler {
             resInfo.setSessionId(sessionsIdOfRes);
             resourcesRepo.save(resInfo);
             
-            log.debug("Resource stored in session for plugin with id " + pluginId);
+            log.debug("Resource stored in session for plugin with url " + pluginUrl);
         }
         
         for(String pluginUrl : subscribeList.keySet() ) {
@@ -236,18 +224,18 @@ public class WebSocketController extends TextWebSocketHandler {
         HashMap<String, List> unsubscribeList = new HashMap();
         for (String resId : resourceIds) {
             // adding new resource info to subscribe map, with pluginUrl as key
-            ResourceInfo resInfo = getResourceInfo(resId);            
-            String pluginId = resInfo.getPluginId();
-            Optional<PluginInfo> plg = pluginRepo.findById(pluginId);
-            if(plg == null || !plg.isPresent())
-                throw new Exception("No plugin found");
-            
-            String pluginUrl = plg.get().getPluginURL();
-            log.debug("Found plugin with id " + pluginId + " - url: " + pluginUrl);
+            ResourceInfo resInfo = getResourceInfo(resId);
+            SessionInfo sessionInfo = sessionsRepo.findBySspId(resInfo.getSspIdResource());
+            String pluginUrl = sessionInfo.getPluginURL();
+            if(pluginUrl == null) {
+                log.error("No plugin url found");
+                throw new Exception("No plugin url associated with resource");
+            }
+            log.debug("Found plugin with url: " + pluginUrl);
             
             List<ResourceInfo> rl = (unsubscribeList.containsKey(pluginUrl)) ? unsubscribeList.get(pluginUrl) : new ArrayList();
             rl.add(resInfo);
-            unsubscribeList.put(pluginId, rl);
+            unsubscribeList.put(pluginUrl, rl);
             //update DB
             List<String> sessionsIdOfRes = resInfo.getSessionId();
             if (sessionsIdOfRes != null) {
@@ -255,9 +243,9 @@ public class WebSocketController extends TextWebSocketHandler {
                 resInfo.setSessionId(sessionsIdOfRes);
                 resourcesRepo.save(resInfo);
                 
-                log.debug("Resource removed from session for plugin with id " + pluginId);
+                log.debug("Resource removed from session for plugin with id " + pluginUrl);
             } else {
-                log.debug("Resource with id " + resInfo.getSymbioteId() + " not found ");
+                log.debug("Resource with id " + resInfo.getSymIdResource() + " not found ");
             }
             
         }
@@ -354,7 +342,7 @@ public class WebSocketController extends TextWebSocketHandler {
     private ResourceInfo getResourceByInternalId(String internalId) {
         ResourceInfo resInfo = null;
         try {
-            List<ResourceInfo> resInfoList = resourcesRepo.findByInternalId(internalId);
+            List<ResourceInfo> resInfoList = resourcesRepo.findByInternalIdResource(internalId);
             if (resInfoList != null && !resInfoList.isEmpty()) {
                 for(ResourceInfo ri: resInfoList){
                     resInfo = ri;

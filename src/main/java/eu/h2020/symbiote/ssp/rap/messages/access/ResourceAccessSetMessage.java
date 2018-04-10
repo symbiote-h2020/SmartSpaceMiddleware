@@ -7,7 +7,10 @@ package eu.h2020.symbiote.ssp.rap.messages.access;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
+import org.json.JSONObject;
+
 import java.util.List;
 
 /**
@@ -19,7 +22,7 @@ public class ResourceAccessSetMessage extends ResourceAccessMessage{
     private final List<ResourceInfo> resInfo;
     
     @JsonProperty("body")
-    private final String body;
+    private final JsonNode body;
     
     /**
      * JSON Constructor
@@ -28,14 +31,14 @@ public class ResourceAccessSetMessage extends ResourceAccessMessage{
      */
     @JsonCreator
     public ResourceAccessSetMessage(@JsonProperty("resourceInfo") List<ResourceInfo> resInfo, 
-                                    @JsonProperty("body") String body) {
+                                    @JsonProperty("body") JsonNode body) {
         this.accessType = ResourceAccessMessage.AccessType.SET;
         this.resInfo = resInfo;
         this.body = body;
     }
     
     @JsonProperty("body")
-    public String getBody() {
+    public JsonNode getBody() {
         return body;
     }
     

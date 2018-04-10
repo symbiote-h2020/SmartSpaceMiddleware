@@ -1,13 +1,8 @@
 package eu.h2020.symbiote.ssp.rap;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.interfaces.NorthboundRestController;
 import eu.h2020.symbiote.ssp.rap.managers.AuthorizationManager;
 import eu.h2020.symbiote.ssp.rap.managers.AuthorizationResult;
-import eu.h2020.symbiote.model.cim.Observation;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import java.nio.charset.Charset;
@@ -28,7 +23,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import static org.mockito.Mockito.*;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Value;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 import org.springframework.test.context.ActiveProfiles;
@@ -53,7 +48,7 @@ public class TestRestController {
     @InjectMocks
     @Autowired
     NorthboundRestController controller;
-    
+
     private MockMvc mockMvc;
     
     @Autowired
@@ -99,8 +94,8 @@ public class TestRestController {
             //test get
             ResultActions res = mockMvc.perform(get("/rap/Sensor/"+resourceId)
                 .headers(getHeader()));
-            
-            res.andExpect(status().isInternalServerError());            
+
+            res.andExpect(status().isInternalServerError());
             //test security
             res = mockMvc.perform(get("/rap/Sensor/"+resourceId)
                 .headers(getHeader()));
@@ -108,7 +103,7 @@ public class TestRestController {
             
             //delete
             resourcesRepository.delete(resourceId);
-            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
+            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalIdResource(platformResourceId);
             assert(resourceInfoList == null || resourceInfoList.isEmpty());
         }catch(Exception e){
             log.error(e.getMessage(), e);
@@ -141,8 +136,8 @@ public class TestRestController {
             //test history
             ResultActions res = mockMvc.perform(get("/rap/Sensor/"+resourceId+"/history")
                 .headers(getHeader()));
-            
-            res.andExpect(status().isInternalServerError());            
+
+            res.andExpect(status().isInternalServerError());
             //test security            
             res = mockMvc.perform(get("/rap/Sensor/"+resourceId+"/history")
                 .headers(getHeader()));
@@ -150,7 +145,7 @@ public class TestRestController {
 
             //delete
             resourcesRepository.delete(resourceId);
-            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
+            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalIdResource(platformResourceId);
             assert(resourceInfoList == null || resourceInfoList.isEmpty());
         }catch(Exception e){
             log.error(e.getMessage(), e);
@@ -189,16 +184,14 @@ public class TestRestController {
                 .content("null"));
             res.andExpect(status().isOk());
             String content = res.andReturn().getResponse().getContentAsString();
-            content = res.andReturn().getResponse().getContentAsString();
             assert(content.equals(""));
-            //test security            
+            //test security
             res = mockMvc.perform(post("/rap/Actuator/"+resourceId)
                 .headers(getHeader()));
             res.andExpect(status().isInternalServerError());
-            
             //delete
             resourcesRepository.delete(resourceId);
-            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalId(platformResourceId);
+            List<ResourceInfo> resourceInfoList = resourcesRepository.findByInternalIdResource(platformResourceId);
             assert(resourceInfoList == null || resourceInfoList.isEmpty());
         }catch(Exception e){
             log.error(e.getMessage(), e);
@@ -210,11 +203,11 @@ public class TestRestController {
     }
     
     private ResourceInfo addResource(String resourceId, String platformResourceId, List<String> obsProperties, String pluginId) {
-        ResourceInfo resourceInfo = new ResourceInfo(resourceId, platformResourceId);
+        ResourceInfo resourceInfo = new ResourceInfo(resourceId, "", platformResourceId, "", "");
         if(obsProperties != null)
             resourceInfo.setObservedProperties(obsProperties);
         if(pluginId != null && pluginId.length()>0)
-            resourceInfo.setPluginId(pluginId);
+            resourceInfo.setPluginUrl(pluginId);
         
         ResourceInfo resourceInfoResult = resourcesRepository.save(resourceInfo);
         return resourceInfoResult;

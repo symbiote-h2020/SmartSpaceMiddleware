@@ -9,15 +9,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import eu.h2020.symbiote.ssp.rap.RapConfig;
 import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
-import eu.h2020.symbiote.ssp.resources.db.PluginRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.rap.resources.query.Query;
-import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
+
 import static eu.h2020.symbiote.ssp.rap.odata.RapEntityCollectionProcessor.setErrorResponse;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -25,6 +24,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
 import org.apache.olingo.commons.api.edm.EdmNavigationProperty;
@@ -48,7 +49,6 @@ import org.apache.olingo.server.core.uri.UriResourcePrimitivePropertyImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -65,25 +65,20 @@ public class RapPrimitiveProcessor implements PrimitiveProcessor {
     private ResourcesRepository resourcesRepo;
     
     @Autowired
-    private PluginRepository pluginRepo;
-    
+    private SessionsRepository sessionsRepo;
+
     @Autowired
     private RapCommunicationHandler communicationHandler;
     
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${rap.json.property.type}")
-    private String jsonPropertyClassName;
-    
     private StorageHelper storageHelper;
     
     @Override
     public void init(OData odata, ServiceMetadata sm) {
-        storageHelper = new StorageHelper(
-                resourcesRepo, pluginRepo, 
-                communicationHandler, restTemplate, 
-                jsonPropertyClassName);
+        storageHelper = new StorageHelper(resourcesRepo, sessionsRepo, communicationHandler,
+                                        restTemplate, RapConfig.JSON_PROPERTY_CLASS_NAME);
     }
     
     @Override
@@ -143,7 +138,7 @@ public class RapPrimitiveProcessor implements PrimitiveProcessor {
             try {
                 resourceInfoList = storageHelper.getResourceInfoList(typeNameList, keyPredicates);
                 for (ResourceInfo resourceInfo : resourceInfoList) {
-                    String symbioteIdTemp = resourceInfo.getSymbioteId();
+                    String symbioteIdTemp = resourceInfo.getSymIdResource();
                     if (symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
                         symbioteId = symbioteIdTemp;
                 }
