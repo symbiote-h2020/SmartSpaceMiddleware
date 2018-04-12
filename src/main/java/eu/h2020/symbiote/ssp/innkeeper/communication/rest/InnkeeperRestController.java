@@ -154,7 +154,8 @@ public class InnkeeperRestController {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspDelete(decoded_message);
-				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
+				String encodedResponse = lwsp.send_data(res.getBody().toString());
+				//String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
 				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
@@ -172,17 +173,26 @@ public class InnkeeperRestController {
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			String outputMessage = lwsp.processMessage();
-			log.info(outputMessage);
-			log.info("MTI:"+lwsp.get_mti());
+			
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+			
+			try {
+				String outputMessage = lwsp.processMessage();
+				log.info(outputMessage);
+				log.info("MTI:"+lwsp.get_mti());
+			} catch (NullPointerException e) {
+				log.error("KEEP ALIVE MSG from lwsp.processMessage() returns null");
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
+			}
 
 			switch (lwsp.get_mti()) {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspKeepAlive(decoded_message);
-				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
+				log.info(res.getBody().toString());
+				String encodedResponse = lwsp.send_data(res.getBody().toString());
+				//String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
 				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);

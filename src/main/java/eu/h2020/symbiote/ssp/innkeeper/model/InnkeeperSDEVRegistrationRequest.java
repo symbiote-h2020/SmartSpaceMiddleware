@@ -206,19 +206,17 @@ public class InnkeeperSDEVRegistrationRequest {
 		if (s==null) {			
 			log.error("ERROR1 - no session found");
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		
-			httpStatus=HttpStatus.BAD_REQUEST;
-			return new ResponseEntity<Object>(
-					new ObjectMapper().writeValueAsString(response),
-					responseHeaders,httpStatus);
+			httpStatus=HttpStatus.BAD_REQUEST;		
+			String res = new ObjectMapper().writeValueAsString(response);
+			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
 		}
 		if (	!s.getSspId().equals(sspSdevInfo.getSspId()) && 
 				!s.getSymId().equals(sspSdevInfo.getSymId())){
 			log.error("ERROR2 - no match Ids");
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);
 			httpStatus=HttpStatus.BAD_REQUEST;
-			return new ResponseEntity<Object>(
-					new ObjectMapper().writeValueAsString(response),
-					responseHeaders,httpStatus);
+			String res = new ObjectMapper().writeValueAsString(response);
+			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
 
 		}else {
 			log.info("SSpId or SymId match");
@@ -230,9 +228,8 @@ public class InnkeeperSDEVRegistrationRequest {
 			//DEFAULT: ERROR
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		
 			httpStatus=HttpStatus.BAD_REQUEST;
-			return new ResponseEntity<Object>(
-					new ObjectMapper().writeValueAsString(response),
-					responseHeaders,httpStatus);
+			String res = new ObjectMapper().writeValueAsString(response);
+			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
 		}else {
 			log.info("SspId "+s.getSspId()+" Match");
 		}
@@ -301,10 +298,9 @@ public class InnkeeperSDEVRegistrationRequest {
 
 		response.setUpdatedSymId(updatedSymIdList);
 
-
-		return new ResponseEntity<Object>(
-				new ObjectMapper().writeValueAsString(response), 
-				responseHeaders,httpStatus);
+		log.info("SEND KEEP ALIVE RESPONSE: "+(String)(new ObjectMapper().writeValueAsString(response)));
+		String res = new ObjectMapper().writeValueAsString(response);
+		return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
 
 	}
 	public ResponseEntity<Object> SspDelete(String msg) throws IOException {
