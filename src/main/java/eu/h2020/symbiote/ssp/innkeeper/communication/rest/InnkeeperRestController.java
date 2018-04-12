@@ -73,11 +73,18 @@ public class InnkeeperRestController {
 		if (isLwspEnabled) {					
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			String outputMessage = lwsp.processMessage();
-			log.info(outputMessage);
-			log.info("MTI:"+lwsp.get_mti());
+			
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+			
+			try {
+				String outputMessage = lwsp.processMessage();
+				log.info(outputMessage);
+				log.info("MTI:"+lwsp.get_mti());
+			} catch (NullPointerException e) {
+				log.error("JOIN MSG from lwsp.processMessage() returns null");
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.BAD_REQUEST);
+			}
 
 			switch (lwsp.get_mti()) {
 			case LwspConstants.REGISTRY:
@@ -105,15 +112,20 @@ public class InnkeeperRestController {
 
 		if (isLwspEnabled) {
 
-			//TODO: DEBUG
-
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			String outputMessage = lwsp.processMessage();
-			log.info(outputMessage);
-			log.info("MTI:"+lwsp.get_mti());
+			
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+			String outputMessage="";
+			try {
+				outputMessage = lwsp.processMessage();
+				log.info(outputMessage);
+				log.info("MTI:"+lwsp.get_mti());
+			} catch (NullPointerException e) {
+				log.error("REGISTRY from lwsp.processMessage() returns null");
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
+			}
 
 			switch (lwsp.get_mti()) {
 			case LwspConstants.SDEV_Hello:
@@ -144,11 +156,17 @@ public class InnkeeperRestController {
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			String outputMessage = lwsp.processMessage();
-			log.info(outputMessage);
-			log.info("MTI:"+lwsp.get_mti());
+			
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+			try {
+				String outputMessage = lwsp.processMessage();
+				log.info(outputMessage);
+				log.info("MTI:"+lwsp.get_mti());
+			} catch (NullPointerException e) {
+				log.error("UNREGISTRY from lwsp.processMessage() returns null");
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.BAD_REQUEST);
+			}
 
 			switch (lwsp.get_mti()) {
 			case LwspConstants.REGISTRY:
@@ -183,7 +201,7 @@ public class InnkeeperRestController {
 				log.info("MTI:"+lwsp.get_mti());
 			} catch (NullPointerException e) {
 				log.error("KEEP ALIVE MSG from lwsp.processMessage() returns null");
-				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.BAD_REQUEST);
 			}
 
 			switch (lwsp.get_mti()) {
