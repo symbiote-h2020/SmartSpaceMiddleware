@@ -124,7 +124,7 @@ public class InnkeeperRestController {
 				log.info("MTI:"+lwsp.get_mti());
 			} catch (NullPointerException e) {
 				log.error("REGISTRY from lwsp.processMessage() returns null");
-				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
+				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.BAD_REQUEST);
 			}
 
 			switch (lwsp.get_mti()) {
@@ -172,9 +172,10 @@ public class InnkeeperRestController {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspDelete(decoded_message);
-				String encodedResponse = lwsp.send_data(res.getBody().toString());
-				//String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
-				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
+				//String encodedResponse = lwsp.send_data(res.getBody().toString());
+				log.info("UNREGISTRY SDEV");
+				return new ResponseEntity<Object>("",res.getHeaders(),res.getStatusCode());
+				
 			default:
 				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
 			}
