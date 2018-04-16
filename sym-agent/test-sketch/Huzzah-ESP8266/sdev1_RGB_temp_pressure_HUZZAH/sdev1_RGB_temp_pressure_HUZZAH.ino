@@ -69,7 +69,7 @@ bool setBlue(int in)
   return true;
 }
 
-
+uint8_t count = 0;
 Property propertyPointer[2] = {Property("temperature", "nc", &readTemp), Property("pressure", "nc", &readPr)};
 
 Parameter paramPointer[3] = {Parameter("r", "xsd:unsignedByte", "0", "255", &setRed), Parameter("g", "xsd:unsignedByte", "0", "255", &setGreen), Parameter("b", "xsd:unsignedByte", "0", "255", &setBlue)};
@@ -78,7 +78,7 @@ Capability c1("RGBCapability", 3, paramPointer);
   //    internalID, name, url, capability_number, Capability* Class, observesProperty_number, Property* Class
 Semantic s1("aggeggio", "192.168.97.55", 1, &c1, 2, propertyPointer);
 
-symAgent sdev1(10000, "RGB Leds HAT", false, &s1);
+symAgent sdev1(20000, "RGB Leds HAT", false, &s1);
 
 extern volatile boolean keepAlive_triggered;
 Metro registrationMetro = Metro();
@@ -94,6 +94,8 @@ void setup() {
   Serial.println("Start...");
   pixels.begin(); // This initializes the NeoPixel library
   if (sdev1.begin() == true) {
+    // delete the db of the innkeeper
+  //int joinresp = sdev1.unregistry();
   int joinresp = sdev1.registry();
   if (joinresp < 300 and joinresp >= 200) {
     //sdev1.join();
@@ -105,6 +107,8 @@ void setup() {
     sdev1.join();
     // if 0 no RegExpiration
     if (sdev1.getRegExpiration() != 0) {
+      Serial.print("\nREG expiration: ");
+      Serial.println(sdev1.getRegExpiration());
       registrationMetro.interval(floor(sdev1.getRegExpiration() * 0.9));
     }
   }
@@ -119,29 +123,32 @@ void setup() {
   //delay(3000);
   //sdev1.TestelaborateQuery(tmpTestJson2);
   if (join_success) Serial.println("\nJoin success!");
-/*
-  String tmpsymId = "112233445566778899aabbcc";
-  Serial.println("\n\nStart test r/w Flash\nReading...");
-  Serial.println(sdev1.TestgetSymIdResourceFromFlash());
-  Serial.print("Writing:");
-  Serial.println(tmpsymId);
-  sdev1.TestsaveSymIdResourceInFlash(tmpsymId);
-  Serial.println("Reading back...");
-  Serial.println(sdev1.TestgetSymIdResourceFromFlash());
-  */
-  //sdev1.TestelaborateQuery(tmpTestJson);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   String resp;
+  
   delay(10);
   if (keepAlive_triggered && join_success == 1){
-    //sdev1.sendKeepAlive(resp);
+    if (count == 3) {
+      sdev1.unregistry();
+      keepAlive_triggered = false;
+      join_success = 0;
+    }
+    if (count < 3) {
+      sdev1.sendKeepAlive(resp);
+      count++;
+    }
+    //Serial.print("COUNTER: ");
+    //Serial.println(count);
+    
   }
   sdev1.handleSSPRequest();
+  
   /*
-  if (registrationMetro.check() == 1 && join_success == 1){
+  if (
+.check() == 1 && join_success == 1){
     //need another new join request
     int joinresp = sdev1.registry();
     if (joinresp < 300 and joinresp >= 200) {

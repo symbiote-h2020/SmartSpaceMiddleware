@@ -28,15 +28,13 @@ void keepAliveISR(void){
 	  		//set the keep_alive interval. The value is in msec
 	#warning "fixthis in keepAliveISR"
 	next=ESP.getCycleCount() + keep_alive_interval;
-	//next=ESP.getCycleCount() + (2000 * TICK_MILLISECONDS);
 	timer0_write(next);
 	interrupts();
 }
 
 symAgent::symAgent()
 {
-		//create the json object, refers to https://github.com/bblanchon/ArduinoJson/blob/master/examples/JsonGeneratorExample/JsonGeneratorExample.ino
-		// calculate the ssp-id based on the WiFi MAC. TODO: maybe this is possible only when it is connected by wifi, or maybe is better to create this
+
 }
 
 symAgent::symAgent(unsigned long keep_alive, String description, bool isRoaming)
@@ -98,82 +96,6 @@ String symAgent::getSymIdFromFlash() {
 		return "";
 	}
 }
-
-/*
-String symAgent::getSymIdResourceFromFlash() {
-	String tmpID = "";
-	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
-	for (uint8_t i = FLASH_AGENT_START_SENSOR_RESOURCE_SYMID; i < FLASH_AGENT_END_SENSOR_RESOURCE_SYMID; i++) {
-		tmpID += String((char)EEPROM.read(i));
-	}
-	PI("Read this ResourceSymId from flash: ");
-	P(tmpID);
-	EEPROM.end();
-	if (tmpID != "ffffffffffffffffffffffffffffffffffffffffffffffff") {
-		//valid sym-id
-		P("Valid sym-id!");
-		return tmpID;
-	} else {
-		P("No symIdResource found in flash");
-		return "";
-	} 
-}
-
-////////////////////////
-// test function, to delete
-///////////////////////
-
-String symAgent::TestgetSymIdResourceFromFlash() {
-	String tmpID = "";
-	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
-	for (uint8_t i = FLASH_AGENT_START_SENSOR_RESOURCE_SYMID; i < FLASH_AGENT_END_SENSOR_RESOURCE_SYMID; i++) {
-		//tmpID += String(EEPROM.read(i), HEX);
-		tmpID += String((char)EEPROM.read(i));
-	}
-	PI("Read this ResourceSymId from flash: ");
-	P(tmpID);
-	EEPROM.end();
-				//ffffffffffffffffffffffff
-	if (tmpID != "ffffffffffffffffffffffffffffffffffffffffffffffff") {
-		//valid sym-id
-		P("Valid sym-id!");
-		return tmpID;
-	} else {
-		P("No symIdResource found in flash");
-		return "";
-	} 
-}
-
-void symAgent::TestsaveSymIdResourceInFlash(String symId) {
-	P("SAVE SYM-ID-RESOURCE IN FLASH");
-	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
-	uint8_t j = 0;
-	for (uint8_t i = FLASH_AGENT_START_SENSOR_RESOURCE_SYMID; i < FLASH_AGENT_END_SENSOR_RESOURCE_SYMID; i++) {
-		EEPROM.write(i, symId[j]);
-		j++;
-	}
-	EEPROM.commit();
-	EEPROM.end();
-#ifdef DEBUG_SYM_CLASS
-	String tmpID = "";
-	j = 0;
-	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
-	for (uint8_t i = FLASH_AGENT_START_SENSOR_RESOURCE_SYMID; i < FLASH_AGENT_END_SENSOR_RESOURCE_SYMID; i++) {
-		//tmpID += String(EEPROM.read(i), HEX);
-		tmpID += String((char)EEPROM.read(i));
-		//tmpID.setCharAt(j, (char)EEPROM.read(i));
-		j++;
-	}
-	PI("Read back SYM-ID-RESOURCE from flash: ");
-	P(tmpID);
-	PI("What I expect:");
-	P(_symIdResource);
-	EEPROM.end();
-#endif
-}
-
-//////////////////////
-*/
 
 void symAgent::saveIdInFlash() {
 	P("SAVE SYM-ID IN FLASH");
@@ -341,12 +263,10 @@ boolean symAgent::elaborateQuery()
 			}
 		*/
 		String type = _root["type"].as<String>();
-		//if (_root["symbioteId"] == _symIdActuatorResource || _root["symbioteId"] == _symIdSensorResource) {
 		if (_root["resourceInfo"][0]["internalIdResource"] == _internalId ) {
 			if (type == "SET") setResource(resp);
 			else if (type == "GET") getResource();
 			else if (type == "HISTORY") getResource();
-			// TODO FIXME
 			else if (type == "SUBSCRIBE") subscribe();
 			else if (type == "UNSUBSCRIBE") unsubscribe();
 			else {
@@ -458,7 +378,6 @@ boolean symAgent::TestelaborateQuery(String resp)
 			if (type == "SET") setResource(resp);
 			else if (type == "GET") getResource();
 			else if (type == "HISTORY") getResource();
-			// TODO FIXME
 			else if (type == "SUBSCRIBE") subscribe();
 			else if (type == "UNSUBSCRIBE") unsubscribe();
 			else {
@@ -470,74 +389,6 @@ boolean symAgent::TestelaborateQuery(String resp)
 	return true;
 }
 
-/*
-void symAgent::setResource(String rapRequest) {
-	P("TEST-SET RESOURCE");
-	_jsonBuff.clear();
-		JsonObject& _root = _jsonBuff.parseObject(rapRequest);
-		if (!_root.success()) {
-    		P("parseObject() failed");
-    		return;
-		}
-#if DEBUG_SYM_CLASS == 1
-		_root.prettyPrintTo(Serial);
-		P(" ");
-#endif
-		//if (_root["resourceInfo"][0]["symbioteId"] == _symId && _root["resourceInfo"][0]["internalId"] == _internalId) {
-		if (_root["resourceInfo"][0]["internalId"] == _internalId) {
-			// check only the first if the array, because the other should be the same
-			for (uint8_t i = 0; i < _semantic->getCapabilityNum(); i++) {
-				//check if any of my resources should be changed
-				String tmpString = _root["body"][_semantic->getCapabilityName(i)].as<String>();
-				PI("READ this capability:");
-				P(tmpString);
-				if ( tmpString != "" ) {
-					JsonArray& body = _root["body"][_semantic->getCapabilityName(i)];
-					int arraySize = body.size();
-					PI("Size of the array:\t");
-					P(arraySize);
-					for (uint8_t j = 0; j < _semantic-> getParamNum(i); j++) {
-						if (j < arraySize) {
-								// ex: root["body"][RGBCapability][0]
-							JsonObject& restriction = _root["body"][_semantic->getCapabilityName(i)][j];
-								// return somwthing like "RGB"
-							String restrictionNameString = restriction.begin()->key;
-							if (restrictionNameString != "") {
-								PI("Actuating: ");
-								PI(_semantic->getCapabilityName(i));
-								PI(" => ");
-								PI(restrictionNameString);
-								int value = restriction[restrictionNameString].as<int>();
-								PI(" : ");
-								PI(value);
-								if (_semantic->actuateParameterOfCapability(i, restrictionNameString, value)) {
-									P(" OK");
-								} else {
-									P("KO");
-								} 
-							} else {
-								PI("No restriction found at:\t");
-								P(j);
-							}
-						}
-						
-					}
-				}
-			}
-		} else {
-			PI("Mismatch in symId.\n*What I got*\nSym-Id:\t");
-			P(_root["resourceInfo"][0]["symbioteId"].as<String>());
-			PI("InternalId:\t");
-			P(_root["resourceInfo"][0]["internalId"].as<String>());
-			PI("*What I expect*\nSym-Id:\t");
-			P(_symId);
-			PI("InternalId:\t");
-			P(_internalId);
-			return;
-		}
-	return;
-}
-*/
 void symAgent::setResource(String rapRequest) {
 	P("SET RESOURCE");
 	_jsonBuff.clear();
@@ -550,7 +401,7 @@ void symAgent::setResource(String rapRequest) {
 		_root.prettyPrintTo(Serial);
 		P(" ");
 #endif
-		if (_root["resourceInfo"][0]["internalId"] == _internalId) {
+		if (_root["resourceInfo"][0]["internalIdResource"] == _internalId) {
 			JsonObject& capNameJson = _root["body"];
 					// return somwthing like "RGBCapability"
 			String capNameString = capNameJson.begin()->key;
@@ -560,7 +411,9 @@ void symAgent::setResource(String rapRequest) {
 				if (_semantic->getCapabilityName(i) == capNameString) capabilityIndex = i;
 			}
 			for( uint8_t j = 0; j< 3; j++) {
+					// attach to the head of the JSON to the inside array position
 				JsonObject& insideCapabilityJSON = _root["body"][capNameString][j];
+					// point the first two element key-value of the array
 				JsonObject::iterator it = insideCapabilityJSON.begin();
 				String propName = it->key;
 				uint8_t propValue = it->value;
@@ -576,53 +429,8 @@ void symAgent::setResource(String rapRequest) {
 					P("KO");
 				}
 			}
-/*
-	// check only the first if the array, because the other should be the same
-			for (uint8_t i = 0; i < _semantic->getCapabilityNum(); i++) {
-				//check if any of my resources should be changed
-				JsonObject& capNameJson = _root["body"];
-								// return somwthing like "RGB"
-				String capNameString = capNameJson.begin()->key;
-
-
-
-				String tmpString = _root["body"][_semantic->getCapabilityName(i)].as<String>();
-				PI("READ this capability:");
-				P(tmpString);
-				if ( tmpString != "" ) {
-					JsonArray& body = _root["body"][_semantic->getCapabilityName(i)];
-					int arraySize = body.size();
-					PI("Size of the array:\t");
-					P(arraySize);
-					for (uint8_t j = 0; j < _semantic-> getParamNum(i); j++) {
-						if (j < arraySize) {
-								// ex: root["body"][RGBCapability][0]
-							JsonObject& restriction = _root["body"][_semantic->getCapabilityName(i)][j];
-								// return somwthing like "RGB"
-							String restrictionNameString = restriction.begin()->key;
-							if (restrictionNameString != "") {
-								PI("Actuating: ");
-								PI(_semantic->getCapabilityName(i));
-								PI(" => ");
-								PI(restrictionNameString);
-								int value = restriction[restrictionNameString].as<int>();
-								PI(" : ");
-								PI(value);
-								if (_semantic->actuateParameterOfCapability(i, restrictionNameString, value)) {
-									P(" OK");
-								} else {
-									P("KO");
-								} 
-							} else {
-								PI("No restriction found at:\t");
-								P(j);
-							}
-						}
-						
-					}
-				}
-			}
-			*/
+			String tmpResp = "{ \"result\":\"done\"}";
+			_server->send(200, "application/json", tmpResp);
 		} else {
 			PI("Mismatch in symId.\n*What I got*\nSym-Id:\t");
 			P(_root["resourceInfo"][0]["symbioteId"].as<String>());
@@ -632,6 +440,9 @@ void symAgent::setResource(String rapRequest) {
 			P(_symId);
 			PI("InternalId:\t");
 			P(_internalId);
+			P("Wrong SymId");
+			String tmpResp = "{ \"internalIdResource\":\"" + _internalId + "\", \"value\":\"WrongSymId\"}";
+			_server->send(200, "application/json", tmpResp);
 			return;
 		}
 	return;
@@ -692,9 +503,8 @@ void symAgent::getResource() {
 			dinamicJsonBuffer.clear();
 }
 
-    // search for well-known symbiotic ssid and try to connect to it.
-	// return true if found a symbiotic ssid and so ssp and connect to it, false otherwise
-
+// search for well-known symbiotic ssid and try to connect to it.
+// return true if found a symbiotic ssid and so ssp and connect to it, false otherwise
 boolean symAgent::begin()
 {
 	P("BEGIN");
@@ -932,6 +742,62 @@ int symAgent::registry()
 	return statusCode;
 }
 
+// Unregistry the SDEV from the SSP, this also delete 
+// all the entry in the DB of the innkeeper
+int symAgent::unregistry()
+{
+	P("UNREGISTRY");
+			_jsonBuff.clear();
+			JsonObject& _root = _jsonBuff.createObject();
+			/*
+				Create a JSON like this:
+				{
+				   String sspId
+		 		}
+			*/
+			_root["sspId"] = _symIdInternal;
+			String tempClearData = "";
+			String tempCryptData = "";
+			String tempJsonPacket = "";
+			String resp = "";
+			_root.printTo(tempClearData);
+			P("Join message (CLEAR-DATA): ");
+		#if DEBUG_SYM_CLASS == 1
+			_root.prettyPrintTo(Serial);
+			P(" ");
+		#endif
+
+			/*
+				create a JSON like this:
+				{
+					"mti": 0x50,
+					"sessionId": <value>,
+					"data": "encryptJoinJSON"
+				}
+			*/
+					// crypt the data using the cryptosuite from lightweightsecurity protocol
+			_security->cryptData(tempClearData, tempCryptData);
+
+			_jsonBuff.clear();
+			JsonObject& jsonCrypt = _jsonBuff.createObject();
+			jsonCrypt["mti"] = STRING_MTI_SDEV_DATA_UPLINK;
+			jsonCrypt["sessionId"] = _security->getSessionId();
+			jsonCrypt["data"] = tempCryptData;
+			jsonCrypt.printTo(tempJsonPacket);
+
+			tempJsonPacket = "\r\n" + tempJsonPacket;
+			_rest_client->setContentType("application/encrypted");
+			int statusCode = _rest_client->post(UNREGISTRY_PATH, tempJsonPacket.c_str(), &resp);
+			P("UNREGISTRY message (SDEVP): ");
+		#if DEBUG_SYM_CLASS == 1
+			jsonCrypt.prettyPrintTo(Serial);
+			P(" ");
+		#endif
+			PI("Status code from server: ");
+		  	P(statusCode);
+			return statusCode;
+}
+
 int symAgent::join()
 {
 	P("JOIN");
@@ -945,8 +811,6 @@ int symAgent::join()
 			JsonObject& _root = _jsonBuff.createObject();
 					
 		 		//read from flash if there is stored a valid symId
-			//_symIdResource = getSymIdResourceFromFlash();
-			//_symIdResource = "";
 		 	_root["internalIdResource"] = _internalId;
 		 	_root["sspIdResource"] = "";
 			_root["sspIdParent"] = _symIdInternal;
@@ -1005,7 +869,7 @@ int symAgent::join()
 			if (statusCode < 300 and statusCode >= 200){
 				//got a valid response
 				_jsonBuff.clear();
-				//remove any additional byte from response like dimension of the buffer
+					//remove any additional byte from response like dimension of the buffer
 				resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
 				JsonObject& _rootCryptResp = _jsonBuff.parseObject(resp);
 				if (!_rootCryptResp.success()) {
@@ -1075,8 +939,6 @@ int symAgent::join()
 		 		}
 			*/
 		 		//read from flash if there is stored a valid symId
-			//_symIdResource = getSymIdResourceFromFlash();
-			//_symIdResource = "";
 		 	_root["internalIdResource"] = _internalId;
 		 	_root["sspIdResource"] = "";
 			_root["sspIdParent"] = _symIdInternal;
@@ -1225,14 +1087,17 @@ int symAgent::sendKeepAlive(String& response)
 	delay(50);
 	_jsonBuff.clear();
 	JsonObject& _root = _jsonBuff.createObject();
-	_root["id"] = _symId;
+	_root["sspId"] = _symIdInternal;
 
 	String tempClearData = "";
 	String tempCryptData = "";
 	String resp = "";
 	String tempJsonPacket = "";
 	_root.printTo(tempClearData);
-
+#if DEBUG_SYM_CLASS == 1
+		_root.prettyPrintTo(Serial);
+		P(" ");
+#endif
 	/*
 		create a JSON like this:
 		{
@@ -1259,30 +1124,77 @@ int symAgent::sendKeepAlive(String& response)
   	P(statusCode);
 	if (statusCode < 300 and statusCode >= 200){
 		//got a valid response
-		_jsonBuff.clear();
-			//remove any additional byte from response like dimension of the buffer
-		resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
-		JsonObject& _root2 = _jsonBuff.parseObject(resp);
-		if (!_root2.success()) {
-    		P("parseObject() failed");
-    		keepAlive_triggered = false;
-    		KEEPALIVE_LED_OFF
-    		return ERR_PARSE_JSON;
-		}
-	#if DEBUG_SYM_CLASS == 1
-		_root2.prettyPrintTo(Serial);
-		P(" ");
-	#endif
-		//response = _root2["result"].as<String>();
-		// TODO: parse response from innkeper
-		keepAlive_triggered = false;
-		KEEPALIVE_LED_OFF
-		// if subscribe enabled, send resource information to RAP
-		if (_subscribe) {
-			String rapData = getResourceAsString();
-			statusCode = _rest_client->post(RAP_PATH, rapData.c_str(), &resp);
-		}
-		return statusCode;
+				_jsonBuff.clear();
+				//remove any additional byte from response like dimension of the buffer
+				resp = resp.substring(resp.indexOf("{"), (resp.lastIndexOf("}") + 1 ));
+				JsonObject& _rootCryptResp = _jsonBuff.parseObject(resp);
+				if (!_rootCryptResp.success()) {
+		    		P("parseObject() failed");
+		    		return ERR_PARSE_JSON;
+				}
+		#if DEBUG_SYM_CLASS == 1
+				_rootCryptResp.prettyPrintTo(Serial);
+				P("");
+		#endif
+				_security->decryptData( _rootCryptResp["data"].as<String>(), tempClearData);
+				_jsonBuff.clear();
+				JsonObject& _rootClearResp = _jsonBuff.parseObject(tempClearData);
+				if (!_rootCryptResp.success()) {
+		    		keepAlive_triggered = false;
+		    		KEEPALIVE_LED_OFF
+		    		return ERR_PARSE_JSON;
+				}
+		#if DEBUG_SYM_CLASS == 1
+				P("Keep-Alive Response from INNK:");
+				_rootClearResp.prettyPrintTo(Serial);
+				P("");
+		#endif
+				if ((_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "OFFLINE")) {
+					//kick away fro the SSP
+					bool somethingChanged = false;
+					P("KEEP-ALIVE OK");
+					if (_rootClearResp["result"].as<String>() == "OK") {
+						// maybe the innkeeper wants to update our symId?
+						JsonArray& updateSymIdArray = _rootClearResp["updatedSymId"];
+						for (uint8_t i = 0; i < updateSymIdArray.size(); i++) {
+							// scan the element of the array
+							JsonObject& updatedSymIdJSON = updateSymIdArray[i];
+							if (updatedSymIdJSON["symIdResource"] != "") {
+								// a new symIdResource is going to be assigned
+								String tmpSSPIdRes = updatedSymIdJSON["sspIdResource"].as<String>();
+								if (_sspIdSensorResource == tmpSSPIdRes) {
+									P("NEW SYMID FOUND!\nOLD\t=>\tNEW");
+									PI(_symIdSensorResource);
+									PI("\t=>\t");
+									P(updatedSymIdJSON["symIdResource"].as<String>());
+									_symIdSensorResource = updatedSymIdJSON["symIdResource"].as<String>();
+									somethingChanged = true;
+								}
+								if (_sspIdActuatorResource == tmpSSPIdRes) {
+									P("NEW SYMID FOUND!\nOLD\t=>\tNEW");
+									PI(_symIdActuatorResource);
+									PI("\t=>\t");
+									P(updatedSymIdJSON["symIdResource"].as<String>());
+									_symIdActuatorResource = updatedSymIdJSON["symIdResource"].as<String>();
+									somethingChanged = true;
+								}
+							}
+						}
+						if (somethingChanged && _roaming) {
+							// need to save the new symId in flash. Actually no. The only symId stored in flash is the symId of the container SDEV.
+							// the other ResourceSymId are not used by the SDEV
+						}
+					}
+				} else {
+					P("KEEP-ALIVE KO");
+				}
+				if (_subscribe) {
+					String rapData = getResourceAsString();
+					statusCode = _rest_client->post(RAP_PATH, rapData.c_str(), &resp);
+				}
+				keepAlive_triggered = false;
+				KEEPALIVE_LED_OFF
+				return statusCode;
 	} else {
 		// http error code from innkeeper
 		_jsonBuff.clear();

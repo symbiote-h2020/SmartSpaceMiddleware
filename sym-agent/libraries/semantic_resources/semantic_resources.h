@@ -18,114 +18,9 @@
 #define SYM_SEMANTICS_RESOURCES
 
 #include <Arduino.h>
-//#include <sym_agent.h>
 #include <lsp.h>
 #include <ArduinoJson.h>
 
-/*
-
-{
-	"@c":".SmartDevice"
-	"connectedTo":"*tba*",
-    "available":"True",
-    //"agentType":"SDEV",    // SDEV, Platform
-    // SDEV one resource only
-    "hasResource": 
-        {
-        	"@c":".Resource",
-        	//MAPPED TO INTERNAL-ID
-            "id":"###",
-            "name":"###",
-            "description":"###",
-            // MAPPED TO TYPE
-            "labels":"Light",
-            "interworkingServiceURL":"*tba*",
-            "locatedAt":"*tba*",
-            "services":null
-        },
-	    "capabilities":
-		[
-			{
-			    "name":"RGB",
-			    "@c": ".Capability"
-			    "inputParameter":
-			    [
-			        {
-			            "name":"Red",
-			            "@c":".Parameter"
-			            "isArray":false,
-			            "datatype":"xsd:unsignedByte",
-			            "mandatory":true,
-			            "restrictions":
-			            [
-			                {
-			                    "min":0,
-			                    "max":255
-			                }
-			            ]
-			        },
-			        {
-			            "name":"Green",
-			            "@c":".Parameter",
-			            "isArray":false,
-			            "datatype":"xsd:unsignedByte",
-			            "mandatory":true,
-			            "restrictions":
-			            [
-			                {
-			                    "min":0,
-			                    "max":255
-			                }
-			            ]
-			        },
-			        {
-			            "name":"Blue",
-			            "@c":".Parameter",
-			            "isArray":false,
-			            "datatype":"xsd:unsignedByte",
-			            "mandatory":true,
-			            "restrictions":
-			            [
-			                {
-			                    "min":0,
-			                    "max":255
-			                }
-			            ]
-			        }
-			    ],
-			    "actsOn":"*tba*",
-			    "affects":["R","G","B"]
-			}
-		]
-	    "observesProperty":
-	    	[
-	    		{
-	    			"@c":".Property"
-	    			"name":"temperature",
-	    			"description":""
-
-	    		}
-	    	]	
-}
-
-RAP RESPONSE
-{
-	"value":,
-	"obsProperty":
-	{
-		"name":"temperature",
-	    "description":""
-	}
-	"uom":
-	{
-		"symbol":"",
-		"name":"",
-		"description":
-	}
-}
-
-
-*/
 
 class Property {
   public:
@@ -166,7 +61,6 @@ class Capability {
 
     String getParametersName(uint8_t paramNumber);
     uint8_t getParametersNum();
-    //uint8_t getIndexOfParameter(String paramName);
     bool actuateCapability(String paramName, int in);
   private:
     String _name;
@@ -209,8 +103,5 @@ class Semantic {
     uint8_t _obsPropertyNumber;
     Property* _obsProperty;
 };
-
-
-
 
 #endif // SYM_SEMANTICS_RESOURCES

@@ -58,6 +58,7 @@
 #define JOIN_PATH "/innkeeper/join"
 #define RAP_PATH "/rap/v1/request"
 #define KEEPALIVE_PATH "/innkeeper/keep_alive"
+#define UNREGISTRY_PATH "/innkeeper/unregistry"
 
 #define SSP_PORT 8080
 
@@ -124,6 +125,7 @@ class symAgent
     boolean begin();
       //join the ssp, return  status code of the request and do side effect of the response from the innkeeper into the join_resp struct
     int registry();
+    int unregistry();
     int join();
     String createSensorSemanticDescription();
     String createActuatorSemanticDescription();
@@ -144,13 +146,6 @@ class symAgent
     void handleSSPRequest();
 
     uint32_t getRegExpiration();
-
-    //void bind(String (* createObservedPropertiesString)(), String (* readSensorsJSON)());
-    //void bind(String (* getProperty)(int), String (* readSensorsJSON)());
-
-    //String (* _createObservedPropertiesString)();
-    //String (* _getProperty) (int);
-    //String (* _readSensorsJSON)();
 
   private:
     /************************* FUNCTIONS *************************/
