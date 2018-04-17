@@ -1,0 +1,2 @@
+#1 edit bootstrap.properties, change pathfile of saam-keystore.p12 created during installation
+#2 edit username and password of Symbiote Core SSP ownder if necessary
