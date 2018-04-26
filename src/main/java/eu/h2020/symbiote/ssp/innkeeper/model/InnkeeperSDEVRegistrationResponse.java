@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 
 public class InnkeeperSDEVRegistrationResponse {
@@ -19,8 +18,6 @@ public class InnkeeperSDEVRegistrationResponse {
     @Autowired
     ResourcesRepository resourcesRepository;
 
-    @Autowired
-    AccessPolicyRepository accessPolicyRepository;
     
     @Autowired
     OwlApiHelper owlApiHelp;

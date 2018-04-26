@@ -1,6 +1,8 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
@@ -31,6 +33,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -234,8 +237,15 @@ public class InnkeeperRestController {
 		HttpStatus httpStatus = HttpStatus.OK;
 		
 		List<ResourceInfo> resourcesInfo = resourcesRepository.findAll();
-		String resInfoString = new ObjectMapper().writeValueAsString(resourcesInfo);
-		log.info(resInfoString);
+		List<ResourceInfo> resourcesInfoFilt = new ArrayList<ResourceInfo>();
+		for (ResourceInfo r : resourcesInfo) {
+			log.info(r.getAccessPolicy().getPolicyType());
+			if (r.getAccessPolicy().getPolicyType() == AccessPolicyType.PUBLIC)
+				resourcesInfoFilt.add(r);
+				
+		}
+		String resInfoString = new ObjectMapper().writeValueAsString(resourcesInfoFilt);
+		log.info(resourcesInfoFilt);
 
 		return new ResponseEntity<Object>(resInfoString,responseHeaders,httpStatus);
 

@@ -25,8 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
@@ -54,8 +52,8 @@ public class InnkeeperSDEVRegistrationRequest {
 	@Autowired
 	ResourcesRepository resourcesRepository;
 
-	@Autowired
-	AccessPolicyRepository accessPolicyRepository;
+	//@Autowired
+	//AccessPolicyRepository accessPolicyRepository;
 
 	@Autowired
 	RegistrationInfoODataRepository registrationInfoODataRepository; 
@@ -290,14 +288,14 @@ public class InnkeeperSDEVRegistrationRequest {
 				registrationInfoODataRepository.save(odata);
 			}
 
-
+/*
 			//Keep Alive AccessPolicies						
 			//Optional<AccessPolicy> accessPolicy= accessPolicyRepository.findById(sspIdCurr);
 			Optional<AccessPolicy> ap = accessPolicyRepository.findById(r.getSspIdResource());
 			AccessPolicy apUpdate = ap.get();
 			apUpdate.setSessionExpiration(r.getSessionExpiration());
 			accessPolicyRepository.save(apUpdate);
-
+*/
 
 
 		}
@@ -369,14 +367,14 @@ public class InnkeeperSDEVRegistrationRequest {
 
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
 			httpStatus=HttpStatus.OK;
-
+/*
 			//Delete AccessPolicies			
 			for (String sspIdCurr : sspIdResourcesList) {
 				//Optional<AccessPolicy> accessPolicy= accessPolicyRepository.findById(sspIdCurr);				
 				accessPolicyRepository.delete(sspIdCurr);
 
 			}
-
+*/
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
 			httpStatus=HttpStatus.OK;
 

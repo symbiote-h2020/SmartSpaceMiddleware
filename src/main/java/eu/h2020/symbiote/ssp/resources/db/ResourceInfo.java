@@ -9,6 +9,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -53,6 +56,8 @@ public class ResourceInfo {
 	@Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private Date session_expiration;
+	@JsonProperty("policy") //of SDEV/Plat
+	private IAccessPolicySpecifier policy; 
 
 
 	public ResourceInfo() {
@@ -106,6 +111,30 @@ public class ResourceInfo {
 		this.session_expiration=session_expiration;
 	}
 
+	@JsonCreator
+	public ResourceInfo(
+			@JsonProperty("sspIdResource")  String sspIdResource,
+			@JsonProperty("symIdResource")  String symIdResource,
+			@JsonProperty("internalIdResource")  String internalIdResource,
+			@JsonProperty("symIdParent") String symIdParent, // of SDEV/Plat
+			@JsonProperty("sspIdParent") String sspIdParent,
+			@JsonProperty("sessionExpiration") Date session_expiration,
+			@JsonProperty("policy") IAccessPolicySpecifier policy
+			) {
+		this.id = sspIdResource;
+		this.symIdResource = symIdResource;
+		this.internalIdResource=internalIdResource;
+		this.symIdParent =symIdParent;
+		this.sspIdParent = sspIdParent;
+		this.pluginUrl = null;
+		this.observedProperties = null;
+		this.sessionIdList = null;       
+		this.type = null;
+		this.session_expiration=session_expiration;
+		this.policy=policy;
+	}
+
+	
 	@JsonProperty("sspIdResource")
 	public String getSspIdResource() {
 		return id;
@@ -204,5 +233,15 @@ public class ResourceInfo {
 	@JsonProperty("session_expiration")
 	public void setSessionExpiration(Date session_expiration) {
 		this.session_expiration = session_expiration;
+	}
+	
+	@JsonProperty("policy")
+	public IAccessPolicySpecifier getAccessPolicy() {
+		return this.policy;
+	}
+
+	@JsonProperty("policy")
+	public void setAccessPolicy(IAccessPolicySpecifier policy) {
+		this.policy = policy;
 	}
 }

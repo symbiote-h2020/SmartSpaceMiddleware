@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 
 public class InnkeeperResourceRegistrationResponse {
