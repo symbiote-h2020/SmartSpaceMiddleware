@@ -9,6 +9,7 @@ import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperSDEVRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperSDEVRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.apache.commons.logging.Log;
@@ -30,6 +31,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
 /**
  * Created by vasgl on 8/24/2017.
@@ -225,7 +227,22 @@ public class InnkeeperRestController {
 		}
 	}
 
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_PUBLIC_RESOURCES, method = RequestMethod.GET)
+	public ResponseEntity<Object> public_resources() throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {		
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+		HttpStatus httpStatus = HttpStatus.OK;
+		
+		List<ResourceInfo> resourcesInfo = resourcesRepository.findAll();
+		String resInfoString = new ObjectMapper().writeValueAsString(resourcesInfo);
+		log.info(resInfoString);
 
+		return new ResponseEntity<Object>(resInfoString,responseHeaders,httpStatus);
+
+
+	}
+	
+	
 
 	private ResponseEntity<Object>setCoreOnline(Boolean v){
 		HttpHeaders responseHeaders = new HttpHeaders();

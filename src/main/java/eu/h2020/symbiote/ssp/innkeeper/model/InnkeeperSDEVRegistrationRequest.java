@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
+import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
+import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
@@ -40,17 +43,20 @@ public class InnkeeperSDEVRegistrationRequest {
 
 	private static Log log = LogFactory.getLog(InnkeeperSDEVRegistrationRequest.class);
 
-	
+
 	@Value("${innk.core.enabled:true}")
 	Boolean isCoreOnline;
 	@Value("${innk.lwsp.enabled:true}")
 	Boolean isLwspEnabled;
 	@Autowired
 	SessionsRepository sessionsRepository;
-	
+
 	@Autowired
 	ResourcesRepository resourcesRepository;
-	
+
+	@Autowired
+	AccessPolicyRepository accessPolicyRepository;
+
 	@Autowired
 	RegistrationInfoODataRepository registrationInfoODataRepository; 
 
@@ -65,7 +71,7 @@ public class InnkeeperSDEVRegistrationRequest {
 	public Boolean checkRegistrationInjection(SspSDEVInfo sspSDEVInfo) {
 		List<SessionInfo> plgIdLst = sessionsRepository.findByPluginId(sspSDEVInfo.getPluginId());
 		List<SessionInfo> plgURLLst = sessionsRepository.findByPluginURL(sspSDEVInfo.getPluginURL());
-		List<SessionInfo> dk1Lst = sessionsRepository.findByDk1(sspSDEVInfo.getDerivedKey1());
+		List<SessionInfo> dk1Lst = sessionsRepository.findByDk1(sspSDEVInfo.getDerivedKey1());		
 		return plgIdLst.size()!=0 && plgURLLst.size()!=0 && dk1Lst.size()!=0; 
 	}
 
@@ -74,7 +80,7 @@ public class InnkeeperSDEVRegistrationRequest {
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
-		
+
 		SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(msg, SspSDEVInfo.class);
 
 		InnkeeperSDEVRegistrationResponse respSDEV = registry(sspSDEVInfo);
@@ -82,7 +88,7 @@ public class InnkeeperSDEVRegistrationRequest {
 		switch (respSDEV.getResult()) {
 		case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
 		case InnkeeperRestControllerConstants.REGISTRATION_OK:		
-			
+
 			SessionInfo s = new SessionInfo();	
 			if (!isLwspEnabled) {
 				sessionId = new Lwsp().generateSessionId();				
@@ -93,12 +99,12 @@ public class InnkeeperSDEVRegistrationRequest {
 			}
 
 			httpStatus=HttpStatus.OK;
-			
+
 			s.setSspId(respSDEV.getSspId());
 			s.setSymId(respSDEV.getSymId());						
 			s.setPluginId(sspSDEVInfo.getPluginId());
 			s.setPluginURL(sspSDEVInfo.getPluginURL());
-							
+
 			sessionsRepository.save(s);				
 			break;
 
@@ -114,12 +120,12 @@ public class InnkeeperSDEVRegistrationRequest {
 		String response = new ObjectMapper().writeValueAsString(respSDEV);
 		return new ResponseEntity<Object>(response,responseHeaders,httpStatus);
 	}
-	
+
 	public InnkeeperSDEVRegistrationResponse registry(SspSDEVInfo sspSDEVInfo) throws JsonProcessingException {
 		//TODO: implement checkCoreSymbioteIdRegistration with REAL Core interaction :-(
 		String symIdFromCore = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspSDEVInfo.getSymId());
 
-		
+
 		// a null SymId from core == REJECT THE REQUEST
 		if (symIdFromCore==null) { 
 			return new InnkeeperSDEVRegistrationResponse(
@@ -136,7 +142,7 @@ public class InnkeeperSDEVRegistrationRequest {
 				return new InnkeeperSDEVRegistrationResponse(
 						"",sspId,InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED,0);
 			}
-			
+
 			// registration injection workaround: check sspSDEVInfo.getSspIdParent() value, multiple registration for the same SDEV
 			if (checkRegistrationInjection(sspSDEVInfo)) {
 				// Got some duplicate fields in Session, suspect on registration,found other registration, reject.
@@ -144,7 +150,7 @@ public class InnkeeperSDEVRegistrationRequest {
 				return new InnkeeperSDEVRegistrationResponse(
 						sspSDEVInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);				
 			}
-			
+
 			//No duplicate registration, go ahead
 			return new InnkeeperSDEVRegistrationResponse(
 					sspSDEVInfo.getSymId(),new SspIdUtils(sessionsRepository).createSspId(),InnkeeperRestControllerConstants.REGISTRATION_OFFLINE,DbConstants.EXPIRATION_TIME);
@@ -157,7 +163,7 @@ public class InnkeeperSDEVRegistrationRequest {
 			return new InnkeeperSDEVRegistrationResponse(
 					symIdFromCore,sspId,InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED,0);
 		} 
-		
+
 		//NEW REGISTRATION
 		if ( sspSDEVInfo.getSymId().equals("")) {
 			if (checkRegistrationInjection(sspSDEVInfo)) {
@@ -174,9 +180,9 @@ public class InnkeeperSDEVRegistrationRequest {
 				sspSDEVInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
 
 	}
-	
-	
-	
+
+
+
 	public ResponseEntity<Object> SspKeepAlive(String msg) throws IOException {
 
 		//KEEP ALIVE ACTIONS:
@@ -274,8 +280,8 @@ public class InnkeeperSDEVRegistrationRequest {
 			r.setSessionExpiration(currTime);
 
 			resourcesRepository.save(r);
-			
-			
+
+
 			//Keep Alive for OData
 			List<RegistrationInfoOData> odataList= registrationInfoODataRepository.findBySspId(r.getSspIdResource());
 			for (RegistrationInfoOData odata : odataList) {
@@ -283,7 +289,17 @@ public class InnkeeperSDEVRegistrationRequest {
 				odata.setSymbioteId(r.getSymIdResource());
 				registrationInfoODataRepository.save(odata);
 			}
-		
+
+
+			//Keep Alive AccessPolicies						
+			//Optional<AccessPolicy> accessPolicy= accessPolicyRepository.findById(sspIdCurr);
+			Optional<AccessPolicy> ap = accessPolicyRepository.findById(r.getSspIdResource());
+			AccessPolicy apUpdate = ap.get();
+			apUpdate.setSessionExpiration(r.getSessionExpiration());
+			accessPolicyRepository.save(apUpdate);
+
+
+
 		}
 		response.setSymId(s.getSymId());
 		response.setSspId(s.getSspId());
@@ -330,9 +346,9 @@ public class InnkeeperSDEVRegistrationRequest {
 			//Delete session
 			sessionsRepository.delete(s);
 
-			
+
 			List<String> sspIdResourcesList = new ArrayList<String>();
-			
+
 			//Delete Resources
 			List<ResourceInfo> resList= resourcesRepository.findBySspIdParent(s.getSspId());
 			for (ResourceInfo r : resList) {
@@ -353,14 +369,27 @@ public class InnkeeperSDEVRegistrationRequest {
 
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
 			httpStatus=HttpStatus.OK;
-			
+
+			//Delete AccessPolicies			
+			for (String sspIdCurr : sspIdResourcesList) {
+				//Optional<AccessPolicy> accessPolicy= accessPolicyRepository.findById(sspIdCurr);				
+				accessPolicyRepository.delete(sspIdCurr);
+
+			}
+
+			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
+			httpStatus=HttpStatus.OK;
+
+
+
+
 			return new ResponseEntity<Object>(
 					new ObjectMapper().writeValueAsString(response), 
 					responseHeaders,httpStatus);
-			
-			
-			
-			
+
+
+
+
 		}
 
 		//DEFAULT: ERROR

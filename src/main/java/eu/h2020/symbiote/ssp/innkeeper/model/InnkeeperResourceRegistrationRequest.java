@@ -277,9 +277,10 @@ public class InnkeeperResourceRegistrationRequest {
 		} else if(resource instanceof MobileSensor) {
 			props = ((MobileSensor)resource).getObservesProperty();
 		}
-
+		
 		try {
-			addPolicy(symbioteIdResource, msg.getInternalIdResource(), msg.getAccessPolicy());
+			addPolicy(msg.getSspIdResource(), msg.getInternalIdResource(), msg.getAccessPolicy(),currTime);			
+			
 		}catch (NullPointerException e) {
 			log.warn("AccessPolicy is null\n");
 		}
@@ -401,10 +402,10 @@ public class InnkeeperResourceRegistrationRequest {
 	}
 
 
-	private void addPolicy(String resourceId, String internalId, IAccessPolicySpecifier accPolicy) throws InvalidArgumentsException {
+	private void addPolicy(String resourceId, String internalId, IAccessPolicySpecifier accPolicy, Date currTime) throws InvalidArgumentsException {
 		try {
 			IAccessPolicy policy = AccessPolicyFactory.getAccessPolicy(accPolicy);
-			AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
+			AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy,currTime);
 			log.debug("ADD POLICY ACTION");
 			accessPolicyRepository.save(ap);
 
@@ -413,23 +414,23 @@ public class InnkeeperResourceRegistrationRequest {
 			log.error("Invalid Policy definition for resource with id " + resourceId);
 		}
 	}
-	/*
-	private void deletePolicy(String internalId) {
+	
+	private void deletePolicy(String id) {
 		try {
-			Optional<AccessPolicy> accessPolicy = accessPolicyRepository.findByInternalId(internalId);
+			Optional<AccessPolicy> accessPolicy = accessPolicyRepository.findById(id);
 			if(accessPolicy == null || accessPolicy.get() == null) {
-				log.error("No policy stored for resource with internalId " + internalId);
+				log.error("No policy stored for resource with internalId " + id);
 				return;
 			}
 
 			accessPolicyRepository.delete(accessPolicy.get().getResourceId());
-			log.info("Policy removed for resource " + internalId);
+			log.info("Policy removed for resource " + id);
 
 		} catch (Exception e) {
-			log.error("Resource with internalId " + internalId + " not found - Exception: " + e.getMessage());
+			log.error("Resource with internalId " + id + " not found - Exception: " + e.getMessage());
 		}
 	}
-	 */
+	 
 
 
 }

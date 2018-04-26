@@ -15,6 +15,8 @@ public class InnkeeperRestControllerConstants {
 
     public static final String INNKEEPER_LIST_RESOURCES_REQUEST_PATH = "/list_resources";
     public static final String INNKEEPER_KEEP_ALIVE_REQUEST_PATH = "/keep_alive";
+    public static final String INNKEEPER_PUBLIC_RESOURCES = "/public_resources";
+    
     public static final String SET_INNK_ONLINE = "/set_innk_online";
     public static final String SET_INNK_OFFLINE = "/set_innk_offline";
     
