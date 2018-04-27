@@ -239,19 +239,15 @@ public class InnkeeperRestController {
 		List<ResourceInfo> resourcesInfo = resourcesRepository.findAll();
 		List<ResourceInfo> resourcesInfoFilt = new ArrayList<ResourceInfo>();
 		for (ResourceInfo r : resourcesInfo) {
-			log.info(r.getAccessPolicy().getPolicyType());
-			if (r.getAccessPolicy().getPolicyType() == AccessPolicyType.PUBLIC)
+			log.info(r.getAccessPolicySpecifier().getPolicyType());
+			if (r.getAccessPolicySpecifier().getPolicyType() == AccessPolicyType.PUBLIC)
 				resourcesInfoFilt.add(r);
-				
 		}
 		String resInfoString = new ObjectMapper().writeValueAsString(resourcesInfoFilt);
 		log.info(resourcesInfoFilt);
 
 		return new ResponseEntity<Object>(resInfoString,responseHeaders,httpStatus);
-
-
 	}
-	
 	
 
 	private ResponseEntity<Object>setCoreOnline(Boolean v){

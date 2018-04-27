@@ -10,11 +10,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
-
+import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -57,7 +58,9 @@ public class ResourceInfo {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private Date session_expiration;
 	@JsonProperty("policy") //of SDEV/Plat
-	private IAccessPolicySpecifier policy; 
+	private IAccessPolicy policy;
+	@JsonProperty("policySpecifier") //of SDEV/Plat
+	private IAccessPolicySpecifier policySpecifier;
 
 
 	public ResourceInfo() {
@@ -119,7 +122,8 @@ public class ResourceInfo {
 			@JsonProperty("symIdParent") String symIdParent, // of SDEV/Plat
 			@JsonProperty("sspIdParent") String sspIdParent,
 			@JsonProperty("sessionExpiration") Date session_expiration,
-			@JsonProperty("policy") IAccessPolicySpecifier policy
+			@JsonProperty("policy") IAccessPolicy policy,
+			@JsonProperty("policySpecifier") IAccessPolicySpecifier policySpecifier
 			) {
 		this.id = sspIdResource;
 		this.symIdResource = symIdResource;
@@ -132,6 +136,7 @@ public class ResourceInfo {
 		this.type = null;
 		this.session_expiration=session_expiration;
 		this.policy=policy;
+		this.policySpecifier=policySpecifier;
 	}
 
 	
@@ -236,12 +241,14 @@ public class ResourceInfo {
 	}
 	
 	@JsonProperty("policy")
-	public IAccessPolicySpecifier getAccessPolicy() {
-		return this.policy;
-	}
+	public IAccessPolicy getAccessPolicy() { return this.policy; }
 
 	@JsonProperty("policy")
-	public void setAccessPolicy(IAccessPolicySpecifier policy) {
-		this.policy = policy;
-	}
+	public void setAccessPolicy(IAccessPolicy policy) {	this.policy = policy; }
+
+	@JsonProperty("policySpecifier")
+	public IAccessPolicySpecifier getAccessPolicySpecifier() { return this.policySpecifier; }
+
+	@JsonProperty("policySpecifier")
+	public void setAccessPolicySpecifier(IAccessPolicySpecifier policySpecifier) {	this.policySpecifier = policySpecifier; }
 }

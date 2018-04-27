@@ -264,7 +264,6 @@ public class InnkeeperResourceRegistrationRequest {
 	private void saveResource(SspResource msg,Date currTime) throws InvalidArgumentsException {
 		Resource resource = msg.getSemanticDescription();
 		String pluginId = sessionsRepository.findBySspId(msg.getSspIdParent()).getPluginId();
-		String symbioteIdResource = resource.getId();
 		List<String> props = null;
 		if(resource instanceof StationarySensor) {
 			props = ((StationarySensor)resource).getObservesProperty();
@@ -278,14 +277,16 @@ public class InnkeeperResourceRegistrationRequest {
 		}catch (NullPointerException e) {
 			log.warn("AccessPolicy is null\n");
 		}*/
+
 		log.info("ADD RESOURCE:");
+		IAccessPolicy accessPolicy= AccessPolicyFactory.getAccessPolicy(msg.getAccessPolicy());
 		addResource(
 				msg.getSspIdResource(),				//sspId resource
 				msg.getSemanticDescription().getId(), //symbioteId Resource
 				msg.getInternalIdResource(),		//internal Id resource
 				msg.getSymIdParent(),						//symbiote Id of SDEV
 				msg.getSspIdParent(),						//sspId of SDEV
-				props, pluginId,currTime,msg.getAccessPolicy());	
+				props, pluginId,currTime, accessPolicy, msg.getAccessPolicy());
 
 		//ADD OData
 		log.info("ADD OData:");
@@ -380,9 +381,12 @@ public class InnkeeperResourceRegistrationRequest {
 			List<String> obsProperties, 
 			String pluginId, 
 			Date currTime,
-			IAccessPolicySpecifier policy) {
+			IAccessPolicy policy,
+			IAccessPolicySpecifier policySpecifier) {
 
-		ResourceInfo resourceInfo = new ResourceInfo(sspIdResource,symIdResource, internalIdResource,symId,sspId, currTime,policy);
+		ResourceInfo resourceInfo = new ResourceInfo(
+				sspIdResource, symIdResource, internalIdResource,
+				symId, sspId, currTime, policy, policySpecifier);
 		if(obsProperties != null)
 			resourceInfo.setObservedProperties(obsProperties);
 		if(pluginId != null && pluginId.length()>0)

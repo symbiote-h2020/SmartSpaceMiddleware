@@ -1,8 +1,6 @@
 package eu.h2020.symbiote.ssp.rap;
 
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
@@ -49,9 +47,6 @@ public class TestDb {
     private ResourcesRepository resourcesRepository;
 
     @Autowired
-    private AccessPolicyRepository accessPolicyRepository;
-    
-    @Autowired
     private RegistrationInfoODataRepository registrationInfoODataRepository;
     
     
@@ -91,6 +86,7 @@ public class TestDb {
         return resourceInfoResult;
     }
 
+    /*
     @Test 
     public void testAccessPolicy() throws Exception{
         //insert resource
@@ -131,7 +127,7 @@ public class TestDb {
         AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy);
         AccessPolicy apNew = accessPolicyRepository.save(ap);
         return apNew;
-    } 
+    }*/
     
     @Test
     public void testRegistrationInfoOData() throws Exception{

@@ -6,14 +6,15 @@
 package eu.h2020.symbiote.ssp.rap.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicy;
-import eu.h2020.symbiote.ssp.resources.db.AccessPolicyRepository;
 import eu.h2020.symbiote.security.ComponentSecurityHandlerFactory;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
+import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
 import eu.h2020.symbiote.security.handler.IComponentSecurityHandler;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
+import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -48,7 +50,7 @@ public class AuthorizationManager {
     private Boolean securityEnabled;
     
     @Autowired
-    private AccessPolicyRepository accessPolicyRepo;
+    private ResourcesRepository resourcesRepository;
 
 
     private IComponentSecurityHandler componentSecurityHandler;
@@ -185,13 +187,12 @@ public class AuthorizationManager {
              // building dummy access policy
             Map<String, IAccessPolicy> accessPolicyMap = new HashMap<>();
             // to get policies here
-            Optional<AccessPolicy> accPolicy = accessPolicyRepo.findById(resourceId);
-            if(accPolicy == null) {
+            Optional<ResourceInfo> resourceInfo = resourcesRepository.findById(resourceId);
+            if(resourceInfo == null) {
                 log.error("No access policies for resource");
                 return ids;
             }
-
-            accessPolicyMap.put(resourceId, accPolicy.get().getPolicy());
+            accessPolicyMap.put(resourceId, resourceInfo.get().getAccessPolicy());
             String mapString = accessPolicyMap.entrySet().stream().map(entry -> entry.getKey() + " - " + entry.getValue())
                     .collect(Collectors.joining(", "));
             log.info("accessPolicyMap: " + mapString);
