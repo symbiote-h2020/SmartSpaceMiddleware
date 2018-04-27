@@ -1,5 +1,7 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
@@ -78,10 +80,10 @@ public class InnkeeperRestController {
 		if (isLwspEnabled) {					
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			
+
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-			
+
 			try {
 				String outputMessage = lwsp.processMessage();
 				log.info(outputMessage);
@@ -119,7 +121,7 @@ public class InnkeeperRestController {
 
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			
+
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 			String outputMessage="";
@@ -138,7 +140,7 @@ public class InnkeeperRestController {
 				return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
 
 			case LwspConstants.REGISTRY:
-				
+
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegistry(lwsp.getSessionId(),decoded_message);
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
@@ -161,7 +163,7 @@ public class InnkeeperRestController {
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			
+
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 			try {
@@ -180,7 +182,7 @@ public class InnkeeperRestController {
 				//String encodedResponse = lwsp.send_data(res.getBody().toString());
 				log.info("UNREGISTRY SDEV");
 				return new ResponseEntity<Object>("",res.getHeaders(),res.getStatusCode());
-				
+
 			default:
 				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
 			}
@@ -197,10 +199,10 @@ public class InnkeeperRestController {
 		if (isLwspEnabled) {
 			lwsp.setData(payload);
 			lwsp.setAllowedCipher("0x008c");
-			
+
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-			
+
 			try {
 				String outputMessage = lwsp.processMessage();
 				log.info(outputMessage);
@@ -235,20 +237,20 @@ public class InnkeeperRestController {
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
-		
+
 		List<ResourceInfo> resourcesInfo = resourcesRepository.findAll();
 		List<ResourceInfo> resourcesInfoFilt = new ArrayList<ResourceInfo>();
 		for (ResourceInfo r : resourcesInfo) {
-			log.info(r.getAccessPolicySpecifier().getPolicyType());
-			if (r.getAccessPolicySpecifier().getPolicyType() == AccessPolicyType.PUBLIC)
-				resourcesInfoFilt.add(r);
+			if (r.getAccessPolicySpecifier().getPolicyType() == AccessPolicyType.PUBLIC)				
+				resourcesInfoFilt.add(r);				
 		}
-		String resInfoString = new ObjectMapper().writeValueAsString(resourcesInfoFilt);
-		log.info(resourcesInfoFilt);
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+		String resInfoString = objectMapper.writeValueAsString(resourcesInfoFilt);
 
 		return new ResponseEntity<Object>(resInfoString,responseHeaders,httpStatus);
 	}
-	
+
 
 	private ResponseEntity<Object>setCoreOnline(Boolean v){
 		HttpHeaders responseHeaders = new HttpHeaders();
