@@ -7,90 +7,91 @@ import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 
 
 public class SspResource {
-    @org.springframework.data.annotation.Id
-    
-    @JsonProperty("internalIdResource")
-    private String internalIdResource; //resource Internal Id
-    
-    @JsonProperty("sspIdResource")
-    private String sspIdResource; // Resource SSP Id
-    
-    @JsonProperty("sspIdParent")
-    private String sspIdParent; // SDEV SSP Id
-    
-    @JsonProperty("symIdParent")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String symIdParent;  // SDEV Symbiote ID
-    
-    @JsonProperty("accessPolicy")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private IAccessPolicySpecifier accessPolicy;
-    @JsonProperty("filteringPolicy")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private IAccessPolicySpecifier filteringPolicy;
-    @JsonProperty("resource")
-    private Resource resource; //Sensor, Actuator...
+	@org.springframework.data.annotation.Id
+
+	@JsonProperty("internalIdResource")
+	private String internalIdResource; //resource Internal Id
+
+	@JsonProperty("sspIdResource")
+	private String sspIdResource; // Resource SSP Id
+
+	@JsonProperty("sspIdParent")
+	private String sspIdParent; // SDEV SSP Id
+
+	@JsonProperty("symIdParent")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private String symIdParent;  // SDEV Symbiote ID
+
+	@JsonProperty("accessPolicy")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private IAccessPolicySpecifier accessPolicy;
+	@JsonProperty("filteringPolicy")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private IAccessPolicySpecifier filteringPolicy;
+	@JsonProperty("resource")
+	private Resource resource; //Sensor, Actuator...
 
 
-    public SspResource() {
-    }
+	public SspResource() {
+	}
 
-    public String getInternalIdResource() {
-        return this.internalIdResource;
-    }
+	public String getInternalIdResource() {
+		return this.internalIdResource;
+	}
 
-    public void setInternalIdResource(String internalIdResource) {
-        this.internalIdResource = internalIdResource;
-    }
+	public void setInternalIdResource(String internalIdResource) {
+		this.internalIdResource = internalIdResource;
+	}
 
-    public String getSspIdResource() {
-        return this.sspIdResource;
-    }
+	public String getSspIdResource() {
+		return this.sspIdResource;
+	}
 
-    public void setSspIdResource(String sspIdResource) {
-        this.sspIdResource = sspIdResource;
-    }
+	public void setSspIdResource(String sspIdResource) {
+		this.sspIdResource = sspIdResource;
+	}
 
-    
-    
-    public String getSspIdParent() {
-        return this.sspIdParent;
-    }
 
-    public void setSspIdParent(String sspIdParent) {
-        this.sspIdParent = sspIdParent;
-    }
 
-    public String getSymIdParent() {
-        return this.symIdParent;
-    }
+	public String getSspIdParent() {
+		return this.sspIdParent;
+	}
 
-    public void setSymIdParent(String symIdParent) {
-        this.symIdParent = symIdParent;
-    }
-   
-    public IAccessPolicySpecifier getAccessPolicy() {
-        return this.accessPolicy;
-    }
+	public void setSspIdParent(String sspIdParent) {
+		this.sspIdParent = sspIdParent;
+	}
 
-    public void setAccessPolicy(IAccessPolicySpecifier accessPolicySpecifier) {
-        this.accessPolicy = accessPolicySpecifier;
-    }
+	public String getSymIdParent() {
+		return this.symIdParent;
+	}
 
-    public IAccessPolicySpecifier getFilteringPolicy() {
-        return this.filteringPolicy;
-    }
+	public void setSymIdParent(String symIdParent) {
+		this.symIdParent = symIdParent;
+	}
 
-    public void setFilteringPolicy(IAccessPolicySpecifier filteringPolicySpecifier) {
-        this.filteringPolicy = filteringPolicySpecifier;
-    }
+	public IAccessPolicySpecifier getAccessPolicy() {
+		return this.accessPolicy;
+	}
 
-    public Resource getSemanticDescription() {
-        return this.resource;
-    }
+	public void setAccessPolicy(IAccessPolicySpecifier accessPolicySpecifier) {
+		this.accessPolicy = accessPolicySpecifier;
+	}
 
-    public void setSemanticDesciption(Resource resource) {
-        this.resource = resource;
-    }
-	
+	public IAccessPolicySpecifier getFilteringPolicy() {
+		return this.filteringPolicy;
+	}
+
+	public void setFilteringPolicy(IAccessPolicySpecifier filteringPolicySpecifier) {
+		this.filteringPolicy = filteringPolicySpecifier;
+	}
+
+	@JsonProperty("resource")
+	public Resource getResource() {
+		return this.resource;
+	}
+	@JsonProperty("resource")
+	public void setResource(Resource resource) {
+		this.resource = resource;
+	}
+
 }

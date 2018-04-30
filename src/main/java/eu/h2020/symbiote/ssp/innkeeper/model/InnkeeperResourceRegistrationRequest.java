@@ -138,12 +138,12 @@ public class InnkeeperResourceRegistrationRequest {
 		log.info(new ObjectMapper().writeValueAsString(msg));
 
 		//check The core and assign symId to the Resource (R5 optional)
-		String symIdResource = new CheckCoreUtility(resourcesRepository,this.isCoreOnline).checkCoreSymbioteIdRegistration(msg.getSemanticDescription().getId());
+		String symIdResource = new CheckCoreUtility(resourcesRepository,this.isCoreOnline).checkCoreSymbioteIdRegistration(msg.getResource().getId());
 
 		String results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
 
 		res = new InnkeeperResourceRegistrationResponse(
-				msg.getSemanticDescription().getId(), 	//symIdResource
+				msg.getResource().getId(), 	//symIdResource
 				msg.getSspIdResource(),					//sspIdResource
 				msg.getSymIdParent(),							//symId (SDEV)
 				msg.getSspIdParent(),							//sspId (SDEV)
@@ -169,19 +169,19 @@ public class InnkeeperResourceRegistrationRequest {
 		if (symIdResource == "") { 
 
 			log.info("REGISTRATION OFFLINE symIdResource="+symIdResource);
-			Resource r=msg.getSemanticDescription();
+			Resource r=msg.getResource();
 			r.setId(symIdResource);
 			String newSspIdResource = new SspIdUtils(resourcesRepository).createSspId();
 			log.info(newSspIdResource);
 			msg.setSspIdResource(newSspIdResource);
-			msg.setSemanticDesciption(r);
+			msg.setResource(r);
 			msg.setSymIdParent(sessionsRepository.findBySspId(msg.getSspIdParent()).getSymId());
 			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspIdParent()).getSessionExpiration());
 
 			results=InnkeeperRestControllerConstants.REGISTRATION_OFFLINE;
 
 			return new InnkeeperResourceRegistrationResponse(
-					msg.getSemanticDescription().getId(), 
+					msg.getResource().getId(), 
 					msg.getSspIdResource(),
 					msg.getSymIdParent(),
 					msg.getSspIdParent(),
@@ -200,7 +200,7 @@ public class InnkeeperResourceRegistrationRequest {
 				log.error("REJECTED: Join ONLINE: SymId="+msg.getSymIdParent()+" Not found");
 			}
 			return new InnkeeperResourceRegistrationResponse(
-					msg.getSemanticDescription().getId(), 								//symIdResource
+					msg.getResource().getId(), 								//symIdResource
 					msg.getSspIdResource(),												//sspIdResource
 					msg.getSymIdParent(),														//symId (SDEV)
 					msg.getSspIdParent(),														//sspId (SDEV)
@@ -214,7 +214,7 @@ public class InnkeeperResourceRegistrationRequest {
 			log.error("REJECTED: symIdResource=null SspId"+msg.getSymIdParent()+" not matched in Session Repository");
 
 			return new InnkeeperResourceRegistrationResponse(
-					msg.getSemanticDescription().getId(), 								//symIdResource
+					msg.getResource().getId(), 								//symIdResource
 					msg.getSspIdResource(),												//sspIdResource
 					msg.getSymIdParent(),														//symId (SDEV)
 					msg.getSspIdParent(),														//sspId (SDEV)
@@ -226,16 +226,16 @@ public class InnkeeperResourceRegistrationRequest {
 		if (symIdResource != "" && !msg.getSymIdParent().equals(symIdResource)) { //REGISTER!
 
 			log.info("NEW REGISTRATION symIdResource="+symIdResource);
-			Resource r=msg.getSemanticDescription();
+			Resource r=msg.getResource();
 			r.setId(symIdResource);			
 			msg.setSspIdResource(new SspIdUtils(resourcesRepository).createSspId());
-			msg.setSemanticDesciption(r);
+			msg.setResource(r);
 
 			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspIdParent()).getSessionExpiration());
 
 			results=InnkeeperRestControllerConstants.REGISTRATION_OK;						
 			return new InnkeeperResourceRegistrationResponse(
-					msg.getSemanticDescription().getId(), 
+					msg.getResource().getId(), 
 					msg.getSspIdResource(),
 					msg.getSymIdParent(),
 					msg.getSspIdParent(),
@@ -248,7 +248,7 @@ public class InnkeeperResourceRegistrationRequest {
 			log.error("ALREADY REGISTERED symIdResource="+symIdResource);
 			results=InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED;
 			return new InnkeeperResourceRegistrationResponse(
-					msg.getSemanticDescription().getId(), 
+					msg.getResource().getId(), 
 					msg.getSspIdResource(),
 					msg.getSymIdParent(),
 					msg.getSspIdParent(),
@@ -262,7 +262,7 @@ public class InnkeeperResourceRegistrationRequest {
 	}
 
 	private void saveResource(SspResource msg,Date currTime) throws InvalidArgumentsException {
-		Resource resource = msg.getSemanticDescription();
+		Resource resource = msg.getResource();
 		String pluginId = sessionsRepository.findBySspId(msg.getSspIdParent()).getPluginId();
 		List<String> props = null;
 		if(resource instanceof StationarySensor) {
@@ -282,22 +282,22 @@ public class InnkeeperResourceRegistrationRequest {
 		IAccessPolicy accessPolicy= AccessPolicyFactory.getAccessPolicy(msg.getAccessPolicy());
 		addResource(
 				msg.getSspIdResource(),				//sspId resource
-				msg.getSemanticDescription().getId(), //symbioteId Resource
+				msg.getResource().getId(), //symbioteId Resource
 				msg.getInternalIdResource(),		//internal Id resource
 				msg.getSymIdParent(),						//symbiote Id of SDEV
 				msg.getSspIdParent(),						//sspId of SDEV
-				props, pluginId,currTime, accessPolicy, msg.getAccessPolicy());
+				props, pluginId,currTime, accessPolicy, msg.getAccessPolicy(),msg.getResource());
 
 		//ADD OData
 		log.info("ADD OData:");
-		log.info("msg.getSemanticDescription().getId()="+msg.getSemanticDescription().getId());
+		log.info("msg.getSemanticDescription().getId()="+msg.getResource().getId());
 		addInfoForOData(msg);
 	}
 
 	private RegistrationInfoOData addInfoForOData(SspResource sspResource){
 		RegistrationInfoOData result = null;
 		List<Parameter> parameters;
-		Resource r = sspResource.getSemanticDescription();
+		Resource r = sspResource.getResource();
 		
 		Date session_expiration=null; 
 		Optional<ResourceInfo> rInfo = resourcesRepository.findById(sspResource.getSspIdResource());
@@ -382,7 +382,8 @@ public class InnkeeperResourceRegistrationRequest {
 			String pluginId, 
 			Date currTime,
 			IAccessPolicy policy,
-			IAccessPolicySpecifier policySpecifier) {
+			IAccessPolicySpecifier policySpecifier,
+			Resource resource) {
 
 		ResourceInfo resourceInfo = new ResourceInfo(
 				sspIdResource, symIdResource, internalIdResource,
@@ -391,6 +392,7 @@ public class InnkeeperResourceRegistrationRequest {
 			resourceInfo.setObservedProperties(obsProperties);
 		if(pluginId != null && pluginId.length()>0)
 			resourceInfo.setPluginUrl(pluginId);
+		resourceInfo.setResource(resource);
 		resourcesRepository.save(resourceInfo);
 
 		try {

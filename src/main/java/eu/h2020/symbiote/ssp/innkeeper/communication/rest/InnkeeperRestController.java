@@ -13,6 +13,7 @@ import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperSDEVRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperSDEVRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
+import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
@@ -239,14 +240,21 @@ public class InnkeeperRestController {
 		HttpStatus httpStatus = HttpStatus.OK;
 
 		List<ResourceInfo> resourcesInfo = resourcesRepository.findAll();
-		List<ResourceInfo> resourcesInfoFilt = new ArrayList<ResourceInfo>();
+		List<SspResource> sspResFilt = new ArrayList<SspResource>();
 		for (ResourceInfo r : resourcesInfo) {
-			if (r.getAccessPolicySpecifier().getPolicyType() == AccessPolicyType.PUBLIC)				
-				resourcesInfoFilt.add(r);				
+			if (r.getAccessPolicySpecifier().getPolicyType() == AccessPolicyType.PUBLIC) {
+				SspResource sspRes = new SspResource();
+				sspRes.setSspIdParent(r.getSspIdParent());
+				sspRes.setSymIdParent(r.getSymIdParent());
+				sspRes.setInternalIdResource(r.getInternalIdResource());
+				sspRes.setResource(r.getResource());
+				sspResFilt.add(sspRes);				
+			}
 		}
+
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
-		String resInfoString = objectMapper.writeValueAsString(resourcesInfoFilt);
+		String resInfoString = objectMapper.writeValueAsString(sspResFilt);
 
 		return new ResponseEntity<Object>(resInfoString,responseHeaders,httpStatus);
 	}

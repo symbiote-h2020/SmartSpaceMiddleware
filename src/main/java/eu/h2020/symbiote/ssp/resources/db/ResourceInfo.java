@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import java.util.ArrayList;
 import java.util.Date;
@@ -57,10 +58,13 @@ public class ResourceInfo {
 	@Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private Date session_expiration;
-	@JsonProperty("policy") //of SDEV/Plat
+	@JsonProperty("policy")
 	private IAccessPolicy policy;
-	@JsonProperty("policySpecifier") //of SDEV/Plat
-	private IAccessPolicySpecifier policySpecifier;
+	@JsonProperty("policySpecifier") 
+	private IAccessPolicySpecifier policySpecifier;	
+	@JsonProperty("resource") 
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private Resource resource;
 
 
 	public ResourceInfo() {
@@ -251,4 +255,10 @@ public class ResourceInfo {
 
 	@JsonProperty("policySpecifier")
 	public void setAccessPolicySpecifier(IAccessPolicySpecifier policySpecifier) {	this.policySpecifier = policySpecifier; }
+	
+	@JsonProperty("resource")
+	public Resource getResource() { return this.resource; }
+
+	@JsonProperty("resource")
+	public void setResource(Resource resource) {	this.resource= resource; }
 }
