@@ -815,8 +815,15 @@ int symAgent::join()
 		 	_root["sspIdResource"] = "";
 			_root["sspIdParent"] = _symIdInternal;
 			_root["symIdParent"] = _symId;
-			_root["accessPolicy"] = (char*)NULL;
-			_root["filteringPolicy"] = (char*)NULL;
+			String policyDefaultString = "{\"policyType\":\"PUBLIC\",\"requiredClaims\":{}}";
+			DynamicJsonBuffer dinamicJsonBufferPolicy; 
+			JsonObject& dinamicRootPolicy = dinamicJsonBufferPolicy.parseObject(policyDefaultString);
+			if (!dinamicRootPolicy.success()) {
+		    		P("parseObject() failed");
+		    		return ERR_PARSE_JSON;
+				}
+			_root["accessPolicy"] = dinamicRootPolicy;
+			_root["filteringPolicy"] = dinamicRootPolicy;
 
 			String tmpSemanticJsonString = createActuatorSemanticDescription();
 			DynamicJsonBuffer dinamicJsonBuffer; 
@@ -943,8 +950,17 @@ int symAgent::join()
 		 	_root["sspIdResource"] = "";
 			_root["sspIdParent"] = _symIdInternal;
 			_root["symIdParent"] = _symId;
-			_root["accessPolicy"] = (char*)NULL;
-			_root["filteringPolicy"] = (char*)NULL;
+			String policyDefaultString = "{\"policyType\":\"PUBLIC\",\"requiredClaims\":{}}";
+			DynamicJsonBuffer dinamicJsonBufferPolicy; 
+			JsonObject& dinamicRootPolicy = dinamicJsonBufferPolicy.parseObject(policyDefaultString);
+			if (!dinamicRootPolicy.success()) {
+		    		P("parseObject() failed");
+		    		return ERR_PARSE_JSON;
+				}
+			_root["accessPolicy"] = dinamicRootPolicy;
+			_root["filteringPolicy"] = dinamicRootPolicy;
+			//_root["accessPolicy"] = (char*)NULL;
+			//_root["filteringPolicy"] = (char*)NULL;
 
 			String tmpSemanticJsonString = createSensorSemanticDescription();
 			DynamicJsonBuffer dinamicJsonBuffer; 
