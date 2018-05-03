@@ -70,7 +70,8 @@ class Capability {
 
 class Semantic {
   public:
-    Semantic(String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property);
+    //Semantic(String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property);
+    Semantic(String name, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property);
     String returnSensorSemanticString();
     String returnActuatorSemanticString();
     String getName();

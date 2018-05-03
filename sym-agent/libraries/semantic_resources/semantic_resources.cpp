@@ -15,7 +15,8 @@
 *******************************************************************************/
 #include "semantic_resources.h"
 
-Semantic::Semantic(String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property)
+//Semantic::Semantic(String name, String url, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property)
+Semantic::Semantic(String name, uint8_t capNum, Capability* cap, uint8_t obsNumber, Property* property)
 {
 	_capabilityNumber = capNum;
 	_capability = cap;
@@ -23,7 +24,7 @@ Semantic::Semantic(String name, String url, uint8_t capNum, Capability* cap, uin
 	_obsProperty = property;
 	_symId = "";
 	_name = name;
-	_url = url;
+	//_url = url;
 }
 
 String Semantic::returnSensorSemanticString()
@@ -144,8 +145,11 @@ bool Semantic::isASensor()
 
 bool Semantic::isAnActuator()
 {
-	if (_capabilityNumber > 0) return true;
-	else return false;
+	bool retVal = false;
+	for (uint8_t i = 0; i<_capabilityNumber; i++) {
+		if (_capability[i].getParametersNum() > 0) retVal = true;
+	}
+	return retVal;
 }
 
 void Semantic::setURL(String url)

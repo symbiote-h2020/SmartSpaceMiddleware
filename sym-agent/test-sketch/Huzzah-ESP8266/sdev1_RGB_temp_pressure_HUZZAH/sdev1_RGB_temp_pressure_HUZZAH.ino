@@ -76,7 +76,7 @@ Parameter paramPointer[3] = {Parameter("r", "xsd:unsignedByte", "0", "255", &set
 
 Capability c1("RGBCapability", 3, paramPointer);
   //    internalID, name, url, capability_number, Capability* Class, observesProperty_number, Property* Class
-Semantic s1("aggeggio", "192.168.97.55", 1, &c1, 2, propertyPointer);
+Semantic s1("aggeggio", 1, &c1, 2, propertyPointer);
 
 symAgent sdev1(20000, "RGB Leds HAT", false, &s1);
 
@@ -94,11 +94,8 @@ void setup() {
   Serial.println("Start...");
   pixels.begin(); // This initializes the NeoPixel library
   if (sdev1.begin() == true) {
-    // delete the db of the innkeeper
-  //int joinresp = sdev1.unregistry();
   int joinresp = sdev1.registry();
   if (joinresp < 300 and joinresp >= 200) {
-    //sdev1.join();
     join_success = 1;
   } else {
       join_success = 0;
@@ -119,9 +116,6 @@ void setup() {
 
   Serial.print("Temperature:\t");
   Serial.println(readTemp());
-  //sdev1.TestelaborateQuery(tmpTestJson);
-  //delay(3000);
-  //sdev1.TestelaborateQuery(tmpTestJson2);
   if (join_success) Serial.println("\nJoin success!");
 }
 
@@ -139,29 +133,8 @@ void loop() {
     if (count < 3) {
       sdev1.sendKeepAlive(resp);
       count++;
-    }
-    //Serial.print("COUNTER: ");
-    //Serial.println(count);
-    
+    }    
   }
   sdev1.handleSSPRequest();
-  
-  /*
-  if (
-.check() == 1 && join_success == 1){
-    //need another new join request
-    int joinresp = sdev1.registry();
-    if (joinresp < 300 and joinresp >= 200) {
-    join_success = 1;
-  } else {
-      join_success = 0;
-      Serial.println("Error in JOIN message");
-    }
-      /// stay under the 90% of the registration expiration
-    registrationMetro.interval(floor(sdev1.getRegExpiration() * 0.9));
-  }
-  */
 }
-
-
 
