@@ -245,6 +245,7 @@ public class InnkeeperRestController {
 			if (r.getAccessPolicySpecifier().getPolicyType() == AccessPolicyType.PUBLIC) {
 				SspResource sspRes = new SspResource();
 				sspRes.setSspIdParent(r.getSspIdParent());
+				sspRes.setSspIdResource(r.getSspIdResource());
 				sspRes.setSymIdParent(r.getSymIdParent());
 				sspRes.setInternalIdResource(r.getInternalIdResource());
 				sspRes.setResource(r.getResource());
