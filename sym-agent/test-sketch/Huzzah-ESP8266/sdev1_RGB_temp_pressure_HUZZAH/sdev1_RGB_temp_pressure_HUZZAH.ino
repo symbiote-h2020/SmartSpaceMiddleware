@@ -6,8 +6,8 @@
 #include <Metro.h>
 #include <semantic_resources.h>
 
-String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalId\":\"5c:cf:7f:3a:6b:76\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":5},{\"b\":5}]},\"type\" : \"SET\"}";
-String tmpTestJson2 = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalId\":\"5c:cf:7f:3a:6b:76\",\"type\":\"Light\"},{\"type\" :\"Observation\"}],\"type\":\"GET\"}";
+String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalIdResource\":\"5c:cf:7f:3a:6b:76\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":5},{\"b\":5}]},\"type\" : \"SET\"}";
+String tmpTestJson2 = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalIdResource\":\"5c:cf:7f:3a:6b:76\",\"type\":\"Light\"},{\"type\" :\"Observation\"}],\"type\":\"GET\"}";
 
 #define SDA 4
 #define SCL 5
@@ -125,15 +125,17 @@ void loop() {
   
   delay(10);
   if (keepAlive_triggered && join_success == 1){
-    if (count == 3) {
-      sdev1.unregistry();
-      keepAlive_triggered = false;
-      join_success = 0;
-    }
-    if (count < 3) {
-      sdev1.sendKeepAlive(resp);
-      count++;
-    }    
+    //if (count == 3) {
+      //sdev1.unregistry();
+      //keepAlive_triggered = false;
+      //join_success = 0;
+    //}
+    //if (count < 3) {
+      int sCode = sdev1.sendKeepAlive(resp);
+      Serial.print("Keep-Alive code: ");
+      Serial.println(sCode);
+      //count++;
+    //}    
   }
   sdev1.handleSSPRequest();
 }

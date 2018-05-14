@@ -52,7 +52,8 @@
 #define FLASH_AGENT_END_SENSOR_RESOURCE_SYMID 97
 
 #define MAX_JSON_SIZE 2500
-#define JOIN_URL "10.20.30.1"
+//#define JOIN_URL "10.20.30.1"
+#define JOIN_URL "innkeeper.symbiote.org"
 //#define RAP_URL "192.168.97.105"
 #define REGISTRY_PATH "/innkeeper/registry"
 #define JOIN_PATH "/innkeeper/join"
