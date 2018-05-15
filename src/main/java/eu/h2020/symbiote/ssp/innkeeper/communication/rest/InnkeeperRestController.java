@@ -71,7 +71,7 @@ public class InnkeeperRestController {
 
 	@Value("${innk.core.enabled:true}")
 	Boolean isCoreOnline;
-	
+
 	@Value("${ssp.id}")
 	String sspName;
 
@@ -266,54 +266,23 @@ public class InnkeeperRestController {
 		return new ResponseEntity<Object>(resInfoString,responseHeaders,httpStatus);
 	}
 
-	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_GET_SSP_INFO, method = RequestMethod.POST)
-	public ResponseEntity<Object> getSspInfo(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {		
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_GET_SSP_INFO, method = RequestMethod.GET)
+	public ResponseEntity<Object> getSspInfo() throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {		
 		HttpStatus httpStatus = HttpStatus.OK;
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-		
-		if (isLwspEnabled) {
-			lwsp.setData(payload);
-			lwsp.setAllowedCipher("0x008c");
 
-			try {
-				String outputMessage = lwsp.processMessage();
-				log.info(outputMessage);
-				log.info("MTI:"+lwsp.get_mti());
-			} catch (NullPointerException e) {
-				log.error("GET SSP NAME MSG from lwsp.processMessage() returns null");
-				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.BAD_REQUEST);
-			}
+		JsonNode node = JsonNodeFactory.instance.objectNode();
+		((ObjectNode) node).put("SSP_NAME", sspName);		
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+		String resInfoString = objectMapper.writeValueAsString(node);			
+		return new ResponseEntity<Object>(resInfoString,responseHeaders,httpStatus);
 
-			switch (lwsp.get_mti()) {
-			case LwspConstants.REGISTRY:
-												
-				JsonNode node = JsonNodeFactory.instance.objectNode();
-			    ((ObjectNode) node).put("SSP_NAME", sspName);		
-				ObjectMapper objectMapper = new ObjectMapper();
-				objectMapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
-				String res = objectMapper.writeValueAsString(node);			
-				
-				String encodedResponse = lwsp.send_data(res);
-				//String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
-				return new ResponseEntity<Object>(encodedResponse,responseHeaders,httpStatus);
-			default:
-				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.INTERNAL_SERVER_ERROR);
-			}
 
-			// LWSP DISABLED
-		} else { 
-			JsonNode node = JsonNodeFactory.instance.objectNode();
-		    ((ObjectNode) node).put("SSP_NAME", sspName);		
-			ObjectMapper objectMapper = new ObjectMapper();
-			objectMapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
-			String resInfoString = objectMapper.writeValueAsString(node);			
-			return new ResponseEntity<Object>(resInfoString,responseHeaders,httpStatus);
-
-		}
 	}
 
-	
+
 
 	private ResponseEntity<Object>setCoreOnline(Boolean v){
 		HttpHeaders responseHeaders = new HttpHeaders();
