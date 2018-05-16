@@ -1,12 +1,14 @@
 package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
@@ -80,6 +82,15 @@ public class InnkeeperRestController {
 	public InnkeeperRestController() {
 
 	}
+	// PLATFORM RESOURCES REGISTRATION
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_PLATFORM_RESOURCES_REQUEST_PATH, method = RequestMethod.POST)
+	public ResponseEntity<Object> platform_resources(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+		log.info("Registration of Platform resources... TBD");
+		//innkeeperResourceRegistrationRequest.SspJoinResource(payload);
+		return new ResponseEntity<Object>("{\"msg\":\"TBD\"}",responseHeaders,HttpStatus.OK) ;			
+	}
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
@@ -142,7 +153,7 @@ public class InnkeeperRestController {
 			}
 
 			switch (lwsp.get_mti()) {
-			case LwspConstants.SDEV_Hello:
+			case LwspConstants.SDEV_Hello:				
 			case LwspConstants.SDEV_AuthN:
 				return new ResponseEntity<Object>(outputMessage,responseHeaders,HttpStatus.OK);
 
@@ -250,17 +261,25 @@ public class InnkeeperRestController {
 		for (ResourceInfo r : resourcesInfo) {
 			if (r.getAccessPolicySpecifier().getPolicyType() == AccessPolicyType.PUBLIC) {
 				SspResource sspRes = new SspResource();
-				sspRes.setSspIdParent(r.getSspIdParent());
-				sspRes.setSspIdResource(r.getSspIdResource());
-				sspRes.setSymIdParent(r.getSymIdParent());
-				sspRes.setInternalIdResource(r.getInternalIdResource());
-				sspRes.setResource(r.getResource());
+				//sspRes.setSspIdParent(r.getSspIdParent());
+				//sspRes.setSspIdResource(r.getSspIdResource());
+				//sspRes.setSymIdParent(r.getSymIdParent());
+				//sspRes.setInternalIdResource(r.getInternalIdResource());
+				Resource rr = r.getResource();
+				if (!r.getSymIdResource().equals(""))
+					rr.setId(r.getSymIdResource());
+				else if (!r.getSspIdResource().equals(""))
+					rr.setId(r.getSspIdResource());
+				rr.setInterworkingServiceURL(null);
+				sspRes.setResource(rr);
+
 				sspResFilt.add(sspRes);				
 			}
 		}
 
 		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+		objectMapper.setSerializationInclusion(Include.NON_NULL);
+		//	objectMapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
 		String resInfoString = objectMapper.writeValueAsString(sspResFilt);
 
 		return new ResponseEntity<Object>(resInfoString,responseHeaders,httpStatus);

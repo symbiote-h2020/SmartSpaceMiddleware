@@ -10,6 +10,7 @@ public class InnkeeperRestControllerConstants {
 
     public static final String INNKEEPER_BASE_PATH = "/innkeeper";
     public static final String INNKEEPER_JOIN_REQUEST_PATH = "/join";
+    public static final String INNKEEPER_PLATFORM_RESOURCES_REQUEST_PATH = "/platform/resources";
     public static final String INNKEEPER_REGISTRY_REQUEST_PATH = "/registry";
     public static final String INNKEEPER_UNREGISTRY_REQUEST_PATH = "/unregistry";
 
