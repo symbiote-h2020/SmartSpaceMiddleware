@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 
-public class SspSDEVInfo {
+public class SspRegInfo {
     @org.springframework.data.annotation.Id
-    @JsonProperty("symId") 		//of  SDEV
+    @JsonProperty("symId") 		//of  SDEV/PLATFORM
     private String symId;
-    @JsonProperty("sspId")  //of  SDEV
+    @JsonProperty("sspId")  //of  SDEV/PLATFORM
     private String sspId;    
     @JsonProperty("pluginId")
     private String pluginId;
@@ -26,7 +26,7 @@ public class SspSDEVInfo {
     private boolean roaming;
 
 
-    public SspSDEVInfo() {
+    public SspRegInfo() {
     }
 
     public String getSspId() {

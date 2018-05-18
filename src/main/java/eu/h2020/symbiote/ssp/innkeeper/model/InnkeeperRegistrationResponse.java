@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 
-public class InnkeeperSDEVRegistrationResponse {
+public class InnkeeperRegistrationResponse {
 	private static Log log = LogFactory.getLog(InnkeeperResourceRegistrationResponse.class);
     @Autowired
     ResourcesRepository resourcesRepository;
@@ -33,15 +33,15 @@ public class InnkeeperSDEVRegistrationResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonProperty("updatedSymId") 	private List<Map<String,String>> updatedSymId;
 	
-	public InnkeeperSDEVRegistrationResponse() {		
+	public InnkeeperRegistrationResponse() {		
 	}
 	
-	public InnkeeperSDEVRegistrationResponse(String symId, String sspId, String result) {
+	public InnkeeperRegistrationResponse(String symId, String sspId, String result) {
 		this.symId=symId;
 		this.sspId=sspId;
 		this.result=result;
 	}
-	public InnkeeperSDEVRegistrationResponse(String symId, String sspId, String result, Integer registration_expiration) {
+	public InnkeeperRegistrationResponse(String symId, String sspId, String result, Integer registration_expiration) {
 		this.symId=symId;
 		this.sspId=sspId;		
 		this.result=result;

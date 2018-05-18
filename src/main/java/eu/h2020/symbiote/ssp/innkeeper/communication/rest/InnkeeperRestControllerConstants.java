@@ -9,10 +9,16 @@ import java.util.List;
 public class InnkeeperRestControllerConstants {
 
     public static final String INNKEEPER_BASE_PATH = "/innkeeper";
+    public static final String INNKEEPER_REGISTER_REQUEST_PATH = "/register";
     public static final String INNKEEPER_JOIN_REQUEST_PATH = "/join";
-    public static final String INNKEEPER_PLATFORM_RESOURCES_REQUEST_PATH = "/platform/resources";
-    public static final String INNKEEPER_REGISTRY_REQUEST_PATH = "/registry";
-    public static final String INNKEEPER_UNREGISTRY_REQUEST_PATH = "/unregistry";
+    public static final String INNKEEPER_SDEV_REGISTER_REQUEST_PATH = "/sdev/"+INNKEEPER_REGISTER_REQUEST_PATH;
+    public static final String INNKEEPER_SDEV_JOIN_REQUEST_PATH = "/sdev/"+INNKEEPER_JOIN_REQUEST_PATH;
+    public static final String INNKEEPER_PLATFORM_REGISTER_REQUEST_PATH = "/platform/"+INNKEEPER_REGISTER_REQUEST_PATH;
+    public static final String INNKEEPER_PLATFORM_JOIN_REQUEST_PATH = "/platform/"+INNKEEPER_JOIN_REQUEST_PATH;
+    
+    public static final String INNKEEPER_UNREGISTER_REQUEST_PATH = "/un"+INNKEEPER_REGISTER_REQUEST_PATH;
+    public static final String INNKEEPER_SDEV_UNREGISTER_REQUEST_PATH = "/un"+INNKEEPER_REGISTER_REQUEST_PATH;
+    public static final String INNKEEPER_PLATFORM_UNREGISTER_REQUEST_PATH = "/un"+INNKEEPER_REGISTER_REQUEST_PATH;
 
     public static final String INNKEEPER_LIST_RESOURCES_REQUEST_PATH = "/list_resources";
     public static final String INNKEEPER_KEEP_ALIVE_REQUEST_PATH = "/keep_alive";
@@ -22,10 +28,6 @@ public class InnkeeperRestControllerConstants {
     public static final String SET_INNK_ONLINE = "/set_innk_online";
     public static final String SET_INNK_OFFLINE = "/set_innk_offline";
     
-    public static final List<String> SDEV_REGISTRY_PAYLOAD_VALS= Arrays.asList("id","pluginId","pluginURL","semanticDescription");
-    public static final List<String> PLATFORM_REGISTRY_PAYLOAD_VALS= Arrays.asList("id","name","description","url","informationModel");
-    public static final List<String> JOIN_RESOURCE_PAYLOAD_VALS= SDEV_REGISTRY_PAYLOAD_VALS;
-    
     public static final String REGISTRATION_OK = "OK";
     public static final String REGISTRATION_ALREADY_REGISTERED = "ALREADY_REGISTERED";
     public static final String REGISTRATION_OFFLINE = "OFFLINE";
@@ -34,5 +36,7 @@ public class InnkeeperRestControllerConstants {
     
 	public static final String REJECTED_SYMID = "REJECTED";
 	public static final String OFFLINE_SYMID = "OFFLINE";
+	public static final String SDEV = "SDEV";
+	public static final String PLATFORM = "PLATFORM";
     
 }

@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
-import eu.h2020.symbiote.ssp.resources.SspSDEVInfo;
+import eu.h2020.symbiote.ssp.resources.SspRegInfo;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
@@ -37,9 +37,9 @@ import eu.h2020.symbiote.ssp.utils.SspIdUtils;
 
 
 @Service
-public class InnkeeperSDEVRegistrationRequest {
+public class InnkeeperRegistrationRequest {
 
-	private static Log log = LogFactory.getLog(InnkeeperSDEVRegistrationRequest.class);
+	private static Log log = LogFactory.getLog(InnkeeperRegistrationRequest.class);
 
 
 	@Value("${innk.core.enabled:true}")
@@ -66,43 +66,51 @@ public class InnkeeperSDEVRegistrationRequest {
 		return this.isCoreOnline;
 	}
 
-	public Boolean checkRegistrationInjection(SspSDEVInfo sspSDEVInfo) {
-		List<SessionInfo> plgIdLst = sessionsRepository.findByPluginId(sspSDEVInfo.getPluginId());
-		List<SessionInfo> plgURLLst = sessionsRepository.findByPluginURL(sspSDEVInfo.getPluginURL());
-		List<SessionInfo> dk1Lst = sessionsRepository.findByDk1(sspSDEVInfo.getDerivedKey1());		
+	public Boolean checkRegistrationInjection(SspRegInfo sspRegInfo) {
+		List<SessionInfo> plgIdLst = sessionsRepository.findByPluginId(sspRegInfo.getPluginId());
+		List<SessionInfo> plgURLLst = sessionsRepository.findByPluginURL(sspRegInfo.getPluginURL());
+		List<SessionInfo> dk1Lst = sessionsRepository.findByDk1(sspRegInfo.getDerivedKey1());		
 		return plgIdLst.size()!=0 && plgURLLst.size()!=0 && dk1Lst.size()!=0; 
 	}
 
-	public ResponseEntity<Object> SspRegistry(String sessionId, String msg) throws IOException {
-
+	public ResponseEntity<Object> SspRegister(String sessionId, String msg, String type) throws IOException {
+		
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
 
-		SspSDEVInfo sspSDEVInfo =  new ObjectMapper().readValue(msg, SspSDEVInfo.class);
+		SspRegInfo sspRegInfo =  new ObjectMapper().readValue(msg, SspRegInfo.class);
 
-		InnkeeperSDEVRegistrationResponse respSDEV = registry(sspSDEVInfo);
-
-		switch (respSDEV.getResult()) {
+		InnkeeperRegistrationResponse regResp = registry(sspRegInfo);		
+		log.info("REGISTRATION INFO, type:"+type+", SSP registartion status:"+regResp.getResult());
+		switch (regResp.getResult()) {		
 		case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
 		case InnkeeperRestControllerConstants.REGISTRATION_OK:		
-
-			SessionInfo s = new SessionInfo();	
-			if (!isLwspEnabled) {
+			
+			SessionInfo s = new SessionInfo();
+			
+			if (type.equals(InnkeeperRestControllerConstants.SDEV)){
+				if (!isLwspEnabled) {
+					sessionId = new Lwsp().generateSessionId();				
+					s.setsessionId(sessionId);
+					s.setSessionExpiration(new Timestamp(System.currentTimeMillis()));
+				} else {
+					s=sessionsRepository.findBySessionId(sessionId);
+				}
+			}
+			
+			if (type.equals(InnkeeperRestControllerConstants.PLATFORM)){
 				sessionId = new Lwsp().generateSessionId();				
 				s.setsessionId(sessionId);
 				s.setSessionExpiration(new Timestamp(System.currentTimeMillis()));
-			} else {
-				s=sessionsRepository.findBySessionId(sessionId);
 			}
-
-			httpStatus=HttpStatus.OK;
-
-			s.setSspId(respSDEV.getSspId());
-			s.setSymId(respSDEV.getSymId());						
-			s.setPluginId(sspSDEVInfo.getPluginId());
-			s.setPluginURL(sspSDEVInfo.getPluginURL());
-
+			
+			httpStatus=HttpStatus.OK;			
+			s.setSspId(regResp.getSspId());			
+			s.setSymId(regResp.getSymId());								
+			s.setPluginId(sspRegInfo.getPluginId());			
+			s.setPluginURL(sspRegInfo.getPluginURL());
+						
 			sessionsRepository.save(s);				
 			break;
 
@@ -115,67 +123,67 @@ public class InnkeeperSDEVRegistrationRequest {
 		default:
 			httpStatus=HttpStatus.BAD_REQUEST;
 		}
-		String response = new ObjectMapper().writeValueAsString(respSDEV);
+		String response = new ObjectMapper().writeValueAsString(regResp);
 		return new ResponseEntity<Object>(response,responseHeaders,httpStatus);
 	}
 
-	public InnkeeperSDEVRegistrationResponse registry(SspSDEVInfo sspSDEVInfo) throws JsonProcessingException {
+	public InnkeeperRegistrationResponse registry(SspRegInfo sspRegInfo) throws JsonProcessingException {
 		//TODO: implement checkCoreSymbioteIdRegistration with REAL Core interaction :-(
-		String symIdFromCore = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspSDEVInfo.getSymId());
+		String symIdFromCore = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspRegInfo.getSymId());
 
 
 		// a null SymId from core == REJECT THE REQUEST
 		if (symIdFromCore==null) { 
-			return new InnkeeperSDEVRegistrationResponse(
-					sspSDEVInfo.getSymId(),sspSDEVInfo.getSspId(),InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
+			return new InnkeeperRegistrationResponse(
+					sspRegInfo.getSymId(),sspRegInfo.getSspId(),InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
 		}
 
 		//EMPTY smyId from core == OFFLINE
 		if (symIdFromCore.equals("")) { 
 
 			//  check if sspId exists
-			SessionInfo sInfo= sessionsRepository.findBySspId(sspSDEVInfo.getSspId());
+			SessionInfo sInfo= sessionsRepository.findBySspId(sspRegInfo.getSspId());
 			if (sInfo!=null) {
 				String sspId = sInfo.getSspId();
-				return new InnkeeperSDEVRegistrationResponse(
+				return new InnkeeperRegistrationResponse(
 						"",sspId,InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED,0);
 			}
 
-			// registration injection workaround: check sspSDEVInfo.getSspIdParent() value, multiple registration for the same SDEV
-			if (checkRegistrationInjection(sspSDEVInfo)) {
+			// registration injection workaround: check sspRegInfo.getSspIdParent() value, multiple registration for the same SDEV/PLAT
+			if (checkRegistrationInjection(sspRegInfo)) {
 				// Got some duplicate fields in Session, suspect on registration,found other registration, reject.
-				log.error("REGISTRATION REJECTED AS SUSPECT DUPLICATED SDEVOInfo="+new ObjectMapper().writeValueAsString(sspSDEVInfo));
-				return new InnkeeperSDEVRegistrationResponse(
-						sspSDEVInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);				
+				log.error("REGISTRATION REJECTED AS SUSPECT DUPLICATED RegInfo="+new ObjectMapper().writeValueAsString(sspRegInfo));
+				return new InnkeeperRegistrationResponse(
+						sspRegInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);				
 			}
 
 			//No duplicate registration, go ahead
-			return new InnkeeperSDEVRegistrationResponse(
-					sspSDEVInfo.getSymId(),new SspIdUtils(sessionsRepository).createSspId(),InnkeeperRestControllerConstants.REGISTRATION_OFFLINE,DbConstants.EXPIRATION_TIME);
+			return new InnkeeperRegistrationResponse(
+					sspRegInfo.getSymId(),new SspIdUtils(sessionsRepository).createSspId(),InnkeeperRestControllerConstants.REGISTRATION_OFFLINE,DbConstants.EXPIRATION_TIME);
 		}
 
-		// if symIdFromCore == SDEVInfo.symId -> Already registered
-		if (symIdFromCore.equals(sspSDEVInfo.getSymId())) { 	
+		// if symIdFromCore == RegInfo.symId -> Already registered
+		if (symIdFromCore.equals(sspRegInfo.getSymId())) { 	
 
 			String sspId = sessionsRepository.findBySymId(symIdFromCore).getSspId();
-			return new InnkeeperSDEVRegistrationResponse(
+			return new InnkeeperRegistrationResponse(
 					symIdFromCore,sspId,InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED,0);
 		} 
 
 		//NEW REGISTRATION
-		if ( sspSDEVInfo.getSymId().equals("")) {
-			if (checkRegistrationInjection(sspSDEVInfo)) {
+		if ( sspRegInfo.getSymId().equals("")) {
+			if (checkRegistrationInjection(sspRegInfo)) {
 				// Got some duplicate fields in Session, suspect on registration,found other registration, reject.
-				return new InnkeeperSDEVRegistrationResponse(
-						sspSDEVInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);				
+				return new InnkeeperRegistrationResponse(
+						sspRegInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);				
 			} 
 			//No duplicate registration, go ahead
-			return	 new InnkeeperSDEVRegistrationResponse(
+			return	 new InnkeeperRegistrationResponse(
 					symIdFromCore,new SspIdUtils(sessionsRepository).createSspId(),InnkeeperRestControllerConstants.REGISTRATION_OK,DbConstants.EXPIRATION_TIME);
 		}
-		log.error("SDEV REGISTARTION DEFAULT REJECTED");
-		return new InnkeeperSDEVRegistrationResponse(
-				sspSDEVInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
+		log.error("REGISTARTION DEFAULT REJECTED");
+		return new InnkeeperRegistrationResponse(
+				sspRegInfo.getSymId(),null,InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
 
 	}
 
@@ -185,27 +193,27 @@ public class InnkeeperSDEVRegistrationRequest {
 
 		//KEEP ALIVE ACTIONS:
 		// 1. update Session Expiration
-		// 2. check if SSP is online and update symbiote id for SDEV and its Resources (Currently Mock)
+		// 2. check if SSP is online and update symbiote id for SDEV/PLAT and its Resources (Currently Mock)
 
 		Date currTime = new Timestamp(System.currentTimeMillis());
 
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
-		SspSDEVInfo sspSdevInfo = new ObjectMapper().readValue(msg, SspSDEVInfo.class);
+		SspRegInfo sspRegInfo = new ObjectMapper().readValue(msg, SspRegInfo.class);
 
 		SessionInfo s = null;
 
-		if (sspSdevInfo.getSymId()==null || sspSdevInfo.getSymId().equals("")) {
+		if (sspRegInfo.getSymId()==null || sspRegInfo.getSymId().equals("")) {
 			// symId is not useful or not available, use sspId
-			s = sessionsRepository.findBySspId(sspSdevInfo.getSspId());
+			s = sessionsRepository.findBySspId(sspRegInfo.getSspId());
 
 		}else {
 			// UPDATE USING SYMID
-			s = sessionsRepository.findBySymId(sspSdevInfo.getSymId());
+			s = sessionsRepository.findBySymId(sspRegInfo.getSymId());
 		}
 
-		InnkeeperSDEVRegistrationResponse response =new InnkeeperSDEVRegistrationResponse();
+		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
 
 		if (s==null) {			
 			log.error("ERROR1 - no session found");
@@ -214,8 +222,8 @@ public class InnkeeperSDEVRegistrationRequest {
 			String res = new ObjectMapper().writeValueAsString(response);
 			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
 		}
-		if (	!s.getSspId().equals(sspSdevInfo.getSspId()) && 
-				!s.getSymId().equals(sspSdevInfo.getSymId())){
+		if (	!s.getSspId().equals(sspRegInfo.getSspId()) && 
+				!s.getSymId().equals(sspRegInfo.getSymId())){
 			log.error("ERROR2 - no match Ids");
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);
 			httpStatus=HttpStatus.BAD_REQUEST;
@@ -227,7 +235,7 @@ public class InnkeeperSDEVRegistrationRequest {
 			log.info("SSpId or SymId match");
 		}*/
 
-		if (	( !isCoreOnline && (s.getSspId()!="" && !s.getSspId().equals(sspSdevInfo.getSspId())) )
+		if (	( !isCoreOnline && (s.getSspId()!="" && !s.getSspId().equals(sspRegInfo.getSspId())) )
 				) {
 			log.error("ERROR3 - SSP online and SymId not match or SSP offline and SspId not match");
 			//DEFAULT: ERROR
@@ -240,19 +248,19 @@ public class InnkeeperSDEVRegistrationRequest {
 			log.info("SspId "+s.getSspId()+" Match");
 		}*/
 
-		String symIdSDEV=null;
-		if (sspSdevInfo.getSymId()==null)
-			symIdSDEV = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(""); //generate new symId from Core
+		String symIdReg=null;
+		if (sspRegInfo.getSymId()==null)
+			symIdReg = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(""); //generate new symId from Core
 		else
-			symIdSDEV = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspSdevInfo.getSymId());
-		//if I found my symId/SspId of SDEV in the MongoDb session, update expiration time it
+			symIdReg = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspRegInfo.getSymId());
+		//if I found my symId/SspId of SDEV/PLAT in the MongoDb session, update expiration time it
 
 		//UPDATE Expiration time of session
-		if (symIdSDEV!=null) {
+		if (symIdReg!=null) {
 			if (s.getSymId()==null) {
-				s.setSymId(symIdSDEV); // update SymId
+				s.setSymId(symIdReg); // update SymId
 			}else if (s.getSymId().equals("")) {
-				s.setSymId(symIdSDEV); // update SymId
+				s.setSymId(symIdReg); // update SymId
 			}
 		}
 
@@ -324,23 +332,23 @@ public class InnkeeperSDEVRegistrationRequest {
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
-		SspSDEVInfo sspSdevInfo = new ObjectMapper().readValue(msg, SspSDEVInfo.class);
+		SspRegInfo sspRegInfo = new ObjectMapper().readValue(msg, SspRegInfo.class);
 		//Delete Session
 
 		SessionInfo s = null;
 
-		if (sspSdevInfo.getSymId()==null || sspSdevInfo.getSymId().equals("")) {
+		if (sspRegInfo.getSymId()==null || sspRegInfo.getSymId().equals("")) {
 			// symId is not useful or not available, use sspId
-			s = sessionsRepository.findBySspId(sspSdevInfo.getSspId());
+			s = sessionsRepository.findBySspId(sspRegInfo.getSspId());
 
 		}else {
 			// REMOVE USING SYMID
-			s = sessionsRepository.findBySymId(sspSdevInfo.getSymId());
+			s = sessionsRepository.findBySymId(sspRegInfo.getSymId());
 		}
 
-		InnkeeperSDEVRegistrationResponse response =new InnkeeperSDEVRegistrationResponse();
+		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
 
-		//if I found my symId/SspId of SDEV in the MongoDb session, delete it
+		//if I found my symId/SspId of SDEV/PLAT in the MongoDb session, delete it
 		if (s!=null) {
 
 			//Delete session
