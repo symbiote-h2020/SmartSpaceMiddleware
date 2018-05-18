@@ -78,7 +78,7 @@ Capability c1("RGBCapability", 3, paramPointer);
   //    internalID, name, url, capability_number, Capability* Class, observesProperty_number, Property* Class
 Semantic s1("aggeggio", 1, &c1, 2, propertyPointer);
 
-symAgent sdev1(20000, "RGB Leds HAT", false, &s1);
+symAgent sdev1(120000, "RGB Leds HAT", false, &s1);
 
 extern volatile boolean keepAlive_triggered;
 Metro registrationMetro = Metro();

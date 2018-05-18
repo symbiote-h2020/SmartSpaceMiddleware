@@ -55,11 +55,11 @@
 //#define JOIN_URL "10.20.30.1"
 #define JOIN_URL "innkeeper.symbiote.org"
 //#define RAP_URL "192.168.97.105"
-#define REGISTRY_PATH "/innkeeper/registry"
-#define JOIN_PATH "/innkeeper/join"
+#define REGISTRY_PATH "/innkeeper/sdev/register"
+#define JOIN_PATH "/innkeeper/sdev/join"
 #define RAP_PATH "/rap/v1/request"
 #define KEEPALIVE_PATH "/innkeeper/keep_alive"
-#define UNREGISTRY_PATH "/innkeeper/unregistry"
+#define UNREGISTRY_PATH "/innkeeper/sdev/unregistry"
 
 #define SSP_PORT 8080
 
@@ -120,6 +120,7 @@ class symAgent
     void subscribe();
     void unsubscribe();
 
+    void history();
     void getResource();
       // search for well-known symbiotic ssid and try to connect to it.
       // return true if found a symbiotic ssid and so ssp and connect to it, false otherwise

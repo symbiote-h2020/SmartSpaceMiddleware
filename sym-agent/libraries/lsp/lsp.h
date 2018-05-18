@@ -146,7 +146,7 @@
 // Network stuff
 #define INNKEEPER_LSP_URL "innkeeper.symbiote.org"
 #define LSP_PORT 8080
-#define LSP_PATH "/innkeeper/registry"
+#define LSP_PATH "/innkeeper/sdev/register"
 
 
 class lsp {

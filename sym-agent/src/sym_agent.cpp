@@ -266,7 +266,7 @@ boolean symAgent::elaborateQuery()
 		if (_root["resourceInfo"][0]["internalIdResource"] == _internalId ) {
 			if (type == "SET") setResource(resp);
 			else if (type == "GET") getResource();
-			else if (type == "HISTORY") getResource();
+			else if (type == "HISTORY") history();
 			else if (type == "SUBSCRIBE") subscribe();
 			else if (type == "UNSUBSCRIBE") unsubscribe();
 			else {
@@ -462,6 +462,52 @@ void symAgent::getResource() {
 	// push resource to RAP
 	// right now push all the resources
 	P("GET RESOURCE");
+	int res_index = 0;
+			DynamicJsonBuffer dinamicJsonBuffer;
+				//create main array
+			JsonArray& root = dinamicJsonBuffer.createArray();
+			while (res_index < _semantic->getObsPropertyNum()) {
+					// this return something like "33 °C"
+				String tmpString = _semantic->getObsPropertyValue(res_index);
+					//create the nested object for each resource
+				JsonObject& root_internal = root.createNestedObject();
+					//this save only the value before the " ", so in this case "33"
+				root_internal["value"] = tmpString.substring(0, tmpString.indexOf(" "));
+				JsonObject& obsProperty = root_internal.createNestedObject("obsProperty");
+					obsProperty["@c"] = ".Property";
+					obsProperty["name"] = _semantic->getObsPropertyName(res_index);
+					obsProperty["description"] = "";
+				JsonObject& uom = root_internal.createNestedObject("uom");
+					uom["@c"] = "UnitOfMeasurment";
+					uom["symbol"] = tmpString.substring((tmpString.indexOf(" ") + 1));
+					uom["name"] = tmpString.substring((tmpString.indexOf(" ") + 1));
+					uom["description"] = "";
+	#if DEBUG_SYM_CLASS == 1
+					P(" ");
+					root.prettyPrintTo(Serial);
+					P(" ");
+	#endif
+				res_index++;
+			}
+			String resp = "";
+			root.printTo(resp);
+			resp = "\r\n" + resp;
+			P("\n*************\nPACKET SENT TO RAP:");
+#if DEBUG_SYM_CLASS == 1
+		root.prettyPrintTo(Serial);
+		P(" ");
+#endif
+			//P("Print packet as plain-text:");
+			//P(resp);
+			_server->send(200, "application/json", resp);
+			dinamicJsonBuffer.clear();
+}
+
+void symAgent::history() {
+	// push resource to RAP
+	// right now push all the resources
+	// the only difference from the getResource method is the return value as array
+	P("HISTORY");
 	int res_index = 0;
 			DynamicJsonBuffer dinamicJsonBuffer;
 				//create main array
