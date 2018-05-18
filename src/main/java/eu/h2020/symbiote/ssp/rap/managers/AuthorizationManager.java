@@ -189,7 +189,7 @@ public class AuthorizationManager {
             Map<String, IAccessPolicy> accessPolicyMap = new HashMap<>();
             // to get policies here
             Optional<ResourceInfo> resourceInfo = resourcesRepository.findById(resourceId);
-            if(resourceInfo == null) {
+            if(resourceInfo == null || !resourceInfo.isPresent()) {
                 log.error("No access policies for resource");
                 return ids;
             }
