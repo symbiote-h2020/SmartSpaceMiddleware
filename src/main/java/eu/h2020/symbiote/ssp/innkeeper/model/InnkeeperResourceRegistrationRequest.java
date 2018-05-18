@@ -279,14 +279,13 @@ public class InnkeeperResourceRegistrationRequest {
 		}*/
 
 		log.info("ADD RESOURCE:");
-		IAccessPolicy accessPolicy= AccessPolicyFactory.getAccessPolicy(msg.getAccessPolicy());
 		addResource(
 				msg.getSspIdResource(),				//sspId resource
 				msg.getResource().getId(), //symbioteId Resource
 				msg.getInternalIdResource(),		//internal Id resource
 				msg.getSymIdParent(),						//symbiote Id of SDEV
 				msg.getSspIdParent(),						//sspId of SDEV
-				props, pluginId,currTime, accessPolicy, msg.getAccessPolicy(),msg.getResource());
+				props, pluginId,currTime, msg.getAccessPolicy(),msg.getResource());
 
 		//ADD OData
 		log.info("ADD OData:");
@@ -381,13 +380,12 @@ public class InnkeeperResourceRegistrationRequest {
 			List<String> obsProperties, 
 			String pluginId, 
 			Date currTime,
-			IAccessPolicy policy,
 			IAccessPolicySpecifier policySpecifier,
 			Resource resource) {
 
 		ResourceInfo resourceInfo = new ResourceInfo(
 				sspIdResource, symIdResource, internalIdResource,
-				symId, sspId, currTime, policy, policySpecifier);
+				symId, sspId, currTime, policySpecifier);
 		if(obsProperties != null)
 			resourceInfo.setObservedProperties(obsProperties);
 		if(pluginId != null && pluginId.length()>0)

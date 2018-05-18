@@ -58,8 +58,6 @@ public class ResourceInfo {
 	@Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private Date session_expiration;
-	@JsonProperty("policy")
-	private IAccessPolicy policy;
 	@JsonProperty("policySpecifier") 
 	private IAccessPolicySpecifier policySpecifier;	
 	@JsonProperty("resource") 
@@ -126,7 +124,6 @@ public class ResourceInfo {
 			@JsonProperty("symIdParent") String symIdParent, // of SDEV/Plat
 			@JsonProperty("sspIdParent") String sspIdParent,
 			@JsonProperty("sessionExpiration") Date session_expiration,
-			@JsonProperty("policy") IAccessPolicy policy,
 			@JsonProperty("policySpecifier") IAccessPolicySpecifier policySpecifier
 			) {
 		this.id = sspIdResource;
@@ -139,7 +136,6 @@ public class ResourceInfo {
 		this.sessionIdList = null;       
 		this.type = null;
 		this.session_expiration=session_expiration;
-		this.policy=policy;
 		this.policySpecifier=policySpecifier;
 	}
 
@@ -243,12 +239,6 @@ public class ResourceInfo {
 	public void setSessionExpiration(Date session_expiration) {
 		this.session_expiration = session_expiration;
 	}
-	
-	@JsonProperty("policy")
-	public IAccessPolicy getAccessPolicy() { return this.policy; }
-
-	@JsonProperty("policy")
-	public void setAccessPolicy(IAccessPolicy policy) {	this.policy = policy; }
 
 	@JsonProperty("policySpecifier")
 	public IAccessPolicySpecifier getAccessPolicySpecifier() { return this.policySpecifier; }

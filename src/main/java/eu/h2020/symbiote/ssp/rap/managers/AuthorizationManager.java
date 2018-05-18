@@ -8,6 +8,7 @@ package eu.h2020.symbiote.ssp.rap.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.h2020.symbiote.security.ComponentSecurityHandlerFactory;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
+import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyFactory;
 import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
@@ -192,7 +193,8 @@ public class AuthorizationManager {
                 log.error("No access policies for resource");
                 return ids;
             }
-            accessPolicyMap.put(resourceId, resourceInfo.get().getAccessPolicy());
+            IAccessPolicy accessPolicy= AccessPolicyFactory.getAccessPolicy(resourceInfo.get().getAccessPolicySpecifier());
+            accessPolicyMap.put(resourceId, accessPolicy);
             String mapString = accessPolicyMap.entrySet().stream().map(entry -> entry.getKey() + " - " + entry.getValue())
                     .collect(Collectors.joining(", "));
             log.info("accessPolicyMap: " + mapString);
