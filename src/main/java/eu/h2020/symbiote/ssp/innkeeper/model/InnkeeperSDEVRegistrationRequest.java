@@ -222,9 +222,10 @@ public class InnkeeperSDEVRegistrationRequest {
 			String res = new ObjectMapper().writeValueAsString(response);
 			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
 
-		}else {
-			log.info("SSpId or SymId match");
 		}
+		/*else {
+			log.info("SSpId or SymId match");
+		}*/
 
 		if (	( !isCoreOnline && (s.getSspId()!="" && !s.getSspId().equals(sspSdevInfo.getSspId())) )
 				) {
@@ -234,9 +235,10 @@ public class InnkeeperSDEVRegistrationRequest {
 			httpStatus=HttpStatus.BAD_REQUEST;
 			String res = new ObjectMapper().writeValueAsString(response);
 			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
-		}else {
-			log.info("SspId "+s.getSspId()+" Match");
 		}
+		/*else {
+			log.info("SspId "+s.getSspId()+" Match");
+		}*/
 
 		String symIdSDEV=null;
 		if (sspSdevInfo.getSymId()==null)
@@ -254,7 +256,7 @@ public class InnkeeperSDEVRegistrationRequest {
 			}
 		}
 
-		log.info("s.getSymIdParent()="+s.getSymId());
+		//log.info("s.getSymIdParent()="+s.getSymId());
 		s.setSessionExpiration(currTime);
 		sessionsRepository.save(s);
 
@@ -312,7 +314,7 @@ public class InnkeeperSDEVRegistrationRequest {
 
 		response.setUpdatedSymId(updatedSymIdList);
 
-		log.info("SEND KEEP ALIVE RESPONSE: "+(String)(new ObjectMapper().writeValueAsString(response)));
+		//log.info("SEND KEEP ALIVE RESPONSE: "+(String)(new ObjectMapper().writeValueAsString(response)));
 		String res = new ObjectMapper().writeValueAsString(response);
 		return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
 

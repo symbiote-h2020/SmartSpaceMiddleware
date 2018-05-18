@@ -223,8 +223,8 @@ public class InnkeeperRestController {
 
 			try {
 				String outputMessage = lwsp.processMessage();
-				log.info(outputMessage);
-				log.info("MTI:"+lwsp.get_mti());
+				//log.info(outputMessage);
+				//log.info("MTI:"+lwsp.get_mti());
 			} catch (NullPointerException e) {
 				log.error("KEEP ALIVE MSG from lwsp.processMessage() returns null");
 				return new ResponseEntity<Object>("",responseHeaders,HttpStatus.BAD_REQUEST);
@@ -234,7 +234,7 @@ public class InnkeeperRestController {
 			case LwspConstants.REGISTRY:
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspKeepAlive(decoded_message);
-				log.info(res.getBody().toString());
+				//log.info(res.getBody().toString());
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				//String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
