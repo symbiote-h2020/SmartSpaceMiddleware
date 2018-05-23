@@ -47,17 +47,21 @@ if [ -f "SymbIoTeSecurity-25.4.0-helper.jar" ]; then
 else
 	echo "SymbIoTeSecurity-25.4.0-helper.jar not exists, download and copy"
 	wget https://jitpack.io/com/github/symbiote-h2020/SymbIoTeSecurity/25.4.0/SymbIoTeSecurity-25.4.0-helper.jar 
-	if [ -f "cert.properties" ]; then
-		echo "cert.properties exists, generate saam-keystore.p12"
-		java -jar SymbIoTeSecurity-25.4.0-helper.jar cert.properties
-	else
-		echo "ERROR: cert.properties not exists, check your cert.properties first"
-		exit
-	fi
-	
+
 fi
 
 echo "step 5:"
+echo "---------"
+if [ -f "cert.properties" ]; then
+	echo "cert.properties exists, generate saam-keystore.p12"
+	java -jar SymbIoTeSecurity-25.4.0-helper.jar cert.properties
+else
+	echo "ERROR: cert.properties not exists, check your cert.properties first"
+	exit
+fi
+	
+
+echo "step 6:"
 echo "---------"
 #4 download SAM SymbioteSecuirty Helper
 if [ -f "AuthenticationAuthorizationManager-3.1.1-run.jar" ]; then
