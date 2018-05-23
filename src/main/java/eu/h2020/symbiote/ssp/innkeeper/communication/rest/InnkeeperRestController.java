@@ -355,14 +355,18 @@ public class InnkeeperRestController {
 			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 			log.info(httpHeaders);
 
-			/*
+			
 			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
 			// sending to the core
-
+			
 			HttpEntity<Object> httpEntity = new HttpEntity<>("test", httpHeaders);
 			RestTemplate restTemplate = new RestTemplate();
+			
+			String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdev";
+			log.info(endpoint);
+			/*
 			// The Object should be replaced by the class representing the response that you expect
-			ResponseEntity<Object> response = restTemplate.exchange(coreIntefaceUrl, HttpMethod.POST,
+			ResponseEntity<Object> response = restTemplate.exchange(endpoint, HttpMethod.POST,
 					httpEntity, Object.class);
 			log.info(response.getHeaders());
 			*/
