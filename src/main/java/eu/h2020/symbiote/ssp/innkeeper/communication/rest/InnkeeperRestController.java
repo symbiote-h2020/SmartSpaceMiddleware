@@ -3,19 +3,21 @@ package eu.h2020.symbiote.ssp.innkeeper.communication.rest;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import eu.h2020.symbiote.core.cci.ResourceRegistryRequest;
 import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
-import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
+import eu.h2020.symbiote.security.commons.SecurityConstants;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResourceRegistrationRequest;
+import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperRegistrationRequest;
-import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.resources.SspResource;
@@ -27,11 +29,14 @@ import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -43,6 +48,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by vasgl on 8/24/2017.
@@ -79,6 +85,16 @@ public class InnkeeperRestController {
 
 	@Autowired
 	SessionsRepository sessionsRepository;
+	
+	
+	@Value("${symbIoTe.core.interface.url}") String coreIntefaceUrl;
+	@Value("${symbIoTe.aam.integration}") Boolean securityEnabled;
+		
+	@Autowired
+	AuthorizationService authorizationService;
+	
+	
+	
 	public InnkeeperRestController() {
 
 	}
@@ -329,6 +345,71 @@ public class InnkeeperRestController {
 	public ResponseEntity<Object> set_innk_offline(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {		
 		return setCoreOnline(false);
 
+	}
+	
+	@RequestMapping(value = InnkeeperRestControllerConstants.SANDBOX, method = RequestMethod.POST)
+	public ResponseEntity<Object> sandbox(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {		
+		if (securityEnabled) {
+			
+			log.info("Security Enabled");
+			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+			log.info(httpHeaders);
+
+			/*
+			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
+			// sending to the core
+
+			HttpEntity<Object> httpEntity = new HttpEntity<>("test", httpHeaders);
+			RestTemplate restTemplate = new RestTemplate();
+			// The Object should be replaced by the class representing the response that you expect
+			ResponseEntity<Object> response = restTemplate.exchange(coreIntefaceUrl, HttpMethod.POST,
+					httpEntity, Object.class);
+			log.info(response.getHeaders());
+			*/
+			return null;
+
+		}else {
+			log.info("Security Disabled");
+			return null;
+		}
+		
+	}
+	
+	
+	
+	
+	public void sendResourceRegistrationRequest(Map<String, Resource> resources) throws JsonProcessingException {
+		// Create the security request and add it to the headers
+		
+
+		if (securityEnabled) {
+
+			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+
+			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
+			// sending to the core
+
+			HttpEntity<Object> httpEntity = new HttpEntity<>(new ResourceRegistryRequest(resources), httpHeaders);
+
+			RestTemplate restTemplate = new RestTemplate();
+			// The Object should be replaced by the class representing the response that you expect
+			ResponseEntity<Object> response = restTemplate.exchange(coreIntefaceUrl, HttpMethod.POST,
+					httpEntity, Object.class);
+
+
+			// Here, the componentId is "registry", because this is the component which will handle registration requests
+			// The platformId for the SymbIoTeCore components is always SecurityConstants.CORE_AAM_INSTANCE_ID
+			authorizationService.validateServiceResponse("registry", SecurityConstants.CORE_AAM_INSTANCE_ID,
+					response.getHeaders());
+			ResourceRegistryRequest req = new ResourceRegistryRequest(resources);
+			log.info("[REAL] : " +  new ObjectMapper().writeValueAsString(req.getBody()) );
+		}else {
+			//HttpEntity<Object> httpEntity = new HttpEntity<>(new ResourceRegistryRequest(resources), null);
+			ResourceRegistryRequest req = new ResourceRegistryRequest(resources);
+			log.info("[MOCK] : " +  new ObjectMapper().writeValueAsString(req.getBody()) );
+			
+		}
+	
 	}
 
 

@@ -27,6 +27,7 @@ public class InnkeeperRestControllerConstants {
     
     public static final String SET_INNK_ONLINE = "/set_innk_online";
     public static final String SET_INNK_OFFLINE = "/set_innk_offline";
+    public static final String SANDBOX = "/sandbox";
     
     public static final String REGISTRATION_OK = "OK";
     public static final String REGISTRATION_ALREADY_REGISTERED = "ALREADY_REGISTERED";
