@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import eu.h2020.symbiote.ssp.rap.RapConfig;
 import eu.h2020.symbiote.ssp.rap.exceptions.CustomODataApplicationException;
 import eu.h2020.symbiote.ssp.rap.interfaces.RapCommunicationHandler;
+import eu.h2020.symbiote.ssp.rap.messages.plugin.RapPluginResponse;
 import eu.h2020.symbiote.ssp.rap.messages.resourceAccessNotification.SuccessfulAccessInfoMessage;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
@@ -19,6 +20,7 @@ import eu.h2020.symbiote.ssp.rap.resources.query.Query;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
@@ -87,8 +89,7 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
     public void readEntityCollection(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType responseFormat)
             throws ODataApplicationException, ODataLibraryException {
         try {
-            Object obj;
-            InputStream stream = null;
+            RapPluginResponse rapPluginResponse;
             ObjectMapper map = new ObjectMapper();
             map.configure(SerializationFeature.INDENT_OUTPUT, true);        
             CustomODataApplicationException customOdataException = null;
@@ -207,17 +208,17 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
             }
 
             try {
-                obj = storageHelper.getRelatedObject(resourceInfoList, top, filterQuery);
+                rapPluginResponse = storageHelper.getRelatedObject(resourceInfoList, top, filterQuery);
             } catch(ODataApplicationException odataExc) {
-                log.error(odataExc.getMessage(), odataExc);
-                customOdataException = new CustomODataApplicationException(symbioteId,odataExc.getMessage(), 
+                log.error("Resource ID has not been served. Cause:\n" + odataExc.getMessage(), odataExc);
+                customOdataException = new CustomODataApplicationException(symbioteId, odataExc.getMessage(),
                         odataExc.getStatusCode(), odataExc.getLocale());
+                //throw customOdataException;
                 setErrorResponse(response, customOdataException, responseFormat);
                 return;
-            }       
+            }
 
-            try {
-
+            /*try {
                 map.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
                 String json = map.writeValueAsString(obj);
                 stream = new ByteArrayInputStream(json.getBytes("UTF-8"));
@@ -225,14 +226,14 @@ public class RapEntityCollectionProcessor implements EntityCollectionProcessor {
                 log.error(e.getMessage(), e);
             } catch (UnsupportedEncodingException ex) {
                 log.error(ex.getMessage(), ex);
-            }
+            }*/
 
-            if(customOdataException == null && stream != null)
+            if(customOdataException == null && rapPluginResponse instanceof RapPluginResponse)
                 communicationHandler.sendSuccessfulAccessMessage(symbioteId, SuccessfulAccessInfoMessage.AccessType.NORMAL.name());
 
             // 4th: configure the response object: set the body, headers and status code
             //response.setContent(serializerResult.getContent());
-            response.setContent(stream);
+            response.setContent(new ByteArrayInputStream(rapPluginResponse.getContent().getBytes(StandardCharsets.UTF_8)));
             response.setStatusCode(HttpStatusCode.OK.getStatusCode());
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.addHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
