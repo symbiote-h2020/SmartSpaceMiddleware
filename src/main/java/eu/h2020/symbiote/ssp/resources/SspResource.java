@@ -111,5 +111,17 @@ public class SspResource {
 	public void setResourceType(List<String> resourceType) {
 		this.resourceType = resourceType;
 	}
+
+	@JsonProperty("locationName")
+	public String getLocationName() {
+		return this.location;
+	}
+
+	@JsonProperty("locationName")
+	public void setLocationName(String location) {
+		this.location = location;
+	}
+
+	
 	
 }
