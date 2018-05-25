@@ -19,6 +19,7 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsExce
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResourceRegistrationRequest;
+import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperRegistrationResponse;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
@@ -32,11 +33,13 @@ import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -86,8 +89,16 @@ public class InnkeeperRestController {
 	@Value("${ssp.location_name}")
 	String locationName;
 	
+	@Value("${symbIoTe.aam.integration}")
+	Boolean securityEnabled;
+	
+	@Value("${symbIoTe.core.interface.url}")
+	String coreIntefaceUrl;
+	
 	@Autowired
 	SessionsRepository sessionsRepository;
+	@Autowired
+	AuthorizationService authorizationService;
 	public InnkeeperRestController() {
 
 	}
@@ -340,6 +351,38 @@ public class InnkeeperRestController {
 
 	}
 
+	
+	@RequestMapping(value = InnkeeperRestControllerConstants.SANDBOX, method = RequestMethod.POST)
+	public ResponseEntity<Object> sandbox(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {		
+		if (securityEnabled) {
+			
+			log.info("Security Enabled");
+			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+			log.info(httpHeaders);
+
+			
+			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
+			// sending to the core
+			
+			HttpEntity<Object> httpEntity = new HttpEntity<>("test", httpHeaders);
+			RestTemplate restTemplate = new RestTemplate();
+			
+			String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdev";
+			log.info(endpoint);
+			/*
+			// The Object should be replaced by the class representing the response that you expect
+			ResponseEntity<Object> response = restTemplate.exchange(endpoint, HttpMethod.POST,
+					httpEntity, Object.class);
+			log.info(response.getHeaders());
+			*/
+			return null;
+
+		}else {
+			log.info("Security Disabled");
+			return null;
+		}
+		
+	}
 
 
 	private ResponseEntity<Object>setCoreOnline(Boolean v){
