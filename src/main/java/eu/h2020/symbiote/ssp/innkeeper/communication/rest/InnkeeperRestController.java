@@ -68,7 +68,7 @@ public class InnkeeperRestController {
 	ResourcesRepository resourcesRepository;
 
 	@Autowired
-	InnkeeperRegistrationRequest innkeeperSDEVRegistrationRequest;
+	InnkeeperRegistrationRequest innkeeperRegistrationRequest;
 
 	@Autowired
 	InnkeeperResourceRegistrationRequest innkeeperResourceRegistrationRequest;
@@ -106,14 +106,14 @@ public class InnkeeperRestController {
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_PLATFORM_REGISTER_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> platform_register(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 		log.info("REGISTRATION MESSAGE:"+ payload);
-		return innkeeperSDEVRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.PLATFORM);			
+		return innkeeperRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.PLATFORM);			
 	}
 
 	// PLATFORM REGISTRATION
 		@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_PLATFORM_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 		public ResponseEntity<Object> platform_resources(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 			log.info("REGISTRATION MESSAGE:"+ payload);
-			return innkeeperSDEVRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.PLATFORM);			
+			return innkeeperRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.PLATFORM);			
 		}
 
 	
@@ -186,7 +186,7 @@ public class InnkeeperRestController {
 			case LwspConstants.REGISTER:
 
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspRegister(lwsp.getSessionId(),decoded_message,InnkeeperRestControllerConstants.SDEV);
+				ResponseEntity<Object> res = innkeeperRegistrationRequest.SspRegister(lwsp.getSessionId(),decoded_message,InnkeeperRestControllerConstants.SDEV);
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
@@ -194,7 +194,7 @@ public class InnkeeperRestController {
 			}
 
 		}else{
-			return innkeeperSDEVRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.SDEV);
+			return innkeeperRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.SDEV);
 		}
 
 	}
@@ -222,7 +222,7 @@ public class InnkeeperRestController {
 			switch (lwsp.get_mti()) {
 			case LwspConstants.REGISTER:
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspDelete(decoded_message);
+				ResponseEntity<Object> res = innkeeperRegistrationRequest.SspDelete(decoded_message);
 				//String encodedResponse = lwsp.send_data(res.getBody().toString());
 				log.info("UNREGISTER SDEV");
 				return new ResponseEntity<Object>("",res.getHeaders(),res.getStatusCode());
@@ -232,7 +232,7 @@ public class InnkeeperRestController {
 			}
 			// LWSP DISABLED
 		} else { 
-			return innkeeperSDEVRegistrationRequest.SspDelete(payload);
+			return innkeeperRegistrationRequest.SspDelete(payload);
 
 		}
 	}
@@ -259,7 +259,7 @@ public class InnkeeperRestController {
 			switch (lwsp.get_mti()) {
 			case LwspConstants.REGISTER:
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperSDEVRegistrationRequest.SspKeepAlive(decoded_message);
+				ResponseEntity<Object> res = innkeeperRegistrationRequest.SspKeepAlive(decoded_message);
 				//log.info(res.getBody().toString());
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				//String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
@@ -271,7 +271,7 @@ public class InnkeeperRestController {
 
 			// LWSP DISABLED
 		} else { 
-			return innkeeperSDEVRegistrationRequest.SspKeepAlive(payload);
+			return innkeeperRegistrationRequest.SspKeepAlive(payload);
 
 		}
 	}
@@ -389,7 +389,7 @@ public class InnkeeperRestController {
 		HttpHeaders responseHeaders = new HttpHeaders();
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
-		innkeeperSDEVRegistrationRequest.setIsCoreOnline(v);
+		innkeeperRegistrationRequest.setIsCoreOnline(v);
 		innkeeperResourceRegistrationRequest.setIsCoreOnline(v);
 		this.isCoreOnline=v;
 		return new ResponseEntity<Object>("{\"result\"=\"OK\"}",responseHeaders,httpStatus);
