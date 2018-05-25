@@ -8,7 +8,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import eu.h2020.symbiote.core.ci.QueryResourceResult;
+import eu.h2020.symbiote.core.ci.ResourceType;
+import eu.h2020.symbiote.model.cim.Property;
 import eu.h2020.symbiote.model.cim.Resource;
+import eu.h2020.symbiote.model.cim.Sensor;
+import eu.h2020.symbiote.model.cim.StationarySensor;
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
@@ -73,10 +78,14 @@ public class InnkeeperRestController {
 
 	@Value("${innk.core.enabled:true}")
 	Boolean isCoreOnline;
-
+	
 	@Value("${ssp.id}")
 	String sspName;
-
+	
+	
+	@Value("${ssp.location_name}")
+	String locationName;
+	
 	@Autowired
 	SessionsRepository sessionsRepository;
 	public InnkeeperRestController() {
@@ -271,6 +280,29 @@ public class InnkeeperRestController {
 				//sspRes.setSspIdResource(r.getSspIdResource());
 				//sspRes.setSymIdParent(r.getSymIdParent());
 				//sspRes.setInternalIdResource(r.getInternalIdResource());
+				
+				/*QueryResourceResult queryRes= new QueryResourceResult();
+				queryRes.setPlatformId(sspName);
+				queryRes.setPlatformName(sspName);
+				queryRes.setName(r.getResource().getName());
+				queryRes.setId(r.getSymIdResource());
+				//queryRes.setDescription(r.getResource().getDescription().toString());
+				queryRes.setLocationName(locationName);
+				if (r.getResource() instanceof StationarySensor) {
+					StationarySensor ss = (StationarySensor) r.getResource();
+					List<String> list = ss.getObservesProperty().										
+					queryRes.setObservedProperties(list);
+					Property pippo = null;
+				}
+				*/
+				
+				String resourceClass = r.getResource().getClass().toString();
+				log.info(resourceClass);
+				String [] splitResName = resourceClass.split("\\.");				
+				String resType = ResourceType.getTypeForName(splitResName[splitResName.length-1]).getUri();
+				List<String> resTypeList = new ArrayList<String>();
+				resTypeList.add(resType);
+								
 				Resource rr = r.getResource();
 				if (!r.getSymIdResource().equals(""))
 					rr.setId(r.getSymIdResource());
@@ -278,7 +310,8 @@ public class InnkeeperRestController {
 					rr.setId(r.getSspIdResource());
 				rr.setInterworkingServiceURL(null);
 				sspRes.setResource(rr);
-
+				sspRes.setResourceType(resTypeList);
+				sspRes.setLocationName(locationName);
 				sspResFilt.add(sspRes);				
 			}
 		}
