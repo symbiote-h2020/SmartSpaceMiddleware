@@ -9,8 +9,11 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
+#include <WiFiUdp.h>
+#include <NTPClient.h>
 #include <RestClient.h>
 #include <EEPROM.h>
+#include <Time.h>
 #include <lsp.h>
 #include <semantic_resources.h>
 
@@ -32,6 +35,10 @@
   #define P(__VA_ARGS__)
   #define PI(__VA_ARGS__)
 #endif
+
+#define NTP_OFFSET   7200 //60 * 60 * 2      // In seconds
+#define NTP_INTERVAL 60 * 1000    // In miliseconds
+#define NTP_ADDRESS  "europe.pool.ntp.org"
 
 #define FLASH_MEMORY_RESERVATION_AGENT  512
 //#define FLASH_LSP_START_ADDR    0

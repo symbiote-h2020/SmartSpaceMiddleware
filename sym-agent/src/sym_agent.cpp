@@ -19,6 +19,10 @@
 volatile boolean keepAlive_triggered = false;
 volatile unsigned long keep_alive_interval = 0;
 uint8_t ppsk[HMAC_DIGEST_SIZE] = {0x46, 0x72, 0x31, 0x73, 0x80, 0x52, 0x78, 0x92, 0x52, 0x81, 0xad, 0xd7, 0x57, 0x2c, 0x04, 0xa5, 0xdd, 0x84, 0x16, 0x68};
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, NTP_ADDRESS, NTP_OFFSET, NTP_INTERVAL);
+//NTPClient timeClient(ntpUDP);
+
 
 void keepAliveISR(void){
 	//KEEPALIVE_LED_TOGGLE
@@ -377,13 +381,12 @@ boolean symAgent::TestelaborateQuery(String resp)
 		//if (_root["symbioteId"] == _symId) {
 			if (type == "SET") setResource(resp);
 			else if (type == "GET") getResource();
-			else if (type == "HISTORY") getResource();
+			else if (type == "HISTORY") history();
 			else if (type == "SUBSCRIBE") subscribe();
 			else if (type == "UNSUBSCRIBE") unsubscribe();
 			else {
 				P("Wrong TYPE");
 				String tmpResp = "{ \"id\":\"" + _symId + "\", \"value\":\"WrongType\"}";
-				//_server->send(200, "application/json", tmpResp);
 				return false;
 			}
 	return true;
@@ -465,12 +468,27 @@ void symAgent::getResource() {
 	int res_index = 0;
 			DynamicJsonBuffer dinamicJsonBuffer;
 				//create main array
-			JsonArray& root = dinamicJsonBuffer.createArray();
+			JsonObject& root = dinamicJsonBuffer.createObject();
+			root["resourceId"] = _internalId;
+			JsonObject& locationJson = root.createNestedObject("location");
+					locationJson["longitude"] = -2.944728;
+					locationJson["latitude"] = 43.267011;
+					locationJson["altitude"] = 20;
+			String hhmmss = timeClient.getFormattedTime();
+			unsigned long tmst = timeClient.getEpochTime();
+			time_t tmst_time(tmst);
+			int year_var = year(tmst_time);
+			int month_var = month(tmst_time);
+			int day_var = day(tmst_time);
+			String dateTime = String (year_var) + "-" + String (month_var) + "-" + String (day_var) + "T" + hhmmss;
+			root["resultTime"] = dateTime;
+			root["samplingTime"] = dateTime;
+			JsonArray& obsValueJson = root.createNestedArray("obsValues");
 			while (res_index < _semantic->getObsPropertyNum()) {
 					// this return something like "33 °C"
 				String tmpString = _semantic->getObsPropertyValue(res_index);
 					//create the nested object for each resource
-				JsonObject& root_internal = root.createNestedObject();
+				JsonObject& root_internal = obsValueJson.createNestedObject();
 					//this save only the value before the " ", so in this case "33"
 				root_internal["value"] = tmpString.substring(0, tmpString.indexOf(" "));
 				JsonObject& obsProperty = root_internal.createNestedObject("obsProperty");
@@ -482,11 +500,6 @@ void symAgent::getResource() {
 					uom["symbol"] = tmpString.substring((tmpString.indexOf(" ") + 1));
 					uom["name"] = tmpString.substring((tmpString.indexOf(" ") + 1));
 					uom["description"] = "";
-	#if DEBUG_SYM_CLASS == 1
-					P(" ");
-					root.prettyPrintTo(Serial);
-					P(" ");
-	#endif
 				res_index++;
 			}
 			String resp = "";
@@ -497,8 +510,6 @@ void symAgent::getResource() {
 		root.prettyPrintTo(Serial);
 		P(" ");
 #endif
-			//P("Print packet as plain-text:");
-			//P(resp);
 			_server->send(200, "application/json", resp);
 			dinamicJsonBuffer.clear();
 }
@@ -511,12 +522,28 @@ void symAgent::history() {
 	int res_index = 0;
 			DynamicJsonBuffer dinamicJsonBuffer;
 				//create main array
-			JsonArray& root = dinamicJsonBuffer.createArray();
+			JsonArray& rootArray = dinamicJsonBuffer.createArray();
+			JsonObject& root = rootArray.createNestedObject();
+			root["resourceId"] = _internalId;
+			JsonObject& locationJson = root.createNestedObject("location");
+					locationJson["longitude"] = -2.944728;
+					locationJson["latitude"] = 43.267011;
+					locationJson["altitude"] = 20;
+			String hhmmss = timeClient.getFormattedTime();
+			unsigned long tmst = timeClient.getEpochTime();
+			time_t tmst_time(tmst);
+			int year_var = year(tmst_time);
+			int month_var = month(tmst_time);
+			int day_var = day(tmst_time);
+			String dateTime = String (year_var) + "-" + String (month_var) + "-" + String (day_var) + "T" + hhmmss;
+			root["resultTime"] = dateTime;
+			root["samplingTime"] = dateTime;
+			JsonArray& obsValueJson = root.createNestedArray("obsValues");
 			while (res_index < _semantic->getObsPropertyNum()) {
 					// this return something like "33 °C"
 				String tmpString = _semantic->getObsPropertyValue(res_index);
 					//create the nested object for each resource
-				JsonObject& root_internal = root.createNestedObject();
+				JsonObject& root_internal = obsValueJson.createNestedObject();
 					//this save only the value before the " ", so in this case "33"
 				root_internal["value"] = tmpString.substring(0, tmpString.indexOf(" "));
 				JsonObject& obsProperty = root_internal.createNestedObject("obsProperty");
@@ -528,23 +555,21 @@ void symAgent::history() {
 					uom["symbol"] = tmpString.substring((tmpString.indexOf(" ") + 1));
 					uom["name"] = tmpString.substring((tmpString.indexOf(" ") + 1));
 					uom["description"] = "";
-	#if DEBUG_SYM_CLASS == 1
-					P(" ");
-					root.prettyPrintTo(Serial);
-					P(" ");
-	#endif
+//	#if DEBUG_SYM_CLASS == 1
+//					P(" ");
+//					root.prettyPrintTo(Serial);
+//					P(" ");
+//	#endif
 				res_index++;
 			}
 			String resp = "";
-			root.printTo(resp);
+			rootArray.printTo(resp);
 			resp = "\r\n" + resp;
 			P("\n*************\nPACKET SENT TO RAP:");
 #if DEBUG_SYM_CLASS == 1
-		root.prettyPrintTo(Serial);
+		rootArray.prettyPrintTo(Serial);
 		P(" ");
 #endif
-			//P("Print packet as plain-text:");
-			//P(resp);
 			_server->send(200, "application/json", resp);
 			dinamicJsonBuffer.clear();
 }
@@ -624,6 +649,10 @@ boolean symAgent::begin()
 				_security->calculateDK1(4);
 				_security->calculateDK2(4);
 				_security->sendAuthN();
+
+				// init the NTP part
+				timeClient.begin();
+				timeClient.forceUpdate();
   				return true;
   			}
   		}

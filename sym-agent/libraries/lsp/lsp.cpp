@@ -755,12 +755,12 @@ void lsp::cryptData(String in, String& out) {
 	byte enciphered[length];
 	uint8_t iv[16];
 	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
-	printBuffer(iv, 16, "IV\t");
+	//printBuffer(iv, 16, "IV\t");
 
 	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
 	aesEncryptor.process((uint8_t*)in.c_str(), enciphered, length);
 	int encrypted_size = sizeof(enciphered);
-	printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
+	//printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
 	base64 b64enc;
 	String encoded = b64enc.encode(enciphered, encrypted_size, false);
 
@@ -779,7 +779,7 @@ void lsp::decryptData(String in, String& out) {
   	unsigned char decodedb64[binaryLength];
   	memset(decodedb64, 0, binaryLength);
   	decode_base64((unsigned char*)in.c_str(), decodedb64);
-  	printBuffer(decodedb64, binaryLength, "ENCRYPT_DATA(binary)");
+  	//printBuffer(decodedb64, binaryLength, "ENCRYPT_DATA(binary)");
   	String plainHex;
 	decrypt(decodedb64, binaryLength, plainHex);
 	out = plainHex;
@@ -794,11 +794,11 @@ void lsp::decrypt(unsigned char* crypted, uint8_t cryptedSize, String& output) {
 
   	uint8_t iv[16];
 	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
-	printBuffer(iv, 16, "IV\t");
+	//printBuffer(iv, 16, "IV\t");
 
   	AES aesDencryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_DECRYPT);
   	aesDencryptor.process((uint8_t*)crypted, deciphered, length);
-  	printBuffer(deciphered, length, "DECRYPT(BINARY)");
+  	//printBuffer(deciphered, length, "DECRYPT(BINARY)");
   	for (uint8_t i = 0; i< length; i++) {
   		output += String((char)deciphered[i]);
   	} 

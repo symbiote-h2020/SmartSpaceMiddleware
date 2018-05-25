@@ -32,6 +32,7 @@ String Semantic::returnSensorSemanticString()
 	String tmpString = "";
 	tmpString += "{\"@c\":\".StationarySensor\",\"id\":\"\",\"name\":\"SENS-";
 	tmpString += _name;
+	tmpString += "_" + (WiFi.macAddress()).substring(12);
 	tmpString += "\",\"description\":null,\"interworkingServiceURL\":\"";
 	tmpString += _url;
 	tmpString += "\",\"locatedAt\":null,\"services\":null,\"observesProperty\":";
@@ -58,6 +59,7 @@ String Semantic::returnActuatorSemanticString()
 	String tmpString = "";
 	tmpString += "{\"@c\":\".Actuator\",\"id\":\"\",\"name\":\"ACT-";
 	tmpString += _name;
+	tmpString += "_" + (WiFi.macAddress()).substring(12);
 	tmpString += "\",\"description\":null,\"interworkingServiceURL\":\"";
 	tmpString += _url;
 	tmpString += "\",\"locatedAt\":null,\"services\":null,\"capabilities\":";

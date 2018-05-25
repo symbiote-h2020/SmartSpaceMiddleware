@@ -8,6 +8,7 @@
 
 String tmpTestJson = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalIdResource\":\"5c:cf:7f:3a:6b:76\",\"type\":\"Light\"}],\"body\":{\"RGBCapability\":[{\"r\":20},{\"g\":5},{\"b\":5}]},\"type\" : \"SET\"}";
 String tmpTestJson2 = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalIdResource\":\"5c:cf:7f:3a:6b:76\",\"type\":\"Light\"},{\"type\" :\"Observation\"}],\"type\":\"GET\"}";
+String tmpTestJson3 = "{\"resourceInfo\":[{\"symbioteId\":\"\",\"internalIdResource\":\"5c:cf:7f:3a:6b:76\",\"type\":\"Light\"},{\"type\" :\"Observation\"}],\"type\":\"HISTORY\"}";
 
 #define SDA 4
 #define SCL 5
@@ -76,11 +77,12 @@ Parameter paramPointer[3] = {Parameter("r", "xsd:unsignedByte", "0", "255", &set
 
 Capability c1("RGBCapability", 3, paramPointer);
   //    internalID, name, url, capability_number, Capability* Class, observesProperty_number, Property* Class
-Semantic s1("aggeggio", 1, &c1, 2, propertyPointer);
+Semantic s1("SDEV", 1, &c1, 2, propertyPointer);
 
 symAgent sdev1(120000, "RGB Leds HAT", false, &s1);
 
 extern volatile boolean keepAlive_triggered;
+extern NTPClient timeClient;
 Metro registrationMetro = Metro();
 int join_success = 0;
 
@@ -117,6 +119,10 @@ void setup() {
   Serial.print("Temperature:\t");
   Serial.println(readTemp());
   if (join_success) Serial.println("\nJoin success!");
+  delay(5000);
+  sdev1.TestelaborateQuery(tmpTestJson2);
+  delay(3000);
+  sdev1.TestelaborateQuery(tmpTestJson3);
 }
 
 void loop() {
@@ -125,6 +131,11 @@ void loop() {
   
   delay(10);
   if (keepAlive_triggered && join_success == 1){
+    if (timeClient.forceUpdate()) {
+      Serial.println("NTP update OK");
+    } else {
+      Serial.println("NTP update KO");
+    }
     //if (count == 3) {
       //sdev1.unregistry();
       //keepAlive_triggered = false;
