@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -81,20 +82,20 @@ public class InnkeeperRestController {
 
 	@Value("${innk.core.enabled:true}")
 	Boolean isCoreOnline;
-	
+
 	@Value("${ssp.id}")
 	String sspName;
-	
-	
+
+
 	@Value("${ssp.location_name}")
 	String locationName;
-	
+
 	@Value("${symbIoTe.aam.integration}")
 	Boolean securityEnabled;
-	
+
 	@Value("${symbIoTe.core.interface.url}")
 	String coreIntefaceUrl;
-	
+
 	@Autowired
 	SessionsRepository sessionsRepository;
 	@Autowired
@@ -110,14 +111,14 @@ public class InnkeeperRestController {
 	}
 
 	// PLATFORM REGISTRATION
-		@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_PLATFORM_JOIN_REQUEST_PATH, method = RequestMethod.POST)
-		public ResponseEntity<Object> platform_resources(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
-			log.info("REGISTRATION MESSAGE:"+ payload);
-			return innkeeperRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.PLATFORM);			
-		}
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_PLATFORM_JOIN_REQUEST_PATH, method = RequestMethod.POST)
+	public ResponseEntity<Object> platform_resources(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
+		log.info("REGISTRATION MESSAGE:"+ payload);
+		return innkeeperRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.PLATFORM);			
+	}
 
-	
-	
+
+
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_SDEV_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> join(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 
@@ -291,7 +292,7 @@ public class InnkeeperRestController {
 				//sspRes.setSspIdResource(r.getSspIdResource());
 				//sspRes.setSymIdParent(r.getSymIdParent());
 				//sspRes.setInternalIdResource(r.getInternalIdResource());
-				
+
 				/*QueryResourceResult queryRes= new QueryResourceResult();
 				queryRes.setPlatformId(sspName);
 				queryRes.setPlatformName(sspName);
@@ -305,15 +306,15 @@ public class InnkeeperRestController {
 					queryRes.setObservedProperties(list);
 					Property pippo = null;
 				}
-				*/
-				
+				 */
+
 				String resourceClass = r.getResource().getClass().toString();
 				log.info(resourceClass);
 				String [] splitResName = resourceClass.split("\\.");				
 				String resType = ResourceType.getTypeForName(splitResName[splitResName.length-1]).getUri();
 				List<String> resTypeList = new ArrayList<String>();
 				resTypeList.add(resType);
-								
+
 				Resource rr = r.getResource();
 				if (!r.getSymIdResource().equals(""))
 					rr.setId(r.getSymIdResource());
@@ -351,37 +352,50 @@ public class InnkeeperRestController {
 
 	}
 
-	
+
 	@RequestMapping(value = InnkeeperRestControllerConstants.SANDBOX, method = RequestMethod.POST)
 	public ResponseEntity<Object> sandbox(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {		
 		if (securityEnabled) {
-			
+
 			log.info("Security Enabled");
 			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+			httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 			log.info(httpHeaders);
 
-			
+
 			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
 			// sending to the core
-			
-			HttpEntity<Object> httpEntity = new HttpEntity<>("test", httpHeaders);
+
+			HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
+
 			RestTemplate restTemplate = new RestTemplate();
+
+			//String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdev";
+			//String endpoint="https://symbiote-open.man.poznan.pl/cloudCoreInterface/platforms/"+sspName+"/resources";
+			String endpoint="https://symbiote-open.man.poznan.pl/coreInterface/get_available_aams";
 			
-			String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdev";
 			log.info(endpoint);
-			/*
+
 			// The Object should be replaced by the class representing the response that you expect
-			ResponseEntity<Object> response = restTemplate.exchange(endpoint, HttpMethod.POST,
-					httpEntity, Object.class);
-			log.info(response.getHeaders());
-			*/
+			try {
+				ResponseEntity<Object> response = restTemplate.exchange(endpoint, HttpMethod.GET,
+						httpEntity, Object.class);
+				log.info(response.getHeaders());
+				return response;
+
+			}catch (Exception e) {
+				log.error("Got error here");
+				log.error(e);
+			}
+			//
 			return null;
+
 
 		}else {
 			log.info("Security Disabled");
 			return null;
 		}
-		
+
 	}
 
 
