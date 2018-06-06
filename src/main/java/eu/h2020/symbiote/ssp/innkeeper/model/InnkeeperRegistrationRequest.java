@@ -17,14 +17,19 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.ssp.CoreRegister.CoreRegistry;
+import eu.h2020.symbiote.ssp.CoreRegister.SspIdUtils;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
+import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
-import eu.h2020.symbiote.ssp.resources.SspRegInfo;
+//import eu.h2020.symbiote.ssp.resources.SspRegInfo;
+import eu.h2020.symbiote.cloud.model.ssp.SspRegInfo;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
@@ -32,16 +37,17 @@ import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
-import eu.h2020.symbiote.ssp.utils.CheckCoreUtility;
-import eu.h2020.symbiote.ssp.utils.SspIdUtils;
 
 
-@Service
+@Component
 public class InnkeeperRegistrationRequest {
 
 	private static Log log = LogFactory.getLog(InnkeeperRegistrationRequest.class);
 
-
+	@Value("${ssp.id}")
+	String sspName;
+	@Value("${symbIoTe.core.interface.url}")
+	String coreIntefaceUrl;
 	@Value("${innk.core.enabled:true}")
 	Boolean isCoreOnline;
 	@Value("${innk.lwsp.enabled:true}")
@@ -52,11 +58,13 @@ public class InnkeeperRegistrationRequest {
 	@Autowired
 	ResourcesRepository resourcesRepository;
 
-	//@Autowired
-	//AccessPolicyRepository accessPolicyRepository;
+	@Autowired
+	AuthorizationService authorizationService;
 
 	@Autowired
-	RegistrationInfoODataRepository registrationInfoODataRepository; 
+	RegistrationInfoODataRepository registrationInfoODataRepository;
+	@Autowired
+	CoreRegistry coreRegistry; 
 
 	public void setIsCoreOnline(Boolean v) {
 		this.isCoreOnline=v;
@@ -127,10 +135,11 @@ public class InnkeeperRegistrationRequest {
 		return new ResponseEntity<Object>(response,responseHeaders,httpStatus);
 	}
 
-	public InnkeeperRegistrationResponse registry(SspRegInfo sspRegInfo) throws JsonProcessingException {
+	public InnkeeperRegistrationResponse registry(SspRegInfo sspRegInfo) throws IOException {
 		//TODO: implement checkCoreSymbioteIdRegistration with REAL Core interaction :-(
-		String symIdFromCore = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspRegInfo.getSymId());
-
+		coreRegistry.setOnline(this.isCoreOnline);
+		coreRegistry.setRepository(sessionsRepository);
+		String symIdFromCore = coreRegistry.checkCoreSymbioteIdRegistration(sspRegInfo.getSymId(),sspRegInfo);
 
 		// a null SymId from core == REJECT THE REQUEST
 		if (symIdFromCore==null) { 
@@ -249,10 +258,18 @@ public class InnkeeperRegistrationRequest {
 		}*/
 
 		String symIdReg=null;
-		if (sspRegInfo.getSymId()==null)
-			symIdReg = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(""); //generate new symId from Core
-		else
-			symIdReg = new CheckCoreUtility(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspRegInfo.getSymId());
+		if (sspRegInfo.getSymId()==null) {
+			coreRegistry.setOnline(this.isCoreOnline);
+			coreRegistry.setRepository(resourcesRepository);
+			symIdReg = coreRegistry.checkCoreSymbioteIdRegistration("",sspRegInfo);
+		}
+		//	symIdReg = new CoreRegistry(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration("",sspRegInfo); //generate new symId from Core
+		else {
+			coreRegistry.setOnline(this.isCoreOnline);
+			coreRegistry.setRepository(resourcesRepository);
+			symIdReg = coreRegistry.checkCoreSymbioteIdRegistration(sspRegInfo.getSymId(),sspRegInfo);
+		}
+			//symIdReg = new CoreRegistry(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspRegInfo.getSymId(),sspRegInfo);
 		//if I found my symId/SspId of SDEV/PLAT in the MongoDb session, update expiration time it
 
 		//UPDATE Expiration time of session
@@ -275,7 +292,10 @@ public class InnkeeperRegistrationRequest {
 		List<Map<String, String>> updatedSymIdList = new ArrayList<Map<String,String>>();
 		for (ResourceInfo r : resList) {
 
-			String symIdRes = new CheckCoreUtility(resourcesRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(r.getSymIdResource());
+			//String symIdRes = new CoreRegistry(resourcesRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(r.getSymIdResource(),sspRegInfo);
+			coreRegistry.setOnline(this.isCoreOnline);
+			coreRegistry.setRepository(resourcesRepository);
+			String symIdRes = coreRegistry.checkCoreSymbioteIdRegistration(r.getSymIdResource(),sspRegInfo);
 			HashMap<String,String> symIdEntry = new HashMap<String,String>();
 
 			if (symIdRes!=null && r.getSymIdResource().equals("")) 

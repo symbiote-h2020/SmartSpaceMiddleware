@@ -8,6 +8,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import eu.h2020.symbiote.cloud.model.ssp.SspRegInfo;
+import eu.h2020.symbiote.core.cci.SdevRegistryRequest;
+import eu.h2020.symbiote.core.cci.SdevRegistryResponse;
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.ResourceType;
 import eu.h2020.symbiote.model.cim.Property;
@@ -188,6 +191,7 @@ public class InnkeeperRestController {
 
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperRegistrationRequest.SspRegister(lwsp.getSessionId(),decoded_message,InnkeeperRestControllerConstants.SDEV);
+				InnkeeperRegistrationResponse sspRegRes =  new ObjectMapper().readValue(res.getBody().toString(), InnkeeperRegistrationResponse.class);				
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:
@@ -351,45 +355,15 @@ public class InnkeeperRestController {
 
 
 	}
-
-
+	
 	@RequestMapping(value = InnkeeperRestControllerConstants.SANDBOX, method = RequestMethod.POST)
 	public ResponseEntity<Object> sandbox(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {		
 		if (securityEnabled) {
 
 			log.info("Security Enabled");
-			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
-			httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-			log.info(httpHeaders);
 
-
-			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
-			// sending to the core
-
-			HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
-
-			RestTemplate restTemplate = new RestTemplate();
-
-			//String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdev";
-			//String endpoint="https://symbiote-open.man.poznan.pl/cloudCoreInterface/platforms/"+sspName+"/resources";
-			String endpoint="https://symbiote-open.man.poznan.pl/coreInterface/get_available_aams";
-			
-			log.info(endpoint);
-
-			// The Object should be replaced by the class representing the response that you expect
-			try {
-				ResponseEntity<Object> response = restTemplate.exchange(endpoint, HttpMethod.GET,
-						httpEntity, Object.class);
-				log.info(response.getHeaders());
-				return response;
-
-			}catch (Exception e) {
-				log.error("Got error here");
-				log.error(e);
-			}
-			//
+			SspRegInfo sspRegInfo = new SspRegInfo();
 			return null;
-
 
 		}else {
 			log.info("Security Disabled");

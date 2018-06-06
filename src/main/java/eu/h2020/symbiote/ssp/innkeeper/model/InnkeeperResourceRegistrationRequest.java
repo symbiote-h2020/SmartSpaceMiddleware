@@ -38,7 +38,10 @@ import eu.h2020.symbiote.model.cim.Service;
 import eu.h2020.symbiote.model.cim.StationarySensor;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
+import eu.h2020.symbiote.ssp.CoreRegister.CoreRegistry;
+import eu.h2020.symbiote.ssp.CoreRegister.SspIdUtils;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
+import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
 import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
@@ -49,14 +52,19 @@ import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
-import eu.h2020.symbiote.ssp.utils.CheckCoreUtility;
-import eu.h2020.symbiote.ssp.utils.SspIdUtils;
 
 @Component
 public class InnkeeperResourceRegistrationRequest {
 
 	private static Log log = LogFactory.getLog(InnkeeperResourceRegistrationRequest.class);
 
+	
+	@Value("${ssp.id}")
+	String sspName;
+	
+	@Value("${symbIoTe.core.interface.url}")
+	String coreIntefaceUrl;
+	
 	@Value("${innk.core.enabled:true}")
 	private Boolean isCoreOnline;
 
@@ -68,7 +76,13 @@ public class InnkeeperResourceRegistrationRequest {
 
 	@Autowired
 	private RegistrationInfoODataRepository infoODataRepo;
-
+	
+	@Autowired
+	AuthorizationService authorizationService;
+	
+	@Autowired
+	CoreRegistry coreRegistry;
+	
 	public void setIsCoreOnline(Boolean v) {
 		this.isCoreOnline=v;
 	}
@@ -133,12 +147,15 @@ public class InnkeeperResourceRegistrationRequest {
 
 	}
 
-	public InnkeeperResourceRegistrationResponse joinResource(SspResource msg, Date currTime) throws InvalidArgumentsException, JsonProcessingException {
+	public InnkeeperResourceRegistrationResponse joinResource(SspResource msg, Date currTime) throws InvalidArgumentsException, IOException {
 		InnkeeperResourceRegistrationResponse res= null;
 		log.info(new ObjectMapper().writeValueAsString(msg));
 
 		//check The core and assign symId to the Resource (R5 optional)
-		String symIdResource = new CheckCoreUtility(resourcesRepository,this.isCoreOnline).checkCoreSymbioteIdRegistration(msg.getResource().getId());
+		coreRegistry.setOnline(this.isCoreOnline);
+		coreRegistry.setRepository(resourcesRepository);
+
+		String symIdResource = coreRegistry.checkCoreSymbioteIdRegistration(msg.getResource().getId(),msg);
 
 		String results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
 
