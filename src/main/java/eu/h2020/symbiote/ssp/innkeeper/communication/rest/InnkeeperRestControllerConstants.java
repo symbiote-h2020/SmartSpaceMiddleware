@@ -9,7 +9,7 @@ import java.util.List;
 public class InnkeeperRestControllerConstants {
 
     public static final String INNKEEPER_BASE_PATH = "/innkeeper";
-    public static final String INNKEEPER_REGISTER_REQUEST_PATH = "/register";
+    public static final String INNKEEPER_REGISTER_REQUEST_PATH = "register";
     public static final String INNKEEPER_JOIN_REQUEST_PATH = "/join";
     public static final String INNKEEPER_SDEV_REGISTER_REQUEST_PATH = "/sdev/"+INNKEEPER_REGISTER_REQUEST_PATH;
     public static final String INNKEEPER_SDEV_JOIN_REQUEST_PATH = "/sdev/"+INNKEEPER_JOIN_REQUEST_PATH;

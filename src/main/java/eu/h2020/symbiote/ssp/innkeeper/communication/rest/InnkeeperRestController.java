@@ -191,7 +191,6 @@ public class InnkeeperRestController {
 
 				String decoded_message = lwsp.get_response();
 				ResponseEntity<Object> res = innkeeperRegistrationRequest.SspRegister(lwsp.getSessionId(),decoded_message,InnkeeperRestControllerConstants.SDEV);
-				InnkeeperRegistrationResponse sspRegRes =  new ObjectMapper().readValue(res.getBody().toString(), InnkeeperRegistrationResponse.class);				
 				String encodedResponse = lwsp.send_data(res.getBody().toString());
 				return new ResponseEntity<Object>(encodedResponse,res.getHeaders(),res.getStatusCode());
 			default:

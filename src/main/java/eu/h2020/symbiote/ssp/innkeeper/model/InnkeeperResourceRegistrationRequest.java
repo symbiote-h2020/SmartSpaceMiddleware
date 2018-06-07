@@ -155,7 +155,7 @@ public class InnkeeperResourceRegistrationRequest {
 		coreRegistry.setOnline(this.isCoreOnline);
 		coreRegistry.setRepository(resourcesRepository);
 
-		String symIdResource = coreRegistry.checkCoreSymbioteIdRegistration(msg.getResource().getId(),msg);
+		String symIdResource = coreRegistry.getSymbioteIdFromCore(msg.getResource().getId(),msg);
 
 		String results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
 
@@ -295,7 +295,6 @@ public class InnkeeperResourceRegistrationRequest {
 			log.warn("AccessPolicy is null\n");
 		}*/
 
-		log.info("ADD RESOURCE:");
 		addResource(
 				msg.getSspIdResource(),				//sspId resource
 				msg.getResource().getId(), //symbioteId Resource
@@ -305,8 +304,6 @@ public class InnkeeperResourceRegistrationRequest {
 				props, pluginId,currTime, msg.getAccessPolicy(),msg.getResource());
 
 		//ADD OData
-		log.info("ADD OData:");
-		log.info("msg.getSemanticDescription().getId()="+msg.getResource().getId());
 		addInfoForOData(msg);
 	}
 
@@ -363,7 +360,6 @@ public class InnkeeperResourceRegistrationRequest {
 	}
 
 	private RegistrationInfoOData saveRegistrationInfoODataInDb(String sspIdResource, String id, String className, String superClass, List<Parameter> parameters, Date session_expiration) {
-		log.info("RegistrationInfoOData, id:"+id);
 		Set<ParameterInfo> parameterInfoList = new HashSet<>();
 		for (Parameter p : parameters) {
 			String type = "string";
@@ -373,11 +369,6 @@ public class InnkeeperResourceRegistrationRequest {
 			} else if (datatype.getClass().equals(PrimitiveDatatype.class)) {
 				type = ((PrimitiveDatatype) datatype).getBaseDatatype();
 			}
-
-			log.info("Add parameter:");
-			log.info("type:"+type);
-			log.info("p.getName():"+p.getName());
-			log.info("p.isMandatory():"+p.isMandatory());
 
 			ParameterInfo parameterInfo = new ParameterInfo(type, p.getName(), p.isMandatory());
 			parameterInfoList.add(parameterInfo);

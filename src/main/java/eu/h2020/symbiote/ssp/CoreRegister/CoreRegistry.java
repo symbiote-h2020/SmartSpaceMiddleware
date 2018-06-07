@@ -32,6 +32,7 @@ import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResourceRegistrationReques
 import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.resources.SspResource;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 
@@ -96,42 +97,39 @@ public class CoreRegistry {
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 		log.info(httpHeaders);
 
-		// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
-
-
 		SdevRegistryRequest sdevRegistryRequest = new SdevRegistryRequest(sspRegInfo);
 		HttpEntity<SdevRegistryRequest> httpEntity = new HttpEntity<>(sdevRegistryRequest, httpHeaders) ;
-		//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
 
 		RestTemplate restTemplate = new RestTemplate();
 
 		//Create a smart device
 
-		//String endpoint="https://symbiote-open.man.poznan.pl/cloudCoreInterface/platforms/"+sspName+"/resources";
-		//String endpoint="https://symbiote-open.man.poznan.pl/coreInterface/get_available_aams";
-
 		log.info(endpoint);
-
-		// The Object should be replaced by the class representing the response that you expect
-		// sending to the core
+		
 		try {
-			ResponseEntity<SdevRegistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.GET,
-					httpEntity, SdevRegistryResponse.class);
-			log.info(response.getHeaders());
-			return response;
+			
+			if (sspRegInfo.getSymId().equals("") || sspRegInfo.getSymId()==null) {
+				// FIRST REGISTRATION perform POST
+				log.info("FIRST REGISTRATION: POST");
+				return restTemplate.exchange(endpoint, HttpMethod.POST,
+						httpEntity, SdevRegistryResponse.class);
+			}else {
+				log.info("UPDATE REGISTRATION: PUT");
+				return restTemplate.exchange(endpoint, HttpMethod.PUT,
+						httpEntity, SdevRegistryResponse.class);
+			}
 
 		}catch (Exception e) {
-			log.error("Got error here");
-			log.error(e);
-		}
-		//
+			log.error("[SDEV registration] SymId="+sspRegInfo.getSymId()+" FAILED:"+ e);
+		}		
 		return null;
 
 	}
 
-	private ResponseEntity<SdevRegistryResponse> registerResource(SspResource sspResource) {
+	private ResponseEntity<SdevRegistryResponse> registerResource(ResourceInfo resourceInfo) {
 
-		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdevs";
+		String sdevId = resourceInfo.getSspIdParent();
+		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/"+sdevId+"/resources";
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -140,48 +138,110 @@ public class CoreRegistry {
 		// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
 
 		Map<String,Resource> resMap = new HashMap<String,Resource>();
-		resMap.put(sspResource.getInternalIdResource(), sspResource.getResource());
+		resMap.put(resourceInfo.getInternalIdResource(), resourceInfo.getResource());
 		SspResourceRegistryRequest sdevResourceRequest = new SspResourceRegistryRequest(resMap);
 		HttpEntity<SspResourceRegistryRequest> httpEntity = new HttpEntity<>(sdevResourceRequest, httpHeaders) ;
 		//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
 
 		RestTemplate restTemplate = new RestTemplate();
 
-		//Create a smart device
+		log.info("[Resource registration] Http request to"+endpoint);
 
-		//String endpoint="https://symbiote-open.man.poznan.pl/cloudCoreInterface/platforms/"+sspName+"/resources";
-		//String endpoint="https://symbiote-open.man.poznan.pl/coreInterface/get_available_aams";
-
-		log.info(endpoint);
-
-		// The Object should be replaced by the class representing the response that you expect
-		// sending to the core
 		try {
-			ResponseEntity<SdevRegistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.GET,
+			ResponseEntity<SdevRegistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.POST,
 					httpEntity, SdevRegistryResponse.class);
 			log.info(response.getHeaders());
 			return response;
 
 		}catch (Exception e) {
-			log.error("Got error here");
-			log.error(e);
+			log.error("[Resource registration] FAILED:"+ e);
+			
 		}
-		//
+		return null;
+
+	}
+	
+	public ResponseEntity<SdevRegistryResponse> unregisterSDEV(String symId) {
+
+		SspRegInfo sspRegInfo = new SspRegInfo();
+		sspRegInfo.setSymId(symId);
+		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdevs";
+
+		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+		SdevRegistryRequest sdevRegistryRequest = new SdevRegistryRequest(sspRegInfo);
+		HttpEntity<SdevRegistryRequest> httpEntity = new HttpEntity<>(sdevRegistryRequest, httpHeaders) ;
+
+		RestTemplate restTemplate = new RestTemplate();
+
+		//Create a smart device
+
+		log.info(endpoint);
+		
+		try {			
+				return restTemplate.exchange(endpoint, HttpMethod.DELETE,
+						httpEntity, SdevRegistryResponse.class);
+		}catch (Exception e) {
+			log.error("[SDEV delete] SymId="+sspRegInfo.getSymId()+" FAILED:"+ e);
+		}		
 		return null;
 
 	}
 
-	public String checkCoreSymbioteIdRegistration(String symId, Object msg) throws IOException {
-		ResponseEntity<SdevRegistryResponse> response=null;
+	public ResponseEntity<SdevRegistryResponse> unregisterResource(ResourceInfo resourceInfo) {
+
+
+		String sdevId = resourceInfo.getSspIdParent();
+		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/"+sdevId+"/resources";
+
+		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+		// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
+
+		Map<String,Resource> resMap = new HashMap<String,Resource>();
+		resMap.put(resourceInfo.getInternalIdResource(), resourceInfo.getResource());
+		SspResourceRegistryRequest sdevResourceRequest = new SspResourceRegistryRequest(resMap);
+		HttpEntity<SspResourceRegistryRequest> httpEntity = new HttpEntity<>(sdevResourceRequest, httpHeaders) ;
+		//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
+
+		RestTemplate restTemplate = new RestTemplate();
+
+		log.info("[Resource DELETE] Http request to"+endpoint);
+
+		try {
+			ResponseEntity<SdevRegistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.DELETE,
+					httpEntity, SdevRegistryResponse.class);
+			log.info(response.getHeaders());
+			return response;
+
+		}catch (Exception e) {
+			log.error("[Resource DELETE] FAILED:"+ e);
+			
+		}
+		return null;
+
+
+	}
+
 		
+	
+	
+
+	public String getSymbioteIdFromCore(String symId, Object msg) throws IOException {
+		ResponseEntity<SdevRegistryResponse> response=null;
+		log.info("GET SYMBIOTE ID FROM CORE");
 		log.info(new ObjectMapper().writeValueAsString(msg).toString());		
 		if (msg instanceof SspRegInfo) {
+			log.info("SDEV Core Registration");
 			SspRegInfo sspRegInfo = (SspRegInfo)(msg);
 			response = registerSDEV(sspRegInfo);
 		}
-		if (msg instanceof SspResource) {
-			SspResource sspResource = (SspResource)(msg);
-			response = registerResource(sspResource);
+		if (msg instanceof ResourceInfo) {
+			log.info("Resource Core Registration");
+			ResourceInfo resourceInfo = (ResourceInfo)(msg);
+			response = registerResource(resourceInfo);
 			
 		}
 		//Response is null if the registration function got an exception, in this case I assume that the SSP is offline.

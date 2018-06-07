@@ -139,9 +139,10 @@ public class InnkeeperRegistrationRequest {
 		//TODO: implement checkCoreSymbioteIdRegistration with REAL Core interaction :-(
 		coreRegistry.setOnline(this.isCoreOnline);
 		coreRegistry.setRepository(sessionsRepository);
-		String symIdFromCore = coreRegistry.checkCoreSymbioteIdRegistration(sspRegInfo.getSymId(),sspRegInfo);
+		
+		String symIdFromCore = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo);
 
-		// a null SymId from core == REJECT THE REQUEST
+		//null SymId from core == REJECT THE REQUEST
 		if (symIdFromCore==null) { 
 			return new InnkeeperRegistrationResponse(
 					sspRegInfo.getSymId(),sspRegInfo.getSspId(),InnkeeperRestControllerConstants.REGISTRATION_REJECTED,0);	
@@ -261,13 +262,13 @@ public class InnkeeperRegistrationRequest {
 		if (sspRegInfo.getSymId()==null) {
 			coreRegistry.setOnline(this.isCoreOnline);
 			coreRegistry.setRepository(resourcesRepository);
-			symIdReg = coreRegistry.checkCoreSymbioteIdRegistration("",sspRegInfo);
+			symIdReg = coreRegistry.getSymbioteIdFromCore("",sspRegInfo);
 		}
 		//	symIdReg = new CoreRegistry(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration("",sspRegInfo); //generate new symId from Core
 		else {
 			coreRegistry.setOnline(this.isCoreOnline);
 			coreRegistry.setRepository(resourcesRepository);
-			symIdReg = coreRegistry.checkCoreSymbioteIdRegistration(sspRegInfo.getSymId(),sspRegInfo);
+			symIdReg = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo);
 		}
 			//symIdReg = new CoreRegistry(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspRegInfo.getSymId(),sspRegInfo);
 		//if I found my symId/SspId of SDEV/PLAT in the MongoDb session, update expiration time it
@@ -295,7 +296,7 @@ public class InnkeeperRegistrationRequest {
 			//String symIdRes = new CoreRegistry(resourcesRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(r.getSymIdResource(),sspRegInfo);
 			coreRegistry.setOnline(this.isCoreOnline);
 			coreRegistry.setRepository(resourcesRepository);
-			String symIdRes = coreRegistry.checkCoreSymbioteIdRegistration(r.getSymIdResource(),sspRegInfo);
+			String symIdRes = coreRegistry.getSymbioteIdFromCore(r.getSymIdResource(),r);
 			HashMap<String,String> symIdEntry = new HashMap<String,String>();
 
 			if (symIdRes!=null && r.getSymIdResource().equals("")) 
@@ -354,6 +355,8 @@ public class InnkeeperRegistrationRequest {
 		HttpStatus httpStatus = HttpStatus.OK;
 		SspRegInfo sspRegInfo = new ObjectMapper().readValue(msg, SspRegInfo.class);
 		//Delete Session
+		
+		
 
 		SessionInfo s = null;
 
@@ -364,6 +367,8 @@ public class InnkeeperRegistrationRequest {
 		}else {
 			// REMOVE USING SYMID
 			s = sessionsRepository.findBySymId(sspRegInfo.getSymId());
+			//REMOVE FROM CORE
+			coreRegistry.unregisterSDEV(sspRegInfo.getSymId());
 		}
 
 		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
@@ -381,6 +386,12 @@ public class InnkeeperRegistrationRequest {
 			List<ResourceInfo> resList= resourcesRepository.findBySspIdParent(s.getSspId());
 			for (ResourceInfo r : resList) {
 				resourcesRepository.delete(r);
+				if (!s.getSymId().equals("")) {
+					log.info("Resource is ONLINE delete from CORE");
+					coreRegistry.unregisterResource(r);	
+				}else {
+					log.info("Resource is OFFLINE nothing to do");
+				}
 				sspIdResourcesList.add(r.getSspIdResource());
 			}
 
@@ -392,7 +403,7 @@ public class InnkeeperRegistrationRequest {
 				List<RegistrationInfoOData> odataList= registrationInfoODataRepository.findBySspId(sspIdCurr);
 				for (RegistrationInfoOData r : odataList) {
 					registrationInfoODataRepository.delete(r);
-				}
+				}				
 			}
 
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
