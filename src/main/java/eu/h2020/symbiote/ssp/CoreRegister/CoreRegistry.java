@@ -1,7 +1,10 @@
 package eu.h2020.symbiote.ssp.CoreRegister;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -55,6 +58,12 @@ public class CoreRegistry {
 	@Value("${symbIoTe.core.interface.url}")
 	String coreIntefaceUrl;
 	
+	
+	@Value("${ssp.url}")
+	String sspUrl;
+	
+	
+	
 	@Autowired
 	AuthorizationService authorizationService;
 	
@@ -89,26 +98,53 @@ public class CoreRegistry {
 		this.isOnline=isOnline;
 	}
 
+	private SspRegInfo setSSPUrl(SspRegInfo sspRegInfo) {
+		SspRegInfo ret = sspRegInfo;
+		
+		String[] sep = sspRegInfo.getPluginURL().split("\\/");
+		List<String> sepList = Arrays.asList(sep);
+		sep[2]=sspUrl;
+		String sepStr="";
+		int l=0;
+		for (String s : sepList) {
+			String separator="/";
+			if (l==sepList.size()-1) separator="";
+			sepStr+=s+separator;
+			l++;
+		}
+		ret.setPluginURL(sepStr);
+		return ret;
+	}
+	
 	private ResponseEntity<SdevRegistryResponse> registerSDEV(SspRegInfo sspRegInfo) {
-
-		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdevs";
+		SspRegInfo sspRegInfoCore = new SspRegInfo();
+		sspRegInfoCore.setDerivedKey1(sspRegInfo.getDerivedKey1());
+		sspRegInfoCore.setHashField(sspRegInfo.getHashField());
+		sspRegInfoCore.setPluginId(sspRegInfo.getPluginId());
+		sspRegInfoCore.setPluginURL(sspRegInfo.getPluginURL());
+		sspRegInfoCore.setRoaming(sspRegInfo.getRoaming());
+		sspRegInfoCore.setSspId(sspRegInfo.getSspId());
+		sspRegInfoCore.setSymId(sspRegInfo.getSymId());
+		
+ 		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdevs";
+		
+		sspRegInfoCore=setSSPUrl(sspRegInfoCore);
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 		log.info(httpHeaders);
 
-		SdevRegistryRequest sdevRegistryRequest = new SdevRegistryRequest(sspRegInfo);
+		SdevRegistryRequest sdevRegistryRequest = new SdevRegistryRequest(sspRegInfoCore);
 		HttpEntity<SdevRegistryRequest> httpEntity = new HttpEntity<>(sdevRegistryRequest, httpHeaders) ;
-
 		RestTemplate restTemplate = new RestTemplate();
-
+		log.info("SDEV Interworking Service URL exposed to Core:"+sdevRegistryRequest.getBody().getPluginURL());
 		//Create a smart device
 
-		log.info(endpoint);
+		log.info("URL CORE REGISTER ENDPOINT:"+endpoint);
 		
 		try {
 			
-			if (sspRegInfo.getSymId().equals("") || sspRegInfo.getSymId()==null) {
+			if (sspRegInfoCore.getSymId().equals("") || sspRegInfoCore.getSymId()==null) {
 				// FIRST REGISTRATION perform POST
 				log.info("FIRST REGISTRATION: POST");
 				return restTemplate.exchange(endpoint, HttpMethod.POST,
@@ -120,7 +156,7 @@ public class CoreRegistry {
 			}
 
 		}catch (Exception e) {
-			log.error("[SDEV registration] SymId="+sspRegInfo.getSymId()+" FAILED:"+ e);
+			log.error("[SDEV registration] SymId="+sspRegInfoCore.getSymId()+" FAILED:"+ e);
 		}		
 		return null;
 
