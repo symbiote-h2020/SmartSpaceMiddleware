@@ -54,9 +54,12 @@ public class CoreRegistry {
 
 	@Value("${symbIoTe.aam.integration}")
 	Boolean securityEnabled;
-
+	
+	@Value("${symbIoTe.cloud.interface.url}")
+	String cloudInterfaceUrl;
+	
 	@Value("${symbIoTe.core.interface.url}")
-	String coreIntefaceUrl;
+	String coreInterfaceUrl;
 	
 	
 	@Value("${ssp.url}")
@@ -70,9 +73,6 @@ public class CoreRegistry {
 	
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
 	
-	//String sspName;
-	//String coreIntefaceUrl;
-	//AuthorizationService authorizationService;
 	private Object repository;
 	private Boolean isOnline;
 
@@ -115,8 +115,12 @@ public class CoreRegistry {
 		ret.setPluginURL(sepStr);
 		return ret;
 	}
-	
-	private ResponseEntity<SdevRegistryResponse> registerSDEV(SspRegInfo sspRegInfo) {
+	private SspRegInfo setSSPsymbioteID(SspRegInfo sspRegInfo) {
+		SspRegInfo ret = sspRegInfo;
+		sspRegInfo.setPluginId(sspName);
+		return ret;
+	}
+	private ResponseEntity<SdevRegistryResponse> registerSDEV(SspRegInfo sspRegInfo) throws JsonProcessingException {
 		SspRegInfo sspRegInfoCore = new SspRegInfo();
 		sspRegInfoCore.setDerivedKey1(sspRegInfo.getDerivedKey1());
 		sspRegInfoCore.setHashField(sspRegInfo.getHashField());
@@ -126,21 +130,33 @@ public class CoreRegistry {
 		sspRegInfoCore.setSspId(sspRegInfo.getSspId());
 		sspRegInfoCore.setSymId(sspRegInfo.getSymId());
 		
- 		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdevs";
+ 		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs";
+ 		
 		
 		sspRegInfoCore=setSSPUrl(sspRegInfoCore);
+		sspRegInfoCore=setSSPsymbioteID(sspRegInfoCore);
+		
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+		//HttpHeaders httpHeaders = new HttpHeaders(); 
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 		log.info(httpHeaders);
+		
+		String jsonInString = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sspRegInfoCore);
+		log.info("JSON PAYLOAD:"+jsonInString);
 
 		SdevRegistryRequest sdevRegistryRequest = new SdevRegistryRequest(sspRegInfoCore);
 		HttpEntity<SdevRegistryRequest> httpEntity = new HttpEntity<>(sdevRegistryRequest, httpHeaders) ;
 		RestTemplate restTemplate = new RestTemplate();
+		
 		log.info("SDEV Interworking Service URL exposed to Core:"+sdevRegistryRequest.getBody().getPluginURL());
+		log.info("sspRegInfoCore.getSspId()="+sspRegInfoCore.getSspId());
 		//Create a smart device
 
 		log.info("URL CORE REGISTER ENDPOINT:"+endpoint);
+		
+		
+
 		
 		try {
 			
@@ -165,7 +181,7 @@ public class CoreRegistry {
 	private ResponseEntity<SdevRegistryResponse> registerResource(ResourceInfo resourceInfo) {
 
 		String sdevId = resourceInfo.getSspIdParent();
-		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/"+sdevId+"/resources";
+		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/"+sdevId+"/resources";
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -201,7 +217,7 @@ public class CoreRegistry {
 
 		SspRegInfo sspRegInfo = new SspRegInfo();
 		sspRegInfo.setSymId(symId);
-		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/sdevs";
+		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs";
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -229,7 +245,7 @@ public class CoreRegistry {
 
 
 		String sdevId = resourceInfo.getSspIdParent();
-		String endpoint=coreIntefaceUrl+"/ssps/"+sspName+"/"+sdevId+"/resources";
+		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/"+sdevId+"/resources";
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -284,7 +300,7 @@ public class CoreRegistry {
 		if (response == null) {
 			return "";
 		}
-		
+
 		if (	response.getStatusCode()==HttpStatus.BAD_GATEWAY ||
 				response.getStatusCode()==HttpStatus.SERVICE_UNAVAILABLE ||
 				response.getStatusCode()==HttpStatus.GATEWAY_TIMEOUT
@@ -294,6 +310,7 @@ public class CoreRegistry {
 		
 	
 		SspRegInfo sspRegInfo = new ObjectMapper().readValue(response.getBody().toString(), SspRegInfo.class);
+		
 		
 		
 		
