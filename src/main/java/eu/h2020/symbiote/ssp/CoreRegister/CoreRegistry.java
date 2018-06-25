@@ -25,9 +25,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.cloud.model.ssp.SspRegInfo;
+import eu.h2020.symbiote.core.cci.ResourceRegistryResponse;
 import eu.h2020.symbiote.core.cci.SdevRegistryRequest;
 import eu.h2020.symbiote.core.cci.SdevRegistryResponse;
 import eu.h2020.symbiote.core.cci.SspResourceRegistryRequest;
+import eu.h2020.symbiote.core.cci.SspResourceReqistryResponse;
 import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
 import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperRegistrationRequest;
@@ -54,43 +56,43 @@ public class CoreRegistry {
 
 	@Value("${symbIoTe.aam.integration}")
 	Boolean securityEnabled;
-	
+
 	@Value("${symbIoTe.cloud.interface.url}")
 	String cloudInterfaceUrl;
-	
+
 	@Value("${symbIoTe.core.interface.url}")
 	String coreInterfaceUrl;
-	
-	
+
+
 	@Value("${ssp.url}")
 	String sspUrl;
-	
-	
-	
+
+
+
 	@Autowired
 	AuthorizationService authorizationService;
-	
-	
+
+
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
-	
+
 	private Object repository;
 	private Boolean isOnline;
 
 	public CoreRegistry() {
 
 	}
-	
+
 	public CoreRegistry(Object repo, Boolean isOnline) {
 		this.repository=repo;
 		this.isOnline=isOnline;
 	}
-	
-	
+
+
 
 	public Boolean getCoreConnectivity() {
 		return this.isOnline;
 	}
-	
+
 	public void setRepository(Object repo) {
 		this.repository=repo;
 	}
@@ -100,7 +102,7 @@ public class CoreRegistry {
 
 	private SspRegInfo setSSPUrl(SspRegInfo sspRegInfo) {
 		SspRegInfo ret = sspRegInfo;
-		
+		log.error("sspRegInfo.getPluginURL()="+sspRegInfo.getPluginURL());
 		String[] sep = sspRegInfo.getPluginURL().split("\\/");
 		List<String> sepList = Arrays.asList(sep);
 		sep[2]=sspUrl;
@@ -129,13 +131,13 @@ public class CoreRegistry {
 		sspRegInfoCore.setRoaming(sspRegInfo.getRoaming());
 		sspRegInfoCore.setSspId(sspRegInfo.getSspId());
 		sspRegInfoCore.setSymId(sspRegInfo.getSymId());
-		
- 		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs";
- 		
-		
+
+		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs";
+
+
 		sspRegInfoCore=setSSPUrl(sspRegInfoCore);
 		sspRegInfoCore=setSSPsymbioteID(sspRegInfoCore);
-		
+
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 		//HttpHeaders httpHeaders = new HttpHeaders(); 
@@ -143,23 +145,27 @@ public class CoreRegistry {
 		log.info(httpHeaders);
 		
 		String jsonInString = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sspRegInfoCore);
+
+
 		log.info("JSON PAYLOAD:"+jsonInString);
+				
+		
 
 		SdevRegistryRequest sdevRegistryRequest = new SdevRegistryRequest(sspRegInfoCore);
 		HttpEntity<SdevRegistryRequest> httpEntity = new HttpEntity<>(sdevRegistryRequest, httpHeaders) ;
 		RestTemplate restTemplate = new RestTemplate();
-		
+
 		log.info("SDEV Interworking Service URL exposed to Core:"+sdevRegistryRequest.getBody().getPluginURL());
 		log.info("sspRegInfoCore.getSspId()="+sspRegInfoCore.getSspId());
 		//Create a smart device
 
 		log.info("URL CORE REGISTER ENDPOINT:"+endpoint);
-		
-		
 
-		
+
+
+
 		try {
-			
+
 			if (sspRegInfoCore.getSymId().equals("") || sspRegInfoCore.getSymId()==null) {
 				// FIRST REGISTRATION perform POST
 				log.info("FIRST REGISTRATION: POST");
@@ -167,6 +173,7 @@ public class CoreRegistry {
 						httpEntity, SdevRegistryResponse.class);
 			}else {
 				log.info("UPDATE REGISTRATION: PUT");
+				log.info("updating symId = "+sspRegInfoCore.getSymId()+"...");
 				return restTemplate.exchange(endpoint, HttpMethod.PUT,
 						httpEntity, SdevRegistryResponse.class);
 			}
@@ -178,41 +185,50 @@ public class CoreRegistry {
 
 	}
 
-	private ResponseEntity<SdevRegistryResponse> registerResource(ResourceInfo resourceInfo) {
+	private ResponseEntity<SspResourceReqistryResponse> registerResource(SspResource sspResource) {
 
-		String sdevId = resourceInfo.getSspIdParent();
-		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/"+sdevId+"/resources";
+		String sdevId = sspResource.getSymIdParent();
+		if (sdevId !=null) if (!sdevId.equals("")){
+			String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs/"+sdevId+"/resources";
 
-		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
-		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-		log.info(httpHeaders);
+			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
+			httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+			log.info(httpHeaders);
 
-		// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
+			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
 
-		Map<String,Resource> resMap = new HashMap<String,Resource>();
-		resMap.put(resourceInfo.getInternalIdResource(), resourceInfo.getResource());
-		SspResourceRegistryRequest sdevResourceRequest = new SspResourceRegistryRequest(resMap);
-		HttpEntity<SspResourceRegistryRequest> httpEntity = new HttpEntity<>(sdevResourceRequest, httpHeaders) ;
-		//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
+			Map<String,Resource> resMap = new HashMap<String,Resource>();
+			resMap.put(sspResource.getInternalIdResource(), sspResource.getResource());
+			SspResourceRegistryRequest sdevResourceRequest = new SspResourceRegistryRequest(resMap);
+			HttpEntity<SspResourceRegistryRequest> httpEntity = new HttpEntity<>(sdevResourceRequest, httpHeaders) ;
+			//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
 
-		RestTemplate restTemplate = new RestTemplate();
+			RestTemplate restTemplate = new RestTemplate();
 
-		log.info("[Resource registration] Http request to"+endpoint);
+			log.info("[Resource registration] Http request to "+endpoint);
 
-		try {
-			ResponseEntity<SdevRegistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.POST,
-					httpEntity, SdevRegistryResponse.class);
-			log.info(response.getHeaders());
-			return response;
+			try {
+				ResponseEntity<SspResourceReqistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.POST,
+						httpEntity, SspResourceReqistryResponse.class);
+				log.info("RESPONSE HEADER:"+response.getHeaders());
+				log.info("RESPONSE BODY:"+response.getBody());
+				return response;
 
-		}catch (Exception e) {
-			log.error("[Resource registration] FAILED:"+ e);
-			
+			}catch (Exception e) {
+				log.error("[Resource registration] FAILED:"+ e);
+
+			}
+
+		}else{
+			log.info("SymId is null, return null");
 		}
 		return null;
 
+
+
+
 	}
-	
+
 	public ResponseEntity<SdevRegistryResponse> unregisterSDEV(String symId) {
 
 		SspRegInfo sspRegInfo = new SspRegInfo();
@@ -230,10 +246,10 @@ public class CoreRegistry {
 		//Create a smart device
 
 		log.info(endpoint);
-		
+
 		try {			
-				return restTemplate.exchange(endpoint, HttpMethod.DELETE,
-						httpEntity, SdevRegistryResponse.class);
+			return restTemplate.exchange(endpoint, HttpMethod.DELETE,
+					httpEntity, SdevRegistryResponse.class);
 		}catch (Exception e) {
 			log.error("[SDEV delete] SymId="+sspRegInfo.getSymId()+" FAILED:"+ e);
 		}		
@@ -270,53 +286,114 @@ public class CoreRegistry {
 
 		}catch (Exception e) {
 			log.error("[Resource DELETE] FAILED:"+ e);
-			
+
 		}
 		return null;
 
 
 	}
 
-		
-	
-	
+
+
+
 
 	public String getSymbioteIdFromCore(String symId, Object msg) throws IOException {
-		ResponseEntity<SdevRegistryResponse> response=null;
-		log.info("GET SYMBIOTE ID FROM CORE");
-		log.info(new ObjectMapper().writeValueAsString(msg).toString());		
-		if (msg instanceof SspRegInfo) {
-			log.info("SDEV Core Registration");
-			SspRegInfo sspRegInfo = (SspRegInfo)(msg);
-			response = registerSDEV(sspRegInfo);
-		}
-		if (msg instanceof ResourceInfo) {
-			log.info("Resource Core Registration");
-			ResourceInfo resourceInfo = (ResourceInfo)(msg);
-			response = registerResource(resourceInfo);
-			
-		}
-		//Response is null if the registration function got an exception, in this case I assume that the SSP is offline.
-		if (response == null) {
-			return "";
-		}
+		ResponseEntity<?>  response = null;
+		log.info(new ObjectMapper().writeValueAsString(msg).toString());	
 
-		if (	response.getStatusCode()==HttpStatus.BAD_GATEWAY ||
-				response.getStatusCode()==HttpStatus.SERVICE_UNAVAILABLE ||
-				response.getStatusCode()==HttpStatus.GATEWAY_TIMEOUT
-				) {
-			return "";
-		}
-		
-	
-		SspRegInfo sspRegInfo = new ObjectMapper().readValue(response.getBody().toString(), SspRegInfo.class);
-		
-		
-		
-		
 		if (!this.isOnline)
 			return "";
 
+
+
+		if (msg instanceof SspRegInfo) {
+			//ResponseEntity<SdevRegistryResponse> response=null;
+			log.info("SDEV Core Registration");
+
+			SspRegInfo sspRegInfo = (SspRegInfo)(msg);
+			response = registerSDEV(sspRegInfo);
+
+			//Response is null if the registration function got an exception, in this case I assume that the SSP is offline.
+			if (response == null) {
+				log.error("Something goes wrong in Core, Response is null");
+				return "";
+			}
+
+			if (	response.getStatusCode()==HttpStatus.BAD_GATEWAY ||
+					response.getStatusCode()==HttpStatus.SERVICE_UNAVAILABLE ||
+					response.getStatusCode()==HttpStatus.GATEWAY_TIMEOUT
+					) {
+				log.error("Something goes wrong in Core, SDEV registration Failed");
+
+				log.error(response.getHeaders());
+				log.error(response.getStatusCode());
+				log.error(response.getBody());
+				return "";
+			}
+			log.error("response.getHeaders()="+response.getHeaders());
+			log.error("response.getStatusCode()="+response.getStatusCode());
+			
+			ObjectMapper mapper = new ObjectMapper();
+			String jsonInString = mapper.writeValueAsString(response.getBody());
+			log.error("response.getBody()="+jsonInString);
+			SdevRegistryResponse respBody = (SdevRegistryResponse) response.getBody();
+			SspRegInfo sspRegInfoRes = respBody.getBody();
+
+			log.info("sspRegInfoRes.getSymId():"+sspRegInfoRes.getSymId());
+
+			return sspRegInfoRes.getSymId();
+
+		}
+
+		//Resource Registration
+		if (msg instanceof SspResource) {
+			//TBD
+			//ResponseEntity<SspResourceReqistryResponse> response=null;
+			log.info("Resource Core Registration");
+			
+			SspResource sspResource = (SspResource)(msg);
+			//log.info("sspResource.getSspIdResource()="+sspResource.getSspIdResource());
+			response = registerResource(sspResource);
+
+			//Response is null if the registration function got an exception, in this case I assume that the SSP is offline.
+			if (response == null) {
+				return "";
+			}
+
+			if (	response.getStatusCode()==HttpStatus.BAD_GATEWAY ||
+					response.getStatusCode()==HttpStatus.SERVICE_UNAVAILABLE ||
+					response.getStatusCode()==HttpStatus.GATEWAY_TIMEOUT
+					) {
+				log.error("Something goes wrong in Core, Resource registration Failed");
+				log.error(response.getHeaders());
+				log.error(response.getStatusCode());
+				log.error(response.getBody());
+				return "";
+			}
+
+			SspResourceReqistryResponse respBody = (SspResourceReqistryResponse) response.getBody();
+			String symIdRes=null;
+			for (Map.Entry<String, Resource> entry : respBody.getBody().entrySet()) {
+				System.out.println("Item : " + entry.getKey() + " Count : " + entry.getValue());
+				Resource res = entry.getValue();
+				symIdRes=res.getId();
+				log.info("Got symId for resurce="+symIdRes);
+				break;
+			}
+			if (symIdRes!=null)
+				return symIdRes;
+			else
+				return "";
+			
+
+
+		}
+
+
+
+		return "";
+
+		/*
 		try {
 
 			boolean smyIdSessionsRepositoryExists=false;
@@ -351,11 +428,11 @@ public class CoreRegistry {
 		}catch(Exception e) {			
 			System.err.println(e);
 			return null;
-		}
+		}*/
 	}
-	
-	
-	
+
+
+
 
 
 }

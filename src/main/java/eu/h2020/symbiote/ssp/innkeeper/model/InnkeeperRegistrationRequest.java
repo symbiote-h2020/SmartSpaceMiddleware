@@ -30,6 +30,7 @@ import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 //import eu.h2020.symbiote.ssp.resources.SspRegInfo;
 import eu.h2020.symbiote.cloud.model.ssp.SspRegInfo;
+import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.DbConstants;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
 import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
@@ -118,6 +119,9 @@ public class InnkeeperRegistrationRequest {
 			s.setSymId(regResp.getSymId());								
 			s.setPluginId(sspRegInfo.getPluginId());			
 			s.setPluginURL(sspRegInfo.getPluginURL());
+			if (s.getRoaming()==null) {
+				s.setRoaming(false);
+			}
 						
 			sessionsRepository.save(s);				
 			break;
@@ -222,16 +226,21 @@ public class InnkeeperRegistrationRequest {
 			// UPDATE USING SYMID
 			s = sessionsRepository.findBySymId(sspRegInfo.getSymId());
 		}
-
+		
+		log.error("s="+s);
+		log.error("s.getSymId()		="+s.getSymId());
+		log.error("s.getSspId()		="+s.getSspId());
+		log.error("s.getPluginURL()	="+s.getPluginURL());
+		log.error("s.getRoaming()	="+s.getRoaming());
 		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
 
-		if (s==null) {			
+		/*if (s==null) {			
 			log.error("ERROR1 - no session found");
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		
 			httpStatus=HttpStatus.BAD_REQUEST;		
 			String res = new ObjectMapper().writeValueAsString(response);
 			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
-		}
+		}*/
 		if (	!s.getSspId().equals(sspRegInfo.getSspId()) && 
 				!s.getSymId().equals(sspRegInfo.getSymId())){
 			log.error("ERROR2 - no match Ids");
@@ -259,7 +268,18 @@ public class InnkeeperRegistrationRequest {
 		}*/
 
 		String symIdReg=null;
-		if (sspRegInfo.getSymId()==null) {
+		
+		sspRegInfo.setPluginURL(s.getPluginURL());
+		sspRegInfo.setDerivedKey1(s.getdk1()); 
+		sspRegInfo.setPluginId(s.getPluginId());
+		sspRegInfo.setRoaming(s.getRoaming());
+		sspRegInfo.setRoaming(s.getRoaming());
+		sspRegInfo.setSymId(s.getSymId());
+		sspRegInfo.setSspId(s.getSspId());
+		//sspRegInfoCore.setHashField(sspRegInfo.getHashField()); //????
+		
+		
+		if (sspRegInfo.getSymId()==null || sspRegInfo.getSymId().equals("")) {
 			coreRegistry.setOnline(this.isCoreOnline);
 			coreRegistry.setRepository(resourcesRepository);
 			symIdReg = coreRegistry.getSymbioteIdFromCore("",sspRegInfo);
@@ -296,7 +316,15 @@ public class InnkeeperRegistrationRequest {
 			//String symIdRes = new CoreRegistry(resourcesRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(r.getSymIdResource(),sspRegInfo);
 			coreRegistry.setOnline(this.isCoreOnline);
 			coreRegistry.setRepository(resourcesRepository);
-			String symIdRes = coreRegistry.getSymbioteIdFromCore(r.getSymIdResource(),r);
+			SspResource sspRes = new SspResource();
+			sspRes.setSspIdParent(r.getSspIdParent());
+			//sspRes.setSymIdParent(r.getSymIdParent());
+			sspRes.setSymIdParent(symIdReg);
+			log.error(">>>> r.getSspIdResource()="+r.getSspIdResource());
+			sspRes.setSspIdResource(r.getSspIdResource());
+			sspRes.setAccessPolicy(r.getAccessPolicySpecifier());
+			sspRes.setResource(r.getResource());
+			String symIdRes = coreRegistry.getSymbioteIdFromCore(r.getSymIdResource(),sspRes);
 			HashMap<String,String> symIdEntry = new HashMap<String,String>();
 
 			if (symIdRes!=null && r.getSymIdResource().equals("")) 
