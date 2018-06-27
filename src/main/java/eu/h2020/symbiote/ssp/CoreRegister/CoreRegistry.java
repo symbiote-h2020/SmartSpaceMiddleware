@@ -1,13 +1,10 @@
 package eu.h2020.symbiote.ssp.CoreRegister;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,20 +22,19 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.cloud.model.ssp.SspRegInfo;
-import eu.h2020.symbiote.core.cci.ResourceRegistryResponse;
 import eu.h2020.symbiote.core.cci.SdevRegistryRequest;
 import eu.h2020.symbiote.core.cci.SdevRegistryResponse;
 import eu.h2020.symbiote.core.cci.SspResourceRegistryRequest;
 import eu.h2020.symbiote.core.cci.SspResourceReqistryResponse;
+import eu.h2020.symbiote.model.cim.Device;
+import eu.h2020.symbiote.model.cim.Location;
 import eu.h2020.symbiote.model.cim.Resource;
+import eu.h2020.symbiote.model.cim.WGS84Location;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
-import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperRegistrationRequest;
-import eu.h2020.symbiote.ssp.innkeeper.model.InnkeeperResourceRegistrationRequest;
 import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
-import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
-import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
+import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 
 @Service
@@ -71,6 +67,9 @@ public class CoreRegistry {
 
 	@Autowired
 	AuthorizationService authorizationService;
+	
+	@Autowired
+	SessionsRepository sessionsRepository;
 
 
 	private static Log log = LogFactory.getLog(InnkeeperRestController.class);
@@ -101,9 +100,14 @@ public class CoreRegistry {
 	}
 
 	private SspRegInfo setSSPUrl(SspRegInfo sspRegInfo) {
-		SspRegInfo ret = sspRegInfo;
-		log.error("sspRegInfo.getPluginURL()="+sspRegInfo.getPluginURL());
-		String[] sep = sspRegInfo.getPluginURL().split("\\/");
+		SspRegInfo ret = sspRegInfo;		
+		ret.setPluginURL(setSSPUrlStr(sspRegInfo.getPluginURL()));
+		return ret;
+	}
+	
+	private String setSSPUrlStr(String pluginURL) {
+		String ret="";
+		String[] sep = pluginURL.split("\\/");
 		List<String> sepList = Arrays.asList(sep);
 		sep[2]=sspUrl;
 		String sepStr="";
@@ -114,9 +118,11 @@ public class CoreRegistry {
 			sepStr+=s+separator;
 			l++;
 		}
-		ret.setPluginURL(sepStr);
+		ret=sepStr;
 		return ret;
 	}
+	
+	
 	private SspRegInfo setSSPsymbioteID(SspRegInfo sspRegInfo) {
 		SspRegInfo ret = sspRegInfo;
 		sspRegInfo.setPluginId(sspName);
@@ -185,8 +191,28 @@ public class CoreRegistry {
 
 	}
 
-	private ResponseEntity<SspResourceReqistryResponse> registerResource(SspResource sspResource) {
+	@Value("${latitude}") 
+	double latitude;
+	@Value("${longitude}") 
+	double longitude;
+	@Value("${altitude}") 
+	double altitude;
+	
+	private Location getSSPLocation() {		
+		Location res = new WGS84Location(longitude,latitude,altitude,"",null);
+		/*
+		List<String> ll = new ArrayList<String>();
+		ll.add("This is the Resource Description");
+		res.setDescription(ll);
+		res.setName("SENSOR NAME");
+		*/		
+		return res;
+	}
+	
+	private ResponseEntity<SspResourceReqistryResponse> registerResource(SspResource sspResource) throws JsonProcessingException {
 
+		
+		SspResource localSspRes = sspResource;
 		String sdevId = sspResource.getSymIdParent();
 		if (sdevId !=null) if (!sdevId.equals("")){
 			String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs/"+sdevId+"/resources";
@@ -198,7 +224,28 @@ public class CoreRegistry {
 			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
 
 			Map<String,Resource> resMap = new HashMap<String,Resource>();
-			resMap.put(sspResource.getInternalIdResource(), sspResource.getResource());
+			
+
+						
+			// Assign Location on Resource
+			Device dd = (Device)(sspResource.getResource());	
+			dd.setLocatedAt(getSSPLocation());
+			sspResource.setResource(dd); // update location in data...
+			localSspRes.setResource(dd);
+			
+			
+			// assign Resource Interworking Service URL
+			SessionInfo s = sessionsRepository.findBySspId(sspResource.getSspIdParent());
+			localSspRes.getResource().setInterworkingServiceURL(setSSPUrlStr(s.getPluginURL()));
+			
+			String jsonInString = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(localSspRes.getResource());
+			
+			log.info("RESOURCE PAYLOAD:\n"+jsonInString);
+
+			
+			
+			
+			resMap.put(localSspRes.getInternalIdResource(),localSspRes.getResource());
 			SspResourceRegistryRequest sdevResourceRequest = new SspResourceRegistryRequest(resMap);
 			HttpEntity<SspResourceRegistryRequest> httpEntity = new HttpEntity<>(sdevResourceRequest, httpHeaders) ;
 			//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
@@ -234,6 +281,7 @@ public class CoreRegistry {
 		SspRegInfo sspRegInfo = new SspRegInfo();
 		sspRegInfo.setSymId(symId);
 		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs";
+		
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
