@@ -101,11 +101,13 @@ public class CoreRegistry {
 
 	private SspRegInfo setSSPUrl(SspRegInfo sspRegInfo) {
 		SspRegInfo ret = sspRegInfo;		
-		ret.setPluginURL(setSSPUrlStr(sspRegInfo.getPluginURL()));
+		ret.setPluginURL(setSSPUrlStr(null));
 		return ret;
 	}
 	
 	private String setSSPUrlStr(String pluginURL) {
+		return "http://"+sspUrl;
+		/*
 		String ret="";
 		String[] sep = pluginURL.split("\\/");
 		List<String> sepList = Arrays.asList(sep);
@@ -119,7 +121,8 @@ public class CoreRegistry {
 			l++;
 		}
 		ret=sepStr;
-		return ret;
+		return ret;		
+		*/
 	}
 	
 	
