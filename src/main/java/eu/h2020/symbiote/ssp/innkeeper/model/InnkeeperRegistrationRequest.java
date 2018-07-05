@@ -111,7 +111,7 @@ public class InnkeeperRegistrationRequest {
 			if (type.equals(InnkeeperRestControllerConstants.PLATFORM)){
 				sessionId = new Lwsp().generateSessionId();				
 				s.setsessionId(sessionId);
-				s.setSessionExpiration(new Timestamp(System.currentTimeMillis()));
+				s.setSessionExpiration(null);
 			}
 			
 			httpStatus=HttpStatus.OK;			

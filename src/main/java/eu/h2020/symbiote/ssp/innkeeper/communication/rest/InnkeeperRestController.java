@@ -116,8 +116,8 @@ public class InnkeeperRestController {
 	// PLATFORM REGISTRATION
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_PLATFORM_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> platform_resources(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
-		log.info("REGISTRATION MESSAGE:"+ payload);
-		return innkeeperRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.PLATFORM);			
+		log.info("PLATFORM RESOURCE REGISTRATION MESSAGE:"+ payload);
+		return innkeeperResourceRegistrationRequest.SspJoinResource(payload,InnkeeperRestControllerConstants.PLATFORM);
 	}
 
 
@@ -144,7 +144,7 @@ public class InnkeeperRestController {
 			switch (lwsp.get_mti()) {
 			case LwspConstants.REGISTER:
 				String decoded_message = lwsp.get_response();
-				ResponseEntity<Object> res = innkeeperResourceRegistrationRequest.SspJoinResource(decoded_message);
+				ResponseEntity<Object> res = innkeeperResourceRegistrationRequest.SspJoinResource(decoded_message,InnkeeperRestControllerConstants.SDEV);
 				String encodedResponse = lwsp.send_data(new ObjectMapper().writeValueAsString(res.getBody()));
 
 
@@ -155,7 +155,7 @@ public class InnkeeperRestController {
 
 		}else{	
 			// NO encryption
-			return innkeeperResourceRegistrationRequest.SspJoinResource(payload);
+			return innkeeperResourceRegistrationRequest.SspJoinResource(payload,InnkeeperRestControllerConstants.SDEV);
 		}
 
 

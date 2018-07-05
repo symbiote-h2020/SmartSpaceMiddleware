@@ -106,7 +106,7 @@ public class CoreRegistry {
 	}
 	
 	private String setSSPUrlStr(String pluginURL) {
-		return "http://"+sspUrl;
+		return "https://"+sspUrl;
 		/*
 		String ret="";
 		String[] sep = pluginURL.split("\\/");
@@ -181,7 +181,7 @@ public class CoreRegistry {
 				return restTemplate.exchange(endpoint, HttpMethod.POST,
 						httpEntity, SdevRegistryResponse.class);
 			}else {
-				log.info("UPDATE REGISTRATION: PUT");
+				log.info("SDEV UPDATE REGISTRATION: PUT");
 				log.info("updating symId = "+sspRegInfoCore.getSymId()+"...");
 				return restTemplate.exchange(endpoint, HttpMethod.PUT,
 						httpEntity, SdevRegistryResponse.class);
@@ -248,7 +248,7 @@ public class CoreRegistry {
 			
 			
 			
-			resMap.put(localSspRes.getInternalIdResource(),localSspRes.getResource());
+			resMap.put("1",localSspRes.getResource());
 			SspResourceRegistryRequest sdevResourceRequest = new SspResourceRegistryRequest(resMap);
 			HttpEntity<SspResourceRegistryRequest> httpEntity = new HttpEntity<>(sdevResourceRequest, httpHeaders) ;
 			//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
@@ -258,11 +258,29 @@ public class CoreRegistry {
 			log.info("[Resource registration] Http request to "+endpoint);
 
 			try {
-				ResponseEntity<SspResourceReqistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.POST,
-						httpEntity, SspResourceReqistryResponse.class);
-				log.info("RESPONSE HEADER:"+response.getHeaders());
-				log.info("RESPONSE BODY:"+response.getBody());
-				return response;
+				if (localSspRes.getResource().getId()==null) {
+					ResponseEntity<SspResourceReqistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.POST,
+							httpEntity, SspResourceReqistryResponse.class);
+					log.info("RESPONSE HEADER:"+response.getHeaders());
+					log.info("RESPONSE BODY:"+response.getBody());
+					return response;
+					
+				} 
+				
+				if (localSspRes.getResource().getId().equals("") ) {
+					ResponseEntity<SspResourceReqistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.POST,
+							httpEntity, SspResourceReqistryResponse.class);
+					log.info("RESPONSE HEADER:"+response.getHeaders());
+					log.info("RESPONSE BODY:"+response.getBody());
+					return response;
+				}else {
+					log.info("UPDATE REGISTRATION: PUT");
+					ResponseEntity<SspResourceReqistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.PUT,
+							httpEntity, SspResourceReqistryResponse.class);
+					log.info("RESPONSE HEADER:"+response.getHeaders());
+					log.info("RESPONSE BODY:"+response.getBody());
+					return response;
+				}
 
 			}catch (Exception e) {
 				log.error("[Resource registration] FAILED:"+ e);

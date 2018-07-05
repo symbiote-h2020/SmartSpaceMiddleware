@@ -90,7 +90,7 @@ public class InnkeeperResourceRegistrationRequest {
 	public Boolean isCoreOnline() {
 		return this.isCoreOnline;
 	}
-	public ResponseEntity<Object> SspJoinResource(String msg) throws JsonParseException, JsonMappingException, IOException, InvalidArgumentsException{
+	public ResponseEntity<Object> SspJoinResource(String msg, String type) throws JsonParseException, JsonMappingException, IOException, InvalidArgumentsException{
 
 
 		ResponseEntity<Object> responseEntity = null;
@@ -104,7 +104,12 @@ public class InnkeeperResourceRegistrationRequest {
 		SessionInfo s=sessionsRepository.findBySymId(sspResource.getSymIdParent());
 		// found Symbiote Id in Session Repository
 		if (s != null) {			
-			Date sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymIdParent()).getSessionExpiration();
+			
+			Date sessionExpiration = null;
+			if (type.equals(InnkeeperRestControllerConstants.SDEV)){
+				sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymIdParent()).getSessionExpiration();	
+			}
+			
 			InnkeeperResourceRegistrationResponse respSspResource = this.joinResource(sspResource,sessionExpiration);
 			switch (respSspResource.getResult()) {
 			case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
