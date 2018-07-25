@@ -17,8 +17,8 @@ public class InnkeeperRestControllerConstants {
     public static final String INNKEEPER_PLATFORM_JOIN_REQUEST_PATH = "/platform/"+INNKEEPER_JOIN_REQUEST_PATH;
     
     public static final String INNKEEPER_UNREGISTER_REQUEST_PATH = "/un"+INNKEEPER_REGISTER_REQUEST_PATH;
-    public static final String INNKEEPER_SDEV_UNREGISTER_REQUEST_PATH = "/un"+INNKEEPER_REGISTER_REQUEST_PATH;
-    public static final String INNKEEPER_PLATFORM_UNREGISTER_REQUEST_PATH = "/un"+INNKEEPER_REGISTER_REQUEST_PATH;
+    public static final String INNKEEPER_SDEV_UNREGISTER_REQUEST_PATH = "/sdev/"+"/un"+INNKEEPER_REGISTER_REQUEST_PATH;
+    public static final String INNKEEPER_PLATFORM_UNREGISTER_REQUEST_PATH = "/platform/"+"/un"+INNKEEPER_REGISTER_REQUEST_PATH;
 
     public static final String INNKEEPER_LIST_RESOURCES_REQUEST_PATH = "/list_resources";
     public static final String INNKEEPER_KEEP_ALIVE_REQUEST_PATH = "/keep_alive";

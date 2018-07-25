@@ -240,6 +240,12 @@ public class InnkeeperRestController {
 
 		}
 	}
+	
+	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_PLATFORM_UNREGISTER_REQUEST_PATH, method = RequestMethod.POST)
+	public ResponseEntity<Object> unregister_platofrm(@RequestBody String payload) throws IOException  {
+		return innkeeperRegistrationRequest.SspDelete(payload);		
+	}
+	
 
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_KEEP_ALIVE_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> keep_alive(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
