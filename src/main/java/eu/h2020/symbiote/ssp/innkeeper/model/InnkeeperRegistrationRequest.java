@@ -231,13 +231,24 @@ public class InnkeeperRegistrationRequest {
 			s = sessionsRepository.findBySymId(sspRegInfo.getSymId());
 		}
 		
+		
+	
+		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
+
+		if (s.getSessionExpiration()==null) {
+			log.info("NO session Expiration for this Entry, skip Keep Alive");
+			response.setResult("IGNORE");
+			String res = new ObjectMapper().writeValueAsString(response);
+			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
+
+			
+		}
+		
 		log.error("s="+s);
 		log.error("s.getSymId()		="+s.getSymId());
 		log.error("s.getSspId()		="+s.getSspId());
 		log.error("s.getPluginURL()	="+s.getPluginURL());
 		log.error("s.getRoaming()	="+s.getRoaming());
-		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
-
 		/*if (s==null) {			
 			log.error("ERROR1 - no session found");
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		

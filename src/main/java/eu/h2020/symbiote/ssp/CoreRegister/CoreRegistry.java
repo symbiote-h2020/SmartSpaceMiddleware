@@ -220,9 +220,10 @@ public class CoreRegistry {
 	private ResponseEntity<SspResourceReqistryResponse> registerResource(SspResource sspResource) throws JsonProcessingException {
 
 		
-		SspResource localSspRes = sspResource;
 		String sdevId = sspResource.getSymIdParent();
 		String currInterworkingServiceURL = sspResource.getResource().getInterworkingServiceURL();
+		String symIdParent = sspResource.getSymIdParent();
+
 		
 		ResponseEntity<SspResourceReqistryResponse> response = null;
 		if (sdevId !=null) if (!sdevId.equals("")){
@@ -242,26 +243,23 @@ public class CoreRegistry {
 			Device dd = (Device)(sspResource.getResource());	
 			dd.setLocatedAt(getSSPLocation());
 			sspResource.setResource(dd); // update location in data...
-			localSspRes.setResource(dd);
 			
 			
 			// assign Resource Interworking Service URL
 			SessionInfo s = sessionsRepository.findBySspId(sspResource.getSspIdParent());
-			localSspRes.getResource();			
-			localSspRes.getResource().setInterworkingServiceURL(setSSPUrlStr(s.getPluginURL()));
+			sspResource.getResource().setInterworkingServiceURL(setSSPUrlStr(s.getPluginURL()));
 			
+			sspResource.setSymIdParent(sspName);
 			
-			localSspRes.setSymIdParent(sspName);
-			
-			String jsonInString = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(localSspRes.getResource());
-			log.info("RESOURCE PAYLOAD:\n"+jsonInString);
+			//String jsonInString = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(localSspRes.getResource());
+			//log.info("RESOURCE PAYLOAD:\n"+jsonInString);
 
-			String jsonInStringSSPRes = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(localSspRes);
-			log.info("RESOURCE PAYLOAD SSP:\n"+jsonInStringSSPRes);
+			//String jsonInStringSSPRes = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(localSspRes);
+			//log.info("RESOURCE PAYLOAD SSP:\n"+jsonInStringSSPRes);
 			
 			
 			
-			resMap.put("1",localSspRes.getResource());
+			resMap.put("1",sspResource.getResource());
 			SspResourceRegistryRequest sdevResourceRequest = new SspResourceRegistryRequest(resMap);
 			HttpEntity<SspResourceRegistryRequest> httpEntity = new HttpEntity<>(sdevResourceRequest, httpHeaders) ;
 			//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
@@ -271,14 +269,14 @@ public class CoreRegistry {
 			log.info("[Resource registration] Http request to "+endpoint);
 			
 			try {
-				if (localSspRes.getResource().getId()==null) {
+				if (sspResource.getResource().getId()==null) {
 					response = restTemplate.exchange(endpoint, HttpMethod.POST,
 							httpEntity, SspResourceReqistryResponse.class);
 					log.info("RESPONSE HEADER:"+response.getHeaders());
 					log.info("RESPONSE BODY:"+response.getBody());					
 				} 
 				
-				if (localSspRes.getResource().getId().equals("") ) {
+				if (sspResource.getResource().getId().equals("") ) {
 					response = restTemplate.exchange(endpoint, HttpMethod.POST,
 							httpEntity, SspResourceReqistryResponse.class);
 					log.info("RESPONSE HEADER:"+response.getHeaders());
@@ -300,7 +298,9 @@ public class CoreRegistry {
 		}else{
 			log.info("SymId is null, return null");
 		}
-		localSspRes.getResource().setInterworkingServiceURL(currInterworkingServiceURL);
+		
+		sspResource.getResource().setInterworkingServiceURL(currInterworkingServiceURL);
+		sspResource.setSymIdParent(symIdParent);
 
 		return response;
 

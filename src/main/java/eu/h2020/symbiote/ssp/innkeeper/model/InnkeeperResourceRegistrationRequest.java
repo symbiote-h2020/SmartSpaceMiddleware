@@ -128,7 +128,9 @@ public class InnkeeperResourceRegistrationRequest {
 
 		s= sessionsRepository.findBySspId(sspResource.getSspIdParent());
 
-		if (s != null) {			
+		if (s != null) {
+			// If previous registration provides a symId, complete the sspResource payload filling also the symbioteId
+			sspResource.setSymIdParent(s.getSymId());
 			Date sessionExpiration = s.getSessionExpiration();					
 			InnkeeperResourceRegistrationResponse respSspResource = this.joinResource(sspResource,sessionExpiration);
 
