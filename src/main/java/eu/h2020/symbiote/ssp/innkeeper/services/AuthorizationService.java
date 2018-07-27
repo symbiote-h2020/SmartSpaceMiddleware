@@ -45,14 +45,14 @@ public class AuthorizationService {
     private String keystorePass;
     private Boolean securityEnabled;
 
-    private IComponentSecurityHandler componentSecurityHandler;
+    private IComponentSecurityHandler componentSecurityHandler;	
 
     public AuthorizationService(@Value("${ssp.id}") String sspId,
                                 @Value("${symbIoTe.component.username}") String componentOwnerName,
                                 @Value("${symbIoTe.component.password}") String componentOwnerPassword,
                                 @Value("${symbIoTe.localaam.url}") String aamAddress,
                                 @Value("${symbIoTe.component.clientId}") String clientId,
-                                @Value("${symbIoTe.component.keystore.path}") String keystoreName,
+                                @Value("${symbIoTe.innkeeper.keystore.path}") String keystoreName,
                                 @Value("${symbIoTe.component.keystore.password}") String keystorePass,
                                 @Value("${symbIoTe.aam.integration}") Boolean securityEnabled)
             throws SecurityHandlerException {

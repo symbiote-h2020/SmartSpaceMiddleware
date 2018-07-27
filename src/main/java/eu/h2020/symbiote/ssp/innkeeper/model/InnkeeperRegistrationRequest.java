@@ -90,7 +90,7 @@ public class InnkeeperRegistrationRequest {
 
 		SspRegInfo sspRegInfo =  new ObjectMapper().readValue(msg, SspRegInfo.class);
 
-		InnkeeperRegistrationResponse regResp = registry(sspRegInfo);		
+		InnkeeperRegistrationResponse regResp = registry(sspRegInfo, type);		
 		log.info("REGISTRATION INFO, type:"+type+", SSP registartion status:"+regResp.getResult());
 		switch (regResp.getResult()) {		
 		case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
@@ -139,12 +139,16 @@ public class InnkeeperRegistrationRequest {
 		return new ResponseEntity<Object>(response,responseHeaders,httpStatus);
 	}
 
-	public InnkeeperRegistrationResponse registry(SspRegInfo sspRegInfo) throws IOException {
+	public InnkeeperRegistrationResponse registry(SspRegInfo sspRegInfo, String type) throws IOException {
 		//TODO: implement checkCoreSymbioteIdRegistration with REAL Core interaction :-(
 		coreRegistry.setOnline(this.isCoreOnline);
 		coreRegistry.setRepository(sessionsRepository);
 		
-		String symIdFromCore = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo);
+		String symIdFromCore;
+		if (type==InnkeeperRestControllerConstants.PLATFORM)
+			symIdFromCore = "";
+		else
+			symIdFromCore = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo);
 
 		//null SymId from core == REJECT THE REQUEST
 		if (symIdFromCore==null) { 

@@ -113,7 +113,7 @@ public class InnkeeperRestController {
 		return innkeeperRegistrationRequest.SspRegister(null,payload,InnkeeperRestControllerConstants.PLATFORM);			
 	}
 
-	// PLATFORM REGISTRATION
+	// PLATFORM RESOURCE REGISTRATION
 	@RequestMapping(value = InnkeeperRestControllerConstants.INNKEEPER_PLATFORM_JOIN_REQUEST_PATH, method = RequestMethod.POST)
 	public ResponseEntity<Object> platform_resources(@RequestBody String payload) throws InvalidKeyException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidAlgorithmParameterException, JSONException, Exception {
 		log.info("PLATFORM RESOURCE REGISTRATION MESSAGE:"+ payload);
@@ -297,25 +297,6 @@ public class InnkeeperRestController {
 		for (ResourceInfo r : resourcesInfo) {
 			if (r.getAccessPolicySpecifier().getPolicyType() == AccessPolicyType.PUBLIC) {
 				SspResource sspRes = new SspResource();
-				//sspRes.setSspIdParent(r.getSspIdParent());
-				//sspRes.setSspIdResource(r.getSspIdResource());
-				//sspRes.setSymIdParent(r.getSymIdParent());
-				//sspRes.setInternalIdResource(r.getInternalIdResource());
-
-				/*QueryResourceResult queryRes= new QueryResourceResult();
-				queryRes.setPlatformId(sspName);
-				queryRes.setPlatformName(sspName);
-				queryRes.setName(r.getResource().getName());
-				queryRes.setId(r.getSymIdResource());
-				//queryRes.setDescription(r.getResource().getDescription().toString());
-				queryRes.setLocationName(locationName);
-				if (r.getResource() instanceof StationarySensor) {
-					StationarySensor ss = (StationarySensor) r.getResource();
-					List<String> list = ss.getObservesProperty().										
-					queryRes.setObservedProperties(list);
-					Property pippo = null;
-				}
-				 */
 
 				String resourceClass = r.getResource().getClass().toString();
 				log.info(resourceClass);
