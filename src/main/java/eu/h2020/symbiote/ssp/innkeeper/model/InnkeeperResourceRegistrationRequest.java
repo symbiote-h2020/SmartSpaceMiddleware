@@ -110,7 +110,7 @@ public class InnkeeperResourceRegistrationRequest {
 				sessionExpiration = sessionsRepository.findBySymId(sspResource.getSymIdParent()).getSessionExpiration();	
 			}
 			
-			InnkeeperResourceRegistrationResponse respSspResource = this.joinResource(sspResource,sessionExpiration);
+			InnkeeperResourceRegistrationResponse respSspResource = this.joinResource(sspResource,sessionExpiration,type);
 			switch (respSspResource.getResult()) {
 			case InnkeeperRestControllerConstants.REGISTRATION_REJECTED:
 				httpStatus = HttpStatus.BAD_REQUEST;
@@ -132,7 +132,7 @@ public class InnkeeperResourceRegistrationRequest {
 			// If previous registration provides a symId, complete the sspResource payload filling also the symbioteId
 			sspResource.setSymIdParent(s.getSymId());
 			Date sessionExpiration = s.getSessionExpiration();					
-			InnkeeperResourceRegistrationResponse respSspResource = this.joinResource(sspResource,sessionExpiration);
+			InnkeeperResourceRegistrationResponse respSspResource = this.joinResource(sspResource,sessionExpiration,type);
 
 			switch (respSspResource.getResult()) {
 
@@ -154,7 +154,7 @@ public class InnkeeperResourceRegistrationRequest {
 
 	}
 
-	public InnkeeperResourceRegistrationResponse joinResource(SspResource msg, Date currTime) throws InvalidArgumentsException, IOException {
+	public InnkeeperResourceRegistrationResponse joinResource(SspResource msg, Date currTime,String type) throws InvalidArgumentsException, IOException {
 		InnkeeperResourceRegistrationResponse res= null;
 		log.info(new ObjectMapper().writeValueAsString(msg));
 
@@ -162,7 +162,7 @@ public class InnkeeperResourceRegistrationRequest {
 		coreRegistry.setOnline(this.isCoreOnline);
 		coreRegistry.setRepository(resourcesRepository);
 
-		String symIdResource = coreRegistry.getSymbioteIdFromCore(msg.getResource().getId(),msg);
+		String symIdResource = coreRegistry.getSymbioteIdFromCore(msg.getResource().getId(),msg,type);
 
 		String results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
 

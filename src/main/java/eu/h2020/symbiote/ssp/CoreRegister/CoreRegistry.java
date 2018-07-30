@@ -31,6 +31,7 @@ import eu.h2020.symbiote.model.cim.Location;
 import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.model.cim.WGS84Location;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
+import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
@@ -217,16 +218,18 @@ public class CoreRegistry {
 		return res;
 	}
 	
-	private ResponseEntity<SspResourceReqistryResponse> registerResource(SspResource sspResource) throws JsonProcessingException {
-
-		
-		String sdevId = sspResource.getSymIdParent();
+	private ResponseEntity<SspResourceReqistryResponse> registerResource(SspResource sspResource, String type) throws JsonProcessingException {
+		String sdevId=null;
+		//if (type==InnkeeperRestControllerConstants.SDEV)
+		sdevId = sspResource.getSymIdParent();
+		//if (type==InnkeeperRestControllerConstants.PLATFORM)
+		//	sdevId = "";
 		String currInterworkingServiceURL = sspResource.getResource().getInterworkingServiceURL();
 		String symIdParent = sspResource.getSymIdParent();
 
 		
 		ResponseEntity<SspResourceReqistryResponse> response = null;
-		if (sdevId !=null) if (!sdevId.equals("")){
+		if (sdevId !=null) if (!sdevId.equals("") || type==InnkeeperRestControllerConstants.PLATFORM){
 			String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs/"+sdevId+"/resources";
 
 			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
@@ -378,9 +381,9 @@ public class CoreRegistry {
 
 
 
-	public String getSymbioteIdFromCore(String symId, Object msg) throws IOException {
+	public String getSymbioteIdFromCore(String symId, Object msg, String type) throws IOException {
 		ResponseEntity<?>  response = null;
-		log.info(new ObjectMapper().writeValueAsString(msg).toString());	
+		//log.info(new ObjectMapper().writeValueAsString(msg).toString());	
 
 		if (!this.isOnline)
 			return "";
@@ -433,10 +436,11 @@ public class CoreRegistry {
 			
 			SspResource sspResource = (SspResource)(msg);
 			//log.info("sspResource.getSspIdResource()="+sspResource.getSspIdResource());
-			response = registerResource(sspResource);
+			response = registerResource(sspResource,type);
 
 			//Response is null if the registration function got an exception, in this case I assume that the SSP is offline.
 			if (response == null) {
+				log.info("RESPONSE IS NULL");
 				return "";
 			}
 

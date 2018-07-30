@@ -119,6 +119,8 @@ public class InnkeeperRegistrationRequest {
 			s.setSymId(regResp.getSymId());								
 			s.setPluginId(sspRegInfo.getPluginId());			
 			s.setPluginURL(sspRegInfo.getPluginURL());
+			if (type==InnkeeperRestControllerConstants.SDEV)
+				s.setpsk(sspRegInfo.getHashField().getBytes());
 			if (s.getRoaming()==null) {
 				s.setRoaming(false);
 			}
@@ -145,10 +147,10 @@ public class InnkeeperRegistrationRequest {
 		coreRegistry.setRepository(sessionsRepository);
 		
 		String symIdFromCore;
-		if (type==InnkeeperRestControllerConstants.PLATFORM)
+		/*if (type==InnkeeperRestControllerConstants.PLATFORM)
 			symIdFromCore = "";
-		else
-			symIdFromCore = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo);
+		else*/
+			symIdFromCore = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo,type);
 
 		//null SymId from core == REJECT THE REQUEST
 		if (symIdFromCore==null) { 
@@ -213,6 +215,10 @@ public class InnkeeperRegistrationRequest {
 		// 1. update Session Expiration
 		// 2. check if SSP is online and update symbiote id for SDEV/PLAT and its Resources (Currently Mock)
 
+		
+		
+		
+		
 		Date currTime = new Timestamp(System.currentTimeMillis());
 
 		HttpHeaders responseHeaders = new HttpHeaders();
@@ -231,24 +237,18 @@ public class InnkeeperRegistrationRequest {
 			s = sessionsRepository.findBySymId(sspRegInfo.getSymId());
 		}
 		
+		String type=InnkeeperRestControllerConstants.PLATFORM;
 		
+		if (s.getSessionExpiration()!=null)
+			type=InnkeeperRestControllerConstants.SDEV;
 	
 		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
-
-		if (s.getSessionExpiration()==null) {
-			log.info("NO session Expiration for this Entry, skip Keep Alive");
-			response.setResult("IGNORE");
-			String res = new ObjectMapper().writeValueAsString(response);
-			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
-
-			
-		}
 		
-		log.error("s="+s);
-		log.error("s.getSymId()		="+s.getSymId());
-		log.error("s.getSspId()		="+s.getSspId());
-		log.error("s.getPluginURL()	="+s.getPluginURL());
-		log.error("s.getRoaming()	="+s.getRoaming());
+		log.info("s="+s);
+		log.info("s.getSymId()		="+s.getSymId());
+		log.info("s.getSspId()		="+s.getSspId());
+		log.info("s.getPluginURL()	="+s.getPluginURL());
+		log.info("s.getRoaming()	="+s.getRoaming());
 		/*if (s==null) {			
 			log.error("ERROR1 - no session found");
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		
@@ -294,16 +294,23 @@ public class InnkeeperRegistrationRequest {
 		//sspRegInfoCore.setHashField(sspRegInfo.getHashField()); //????
 		
 		
+		
+		
+		
 		if (sspRegInfo.getSymId()==null || sspRegInfo.getSymId().equals("")) {
 			coreRegistry.setOnline(this.isCoreOnline);
 			coreRegistry.setRepository(resourcesRepository);
-			symIdReg = coreRegistry.getSymbioteIdFromCore("",sspRegInfo);
-		}
-		//	symIdReg = new CoreRegistry(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration("",sspRegInfo); //generate new symId from Core
-		else {
+			
+			
+			if (type==InnkeeperRestControllerConstants.PLATFORM)
+				symIdReg = "";
+			else
+				symIdReg = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo,type);
+			
+		} else {
 			coreRegistry.setOnline(this.isCoreOnline);
 			coreRegistry.setRepository(resourcesRepository);
-			symIdReg = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo);
+			symIdReg = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo,type);
 		}
 			//symIdReg = new CoreRegistry(sessionsRepository,	isCoreOnline).checkCoreSymbioteIdRegistration(sspRegInfo.getSymId(),sspRegInfo);
 		//if I found my symId/SspId of SDEV/PLAT in the MongoDb session, update expiration time it
@@ -316,10 +323,14 @@ public class InnkeeperRegistrationRequest {
 				s.setSymId(symIdReg); // update SymId
 			}
 		}
-
-		//log.info("s.getSymIdParent()="+s.getSymId());
-		s.setSessionExpiration(currTime);
+		
+		if (s.getSessionExpiration()!=null)
+			s.setSessionExpiration(currTime);
+		else
+			log.info("NO session Expiration for this Entry, ignore exipiration time update");
+		
 		sessionsRepository.save(s);
+
 
 
 		//UPDATE Expiration time of Resources
@@ -334,12 +345,15 @@ public class InnkeeperRegistrationRequest {
 			SspResource sspRes = new SspResource();
 			sspRes.setSspIdParent(r.getSspIdParent());
 			//sspRes.setSymIdParent(r.getSymIdParent());
-			sspRes.setSymIdParent(symIdReg);
-			log.error(">>>> r.getSspIdResource()="+r.getSspIdResource());
+			
+			
+			log.info(">>>> r.getSspIdResource()="+r.getSspIdResource());
 			sspRes.setSspIdResource(r.getSspIdResource());
 			sspRes.setAccessPolicy(r.getAccessPolicySpecifier());
 			sspRes.setResource(r.getResource());
-			String symIdRes = coreRegistry.getSymbioteIdFromCore(r.getSymIdResource(),sspRes);
+			
+			String symIdRes = coreRegistry.getSymbioteIdFromCore(r.getSymIdResource(),sspRes,type);
+					
 			HashMap<String,String> symIdEntry = new HashMap<String,String>();
 
 			if (symIdRes!=null && r.getSymIdResource().equals("")) 
@@ -349,7 +363,18 @@ public class InnkeeperRegistrationRequest {
 			symIdEntry.put("sspIdResource", r.getSspIdResource());
 			updatedSymIdList.add(symIdEntry);
 			r.setSymIdParent(s.getSymId());
-			r.setSessionExpiration(currTime);
+			
+			if (s.getSessionExpiration()!=null) {
+				r.setSessionExpiration(currTime);
+			}else {
+				log.info("NO session Expiration for this Entry, skip Keep Alive for this Session");
+				response.setResult("IGNORE");
+				//String res = new ObjectMapper().writeValueAsString(response);
+				//return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
+				
+			}
+			
+			
 
 			resourcesRepository.save(r);
 
