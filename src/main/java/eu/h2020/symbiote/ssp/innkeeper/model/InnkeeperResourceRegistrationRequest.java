@@ -30,12 +30,14 @@ import eu.h2020.symbiote.model.cim.Capability;
 import eu.h2020.symbiote.model.cim.ComplexDatatype;
 import eu.h2020.symbiote.model.cim.Datatype;
 import eu.h2020.symbiote.model.cim.Device;
+import eu.h2020.symbiote.model.cim.Location;
 import eu.h2020.symbiote.model.cim.MobileSensor;
 import eu.h2020.symbiote.model.cim.Parameter;
 import eu.h2020.symbiote.model.cim.PrimitiveDatatype;
 import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.model.cim.Service;
 import eu.h2020.symbiote.model.cim.StationarySensor;
+import eu.h2020.symbiote.model.cim.WGS84Location;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.ssp.CoreRegister.CoreRegistry;
@@ -67,6 +69,19 @@ public class InnkeeperResourceRegistrationRequest {
 	
 	@Value("${innk.core.enabled:true}")
 	private Boolean isCoreOnline;
+	
+	
+	
+	
+	@Value("${latitude}") 
+	double latitude;
+	@Value("${longitude}") 
+	double longitude;
+	@Value("${altitude}") 
+	double altitude;
+	@Value("${ssp.location_name}")
+	String locationName;
+	
 
 	@Autowired
 	ResourcesRepository resourcesRepository;
@@ -100,7 +115,15 @@ public class InnkeeperResourceRegistrationRequest {
 		HttpStatus httpStatus = HttpStatus.OK;
 
 		SspResource sspResource =  new ObjectMapper().readValue(msg, SspResource.class);
+		Device dd = (Device)sspResource.getResource();
 
+		
+		
+		// Assign Location on Resource
+		if (dd.getLocatedAt()==null) {
+			Location loc = new WGS84Location(longitude,latitude,altitude,locationName,null);
+			dd.setLocatedAt(loc);
+		}
 		SessionInfo s=sessionsRepository.findBySymId(sspResource.getSymIdParent());
 		// found Symbiote Id in Session Repository
 		if (s != null) {			

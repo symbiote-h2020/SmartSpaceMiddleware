@@ -1,9 +1,7 @@
 package eu.h2020.symbiote.ssp.CoreRegister;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,7 +24,6 @@ import eu.h2020.symbiote.core.cci.SdevRegistryRequest;
 import eu.h2020.symbiote.core.cci.SdevRegistryResponse;
 import eu.h2020.symbiote.core.cci.SspResourceRegistryRequest;
 import eu.h2020.symbiote.core.cci.SspResourceReqistryResponse;
-import eu.h2020.symbiote.model.cim.Device;
 import eu.h2020.symbiote.model.cim.Location;
 import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.model.cim.WGS84Location;
@@ -239,15 +236,6 @@ public class CoreRegistry {
 			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
 
 			Map<String,Resource> resMap = new HashMap<String,Resource>();
-			
-
-						
-			// Assign Location on Resource
-			Device dd = (Device)(sspResource.getResource());
-			if (dd.getLocatedAt()==null)
-				dd.setLocatedAt(getSSPLocation());
-			sspResource.setResource(dd); // update location in data...
-			
 			
 			// assign Resource Interworking Service URL
 			SessionInfo s = sessionsRepository.findBySspId(sspResource.getSspIdParent());
