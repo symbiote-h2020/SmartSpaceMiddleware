@@ -1,10 +1,10 @@
 package eu.h2020.symbiote.ssp.CoreRegister;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+
+import eu.h2020.symbiote.ssp.constants.InnkeeperRestControllerConstants;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +31,6 @@ import eu.h2020.symbiote.model.cim.Location;
 import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.model.cim.WGS84Location;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
-import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
