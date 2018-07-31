@@ -315,6 +315,9 @@ public class CoreRegistry {
 
 		SspRegInfo sspRegInfo = new SspRegInfo();
 		sspRegInfo.setSymId(symId);
+		sspRegInfo.setPluginId(sspName);
+		sspRegInfo.setPluginURL("https://"+sspUrl);
+		
 		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs";
 		
 
