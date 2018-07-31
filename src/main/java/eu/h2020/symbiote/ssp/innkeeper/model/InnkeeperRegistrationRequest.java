@@ -302,11 +302,12 @@ public class InnkeeperRegistrationRequest {
 			coreRegistry.setRepository(resourcesRepository);
 			
 			
-			if (type==InnkeeperRestControllerConstants.PLATFORM)
+			/*if (type==InnkeeperRestControllerConstants.PLATFORM)
 				symIdReg = "";
 			else
 				symIdReg = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo,type);
-			
+			*/
+			symIdReg = coreRegistry.getSymbioteIdFromCore(sspRegInfo.getSymId(),sspRegInfo,type);
 		} else {
 			coreRegistry.setOnline(this.isCoreOnline);
 			coreRegistry.setRepository(resourcesRepository);
@@ -428,28 +429,21 @@ public class InnkeeperRegistrationRequest {
 
 		SessionInfo s = null;
 
+		s = sessionsRepository.findBySspId(sspRegInfo.getSspId());
+		/*
 		if (sspRegInfo.getSymId()==null || sspRegInfo.getSymId().equals("")) {
 			// symId is not useful or not available, use sspId
-			s = sessionsRepository.findBySspId(sspRegInfo.getSspId());
-
+			
 		}else {
-			// REMOVE USING SYMID
 			s = sessionsRepository.findBySymId(sspRegInfo.getSymId());
-			//REMOVE FROM CORE
-			coreRegistry.unregisterSDEV(sspRegInfo.getSymId());
 		}
-
+*/
 		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
 
 		//if I found my symId/SspId of SDEV/PLAT in the MongoDb session, delete it
 		if (s!=null) {
 
-			//Delete session
-			sessionsRepository.delete(s);
-
-
 			List<String> sspIdResourcesList = new ArrayList<String>();
-
 			//Delete Resources
 			List<ResourceInfo> resList= resourcesRepository.findBySspIdParent(s.getSspId());
 			for (ResourceInfo r : resList) {
@@ -474,9 +468,12 @@ public class InnkeeperRegistrationRequest {
 				}				
 			}
 
+			
+			
+			/*			
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
 			httpStatus=HttpStatus.OK;
-/*
+
 			//Delete AccessPolicies			
 			for (String sspIdCurr : sspIdResourcesList) {
 				//Optional<AccessPolicy> accessPolicy= accessPolicyRepository.findById(sspIdCurr);				
@@ -484,20 +481,30 @@ public class InnkeeperRegistrationRequest {
 
 			}
 */
+
+			//Delete session
+			
+			String symId=null;
+			if (s!=null)
+				if (s.getSymId()!=null)
+					symId=s.getSymId();
+			
+			coreRegistry.unregisterSDEV(symId); // remote delete
+			sessionsRepository.delete(s); // local delete
+			
+			
+						
 			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_OK);					
 			httpStatus=HttpStatus.OK;
-
-
-
 
 			return new ResponseEntity<Object>(
 					new ObjectMapper().writeValueAsString(response), 
 					responseHeaders,httpStatus);
 
-
-
-
 		}
+	
+		
+		
 
 		//DEFAULT: ERROR
 		response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);		

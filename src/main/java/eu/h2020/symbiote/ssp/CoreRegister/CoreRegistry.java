@@ -277,22 +277,21 @@ public class CoreRegistry {
 							httpEntity, SspResourceReqistryResponse.class);
 					log.info("RESPONSE HEADER:"+response.getHeaders());
 					log.info("RESPONSE BODY:"+response.getBody());					
-				} 
-				
-				if (sspResource.getResource().getId().equals("") ) {
-					response = restTemplate.exchange(endpoint, HttpMethod.POST,
-							httpEntity, SspResourceReqistryResponse.class);
-					log.info("RESPONSE HEADER:"+response.getHeaders());
-					log.info("RESPONSE BODY:"+response.getBody());
-					
-				}else {
-					log.info("UPDATE REGISTRATION: PUT");
-					response = restTemplate.exchange(endpoint, HttpMethod.PUT,
-							httpEntity, SspResourceReqistryResponse.class);
-					log.info("RESPONSE HEADER:"+response.getHeaders());
-					log.info("RESPONSE BODY:"+response.getBody());
-					
-				}
+				} else 
+					if (sspResource.getResource().getId().equals("") ) {
+						response = restTemplate.exchange(endpoint, HttpMethod.POST,
+								httpEntity, SspResourceReqistryResponse.class);
+						log.info("RESPONSE HEADER:"+response.getHeaders());
+						log.info("RESPONSE BODY:"+response.getBody());
+
+					}else {
+						log.info("UPDATE REGISTRATION: PUT");
+						response = restTemplate.exchange(endpoint, HttpMethod.PUT,
+								httpEntity, SspResourceReqistryResponse.class);
+						log.info("RESPONSE HEADER:"+response.getHeaders());
+						log.info("RESPONSE BODY:"+response.getBody());
+
+					}
 
 			}catch (Exception e) {
 				log.error("[Resource registration] FAILED:"+ e);
@@ -329,11 +328,12 @@ public class CoreRegistry {
 
 		//Create a smart device
 
-		log.info(endpoint);
+		log.info("[SDEV delete]: endpoint:"+endpoint);
 
-		try {			
+		try {
 			return restTemplate.exchange(endpoint, HttpMethod.DELETE,
 					httpEntity, SdevRegistryResponse.class);
+			
 		}catch (Exception e) {
 			log.error("[SDEV delete] SymId="+sspRegInfo.getSymId()+" FAILED:"+ e);
 		}		
@@ -341,11 +341,14 @@ public class CoreRegistry {
 
 	}
 
-	public ResponseEntity<SdevRegistryResponse> unregisterResource(ResourceInfo resourceInfo) {
+	public ResponseEntity<SdevRegistryResponse> unregisterResource(ResourceInfo resourceInfo) throws JsonProcessingException {
 
 
-		String sdevId = resourceInfo.getSspIdParent();
-		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/"+sdevId+"/resources";
+		String sdevId = resourceInfo.getSymIdParent();
+		
+		String resInfoStr= new ObjectMapper().writeValueAsString(resourceInfo.getResource());
+		log.info("PAYLOAD:"+resInfoStr);
+		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs/"+sdevId+"/resources";
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -353,12 +356,15 @@ public class CoreRegistry {
 		// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
 
 		Map<String,Resource> resMap = new HashMap<String,Resource>();
-		resMap.put(resourceInfo.getInternalIdResource(), resourceInfo.getResource());
+		resMap.put("1", resourceInfo.getResource());
 		SspResourceRegistryRequest sdevResourceRequest = new SspResourceRegistryRequest(resMap);
 		HttpEntity<SspResourceRegistryRequest> httpEntity = new HttpEntity<>(sdevResourceRequest, httpHeaders) ;
 		//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
-
+		
 		RestTemplate restTemplate = new RestTemplate();
+		String currInterworkingServiceURL = resourceInfo.getResource().getInterworkingServiceURL();
+		SessionInfo s = sessionsRepository.findBySspId(resourceInfo.getSspIdParent());
+		resourceInfo.getResource().setInterworkingServiceURL(setSSPUrlStr(s.getPluginURL()));
 
 		log.info("[Resource DELETE] Http request to"+endpoint);
 
@@ -372,6 +378,8 @@ public class CoreRegistry {
 			log.error("[Resource DELETE] FAILED:"+ e);
 
 		}
+		resourceInfo.getResource().setInterworkingServiceURL(currInterworkingServiceURL);
+
 		return null;
 
 
