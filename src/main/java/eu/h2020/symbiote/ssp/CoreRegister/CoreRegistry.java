@@ -243,8 +243,9 @@ public class CoreRegistry {
 
 						
 			// Assign Location on Resource
-			Device dd = (Device)(sspResource.getResource());	
-			dd.setLocatedAt(getSSPLocation());
+			Device dd = (Device)(sspResource.getResource());
+			if (dd.getLocatedAt()==null)
+				dd.setLocatedAt(getSSPLocation());
 			sspResource.setResource(dd); // update location in data...
 			
 			
