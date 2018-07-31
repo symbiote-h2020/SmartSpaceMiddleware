@@ -1,14 +1,18 @@
 package eu.h2020.symbiote.ssp.innkeeper.model;
 
-import java.io.IOException;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.h2020.symbiote.model.cim.*;
 import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
+import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
+import eu.h2020.symbiote.ssp.CoreRegister.CoreRegistry;
+import eu.h2020.symbiote.ssp.CoreRegister.SspIdUtils;
+import eu.h2020.symbiote.ssp.constants.InnkeeperRestControllerConstants;
+import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
+import eu.h2020.symbiote.ssp.model.InnkeeperResourceRegistrationResponse;
+import eu.h2020.symbiote.ssp.resources.SspResource;
+import eu.h2020.symbiote.ssp.resources.db.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,41 +23,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import eu.h2020.symbiote.cloud.model.internal.CloudResource;
-import eu.h2020.symbiote.model.cim.Actuator;
-import eu.h2020.symbiote.model.cim.Capability;
-import eu.h2020.symbiote.model.cim.ComplexDatatype;
-import eu.h2020.symbiote.model.cim.Datatype;
-import eu.h2020.symbiote.model.cim.Device;
-import eu.h2020.symbiote.model.cim.Location;
-import eu.h2020.symbiote.model.cim.MobileSensor;
-import eu.h2020.symbiote.model.cim.Parameter;
-import eu.h2020.symbiote.model.cim.PrimitiveDatatype;
-import eu.h2020.symbiote.model.cim.Resource;
-import eu.h2020.symbiote.model.cim.Service;
-import eu.h2020.symbiote.model.cim.StationarySensor;
-import eu.h2020.symbiote.model.cim.WGS84Location;
-import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
-import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
-import eu.h2020.symbiote.ssp.CoreRegister.CoreRegistry;
-import eu.h2020.symbiote.ssp.CoreRegister.SspIdUtils;
-import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
-import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
-import eu.h2020.symbiote.ssp.rap.odata.OwlApiHelper;
-import eu.h2020.symbiote.ssp.resources.SspResource;
-import eu.h2020.symbiote.ssp.resources.db.DbConstants;
-import eu.h2020.symbiote.ssp.resources.db.ParameterInfo;
-import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
-import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
-import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
-import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
-import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
-import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
+import java.io.IOException;
+import java.util.*;
 
 @Component
 public class InnkeeperResourceRegistrationRequest {

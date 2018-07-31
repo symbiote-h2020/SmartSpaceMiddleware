@@ -7,8 +7,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
+import eu.h2020.symbiote.ssp.constants.InnkeeperRestControllerConstants;
+import eu.h2020.symbiote.ssp.model.InnkeeperRegistrationResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,14 +19,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.h2020.symbiote.ssp.CoreRegister.CoreRegistry;
 import eu.h2020.symbiote.ssp.CoreRegister.SspIdUtils;
-import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
 import eu.h2020.symbiote.ssp.lwsp.Lwsp;
 //import eu.h2020.symbiote.ssp.resources.SspRegInfo;
@@ -90,7 +88,7 @@ public class InnkeeperRegistrationRequest {
 
 		SspRegInfo sspRegInfo =  new ObjectMapper().readValue(msg, SspRegInfo.class);
 
-		InnkeeperRegistrationResponse regResp = registry(sspRegInfo, type);		
+		InnkeeperRegistrationResponse regResp = registry(sspRegInfo, type);
 		log.info("REGISTRATION INFO, type:"+type+", SSP registartion status:"+regResp.getResult());
 		
 		log.info("message:"+msg);
