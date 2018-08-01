@@ -110,7 +110,7 @@ public class AuthorizationManager {
 
             }
 
-            if (checkedPolicies.size() == 1) {
+            if (checkedPolicies != null && checkedPolicies.size() == 1) {
                 return new AuthorizationResult("ok", true);
             } else {
                 return new AuthorizationResult("The stored resource access policy was not satisfied",
