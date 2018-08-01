@@ -188,7 +188,12 @@ public class AuthorizationManager {
              // building dummy access policy
             Map<String, IAccessPolicy> accessPolicyMap = new HashMap<>();
             // to get policies here
-            Optional<ResourceInfo> resourceInfo = resourcesRepository.findById(resourceId);
+            
+            Optional<ResourceInfo> resourceInfo = null;
+            resourceInfo = resourcesRepository.findBySymIdResource(resourceId);
+            if(resourceInfo == null)
+            		resourceInfo = resourcesRepository.findById(resourceId);
+            
             if(resourceInfo == null || !resourceInfo.isPresent()) {
                 log.error("No access policies for resource");
                 return ids;
