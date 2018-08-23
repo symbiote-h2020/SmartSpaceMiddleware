@@ -231,6 +231,7 @@ public class CoreRegistry {
 
 			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 			httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+			
 			log.info(httpHeaders);
 
 			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
@@ -244,8 +245,8 @@ public class CoreRegistry {
 			sspResource.setSymIdParent(sspName);
 			
 			//String jsonInString = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(localSspRes.getResource());
-			//log.info("RESOURCE PAYLOAD:\n"+jsonInString);
-
+			//
+			log.info(">>>>> RESOURCE PAYLOAD:\n"+new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sspResource.getResource()));
 			//String jsonInStringSSPRes = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(localSspRes);
 			//log.info("RESOURCE PAYLOAD SSP:\n"+jsonInStringSSPRes);
 			
@@ -436,6 +437,9 @@ public class CoreRegistry {
 			
 			SspResource sspResource = (SspResource)(msg);
 			//log.info("sspResource.getSspIdResource()="+sspResource.getSspIdResource());
+			
+			log.info("["+type+"]RESOURCE:"+new ObjectMapper().writeValueAsString(sspResource));
+			
 			response = registerResource(sspResource,type);
 
 			//Response is null if the registration function got an exception, in this case I assume that the SSP is offline.
