@@ -21,7 +21,7 @@
 #include <ArduinoJson.h>
 #include <RestClient.h>
 #include <Crypto.h>
-#include <Hash.h>
+//#include <Hash.h>
 #include <sha1.h> // please be sure to use the forked version at https://github.com/bbx10/Cryptosuite
 #include "base64.h"
 #include <EEPROM.h>
@@ -45,10 +45,11 @@
 // thought to be a 4 bytes identifier and 12 HEX byte
 // like this: sym-00112233445566778899aabb
 #define FLASH_LSP_START_SSPID		0
-#define FLASH_LSP_END_SSPID			31
+#define FLASH_LSP_END_SSPID			22
 // should be 16 byte
 #define FLASH_LSP_START_PREV_DK1	32
-#define FLASH_LSP_END_PREV_DK1		47
+	//end address is not inclusive
+#define FLASH_LSP_END_PREV_DK1		48
 
 
 #define ENDIAN_SWAP_32(l) ((l>>24) |((l>>16)<<8)&0xff00 | ((l>>8)<<16)&0xff0000 | (l << 24)) 

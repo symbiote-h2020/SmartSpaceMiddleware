@@ -83,22 +83,39 @@ symAgent::symAgent(unsigned long keep_alive, String description, bool isRoaming,
 
 
 String symAgent::getSymIdFromFlash() {
-	String tmpID = "";
-	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
-	for (uint8_t i = FLASH_AGENT_START_SYMID; i < FLASH_AGENT_END_SYMID; i++) {
-		tmpID += String((char)EEPROM.read(i));
-	}
-	PI("Read this SYM-ID from flash: ");
-	P(tmpID);
-	EEPROM.end();
-	if (tmpID != "ffffffffffffffffffffffffffffffffffffffffffffffff") {
-		//valid sym-id
-		P("Valid sym-id!");
-		return tmpID;
-	} else {
-		P("No symId found in flash");
-		return "";
-	}
+	if (_roaming) {
+		String tmpID = "";
+		EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
+		for (uint8_t i = FLASH_AGENT_START_SYMID; i < FLASH_AGENT_END_SYMID; i++) {
+			tmpID += String((char)EEPROM.read(i));
+		}
+		PI("Read this SYM-ID from flash: ");
+		P(tmpID);
+
+		uint8_t byteCheck = ((uint8_t)EEPROM.read(FLASH_AGENT_SYMID_SHA1_CHECK_BYTE));
+		PI("Read this code-Check from flash: ");
+		P(byteCheck);
+		EEPROM.end();
+
+		//calculate SHA1 of the symId
+		Sha1Class sha1;
+		sha1.init();
+		sha1.print(tmpID);
+		uint8_t dataout[SHA1_KEY_SIZE];
+		memcpy(dataout, sha1.result(), SHA1_KEY_SIZE);
+		PI("Calculate this code-Check from flash: ");
+		P(dataout[0]);
+		
+		if (dataout[0] == byteCheck) {
+			//valid sym-id
+			P("Valid sym-id!");
+			return tmpID;
+		} else {
+			P("No symId found in flash");
+			return "";
+		}
+	} else return "";
+	
 }
 
 void symAgent::saveIdInFlash() {
@@ -109,17 +126,29 @@ void symAgent::saveIdInFlash() {
 		EEPROM.write(i, _symId[j]);
 		j++;
 	}
+
+	//calculate SHA1 of the symId
+	Sha1Class sha1;
+	sha1.init();
+	sha1.print(_symId);
+	uint8_t dataout[SHA1_KEY_SIZE];
+	memcpy(dataout, sha1.result(), SHA1_KEY_SIZE);
+	// save only the first byte
+	EEPROM.write(FLASH_AGENT_SYMID_SHA1_CHECK_BYTE, dataout[0]);
+
+
 	EEPROM.commit();
 	EEPROM.end();
 #ifdef DEBUG_SYM_CLASS
 	String tmpID = "";
 	EEPROM.begin(FLASH_MEMORY_RESERVATION_AGENT);
 	for (uint8_t i = FLASH_AGENT_START_SYMID; i < FLASH_AGENT_END_SYMID; i++) {
-		tmpID += String(EEPROM.read(i), HEX);
+		//tmpID += String(EEPROM.read(i), HEX);
+		tmpID += (char)EEPROM.read(i);
 	}
-	PI("Read back SYM-ID from flash: ");
+	PI("Read back SYM-ID from flash:\t");
 	P(tmpID);
-	PI("What I expect:");
+	PI("What I expect:\t\t\t");
 	P(_symId);
 	EEPROM.end();
 #endif
@@ -141,9 +170,9 @@ void symAgent::forceSymIdInFlash(String value) {
 	for (uint8_t i = FLASH_AGENT_START_SYMID; i < FLASH_AGENT_END_SYMID; i++) {
 		tmpID += String(EEPROM.read(i), HEX);
 	}
-	PI("Read back SYM-ID from flash: ");
+	PI("Read back SYM-ID from flash:\t");
 	P(tmpID);
-	PI("What I expect:");
+	PI("What I expect:\t\t\t");
 	P(_symId);
 	EEPROM.end();
 #endif
@@ -454,11 +483,13 @@ void symAgent::setResource(String rapRequest) {
 void symAgent::subscribe()
 {
 	_subscribe = true;
+	_server->send(200, "application/json", "OK");
 }
 
 void symAgent::unsubscribe()
 {
 	_subscribe = false;
+	_server->send(200, "application/json", "OK");
 }
 
 void symAgent::getResource() {
@@ -678,15 +709,16 @@ int symAgent::registry()
  		}
 	*/
  		//read from flash if there is stored a valid symId
-	//_symId = getSymIdFromFlash();
- 	_symId = ""; ///// TODO FIXME
-	if (_symId == "") _firstTimeEverConnect = true;
-	else _firstTimeEverConnect = false;
+	_symId = getSymIdFromFlash();
+ 	//_symId = ""; ///// TODO FIXME
+	//if (_symId == "") _firstTimeEverConnect = true;
+	//else _firstTimeEverConnect = false;
 	//_firstTimeEverConnect = false;
 	_root["symId"] = _symId;
 	_root["pluginId"] = _mac;
 	_root["sspId"] = "";
-	_root["roaming"] = false;
+	if (_roaming == true) _root["roaming"] = true;
+	else _root["roaming"] = false;
 	_internalId = _mac;
 	String urlString = "http://" + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]) + "/rap/v1/request";
 	_root["pluginURL"] = urlString;
@@ -768,15 +800,15 @@ int symAgent::registry()
 		} else if (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED" || _rootClearResp["result"].as<String>() == "OFFLINE") {
 			P("JOIN OK");
 			_regExpiration = _rootClearResp["registrationExpiration"].as<unsigned int>();
-			if (_symId == "" || _symId == _rootClearResp["symId"].as<String>()) {
+			//if (_symId == "" || _symId == _rootClearResp["symId"].as<String>()) {
 				// everything ok
 				P("JOIN SYMID OK");
 				_symId = _rootClearResp["symId"].as<String>();
 				_symIdInternal = _rootClearResp["sspId"].as<String>();
-			} else {
-				P("JOIN MISMATCH");
-				return ERR_SYMID_MISMATCH_FROM_JOIN;
-			}
+			///} else {
+				//P("JOIN MISMATCH");
+				//return ERR_SYMID_MISMATCH_FROM_JOIN;
+			//}
 		} else {
 			P("JOIN RESPONSE UNKNOWN");
 			return ERR_UNKNOWN_RESPONSE_FROM_JOIN;
@@ -1173,7 +1205,7 @@ unsigned long symAgent::getKeepAlive()
 int symAgent::sendKeepAlive(String& response)
 {
 	P("KEEPALIVE");
-	P("Remember to change if needed the meaning of id field");
+	//P("Remember to change if needed the meaning of id field");
 	KEEPALIVE_LED_ON
 	delay(50);
 	_jsonBuff.clear();
@@ -1186,8 +1218,8 @@ int symAgent::sendKeepAlive(String& response)
 	String tempJsonPacket = "";
 	_root.printTo(tempClearData);
 #if DEBUG_SYM_CLASS == 1
-		_root.prettyPrintTo(Serial);
-		P(" ");
+		//_root.prettyPrintTo(Serial);
+		//P(" ");
 #endif
 	/*
 		create a JSON like this:
@@ -1224,8 +1256,8 @@ int symAgent::sendKeepAlive(String& response)
 		    		return ERR_PARSE_JSON;
 				}
 		#if DEBUG_SYM_CLASS == 1
-				_rootCryptResp.prettyPrintTo(Serial);
-				P("");
+				//_rootCryptResp.prettyPrintTo(Serial);
+				//P("");
 		#endif
 				_security->decryptData( _rootCryptResp["data"].as<String>(), tempClearData);
 				_jsonBuff.clear();
@@ -1246,6 +1278,10 @@ int symAgent::sendKeepAlive(String& response)
 					P("KEEP-ALIVE OK");
 					if (_rootClearResp["result"].as<String>() == "OK") {
 						// maybe the innkeeper wants to update our symId?
+						if (_rootClearResp["symId"].as<String>() != _symId) {
+							_symId = _rootClearResp["symId"].as<String>();
+							P("symId updated!");
+						} 
 						JsonArray& updateSymIdArray = _rootClearResp["updatedSymId"];
 						for (uint8_t i = 0; i < updateSymIdArray.size(); i++) {
 							// scan the element of the array
@@ -1254,20 +1290,28 @@ int symAgent::sendKeepAlive(String& response)
 								// a new symIdResource is going to be assigned
 								String tmpSSPIdRes = updatedSymIdJSON["sspIdResource"].as<String>();
 								if (_sspIdSensorResource == tmpSSPIdRes) {
-									P("NEW SYMID FOUND!\nOLD\t=>\tNEW");
-									PI(_symIdSensorResource);
-									PI("\t=>\t");
-									P(updatedSymIdJSON["symIdResource"].as<String>());
-									_symIdSensorResource = updatedSymIdJSON["symIdResource"].as<String>();
-									somethingChanged = true;
+									// there is a match in the sspi of the resource
+									if (_symIdSensorResource != updatedSymIdJSON["symIdResource"].as<String>()) {
+										// there is a new symId for that resource
+										P("NEW SYMID FOUND!\nOLD\t=>\tNEW");
+										PI(_symIdSensorResource);
+										PI("\t=>\t");
+										P(updatedSymIdJSON["symIdResource"].as<String>());
+										_symIdSensorResource = updatedSymIdJSON["symIdResource"].as<String>();
+										somethingChanged = true;
+									}
 								}
 								if (_sspIdActuatorResource == tmpSSPIdRes) {
-									P("NEW SYMID FOUND!\nOLD\t=>\tNEW");
-									PI(_symIdActuatorResource);
-									PI("\t=>\t");
-									P(updatedSymIdJSON["symIdResource"].as<String>());
-									_symIdActuatorResource = updatedSymIdJSON["symIdResource"].as<String>();
-									somethingChanged = true;
+									// there is a match in the sspi of the resource
+									if (_symIdActuatorResource != updatedSymIdJSON["symIdResource"].as<String>()) {
+										// there is a new symId for that resource
+										P("NEW SYMID FOUND!\nOLD\t=>\tNEW");
+										PI(_symIdActuatorResource);
+										PI("\t=>\t");
+										P(updatedSymIdJSON["symIdResource"].as<String>());
+										_symIdActuatorResource = updatedSymIdJSON["symIdResource"].as<String>();
+										somethingChanged = true;
+									}
 								}
 							}
 						}
@@ -1281,7 +1325,7 @@ int symAgent::sendKeepAlive(String& response)
 				}
 				if (_subscribe) {
 					String rapData = getResourceAsString();
-					statusCode = _rest_client->post(RAP_PATH, rapData.c_str(), &resp);
+					statusCode = _rest_client->post(RAP_NOTIFICATION_PATH, rapData.c_str(), &resp);
 				}
 				keepAlive_triggered = false;
 				KEEPALIVE_LED_OFF

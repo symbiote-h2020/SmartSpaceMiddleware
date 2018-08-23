@@ -27,14 +27,14 @@ String readTemp()
 
 String readPr()
 {
-    // return in kPa
+  // return in kPa
   return String(baro.getPressure() * 0.01) + " mBar";
 }
 
 bool setRed(int in)
 {
-  uint32_t color; 
-  for(int i=0;i<NUMPIXELS;i++) {
+  uint32_t color;
+  for (int i = 0; i < NUMPIXELS; i++) {
     color = pixels.getPixelColor(i);
     //set red color in the RGB 32 bit color variable
     color = ((color & 0xFF00FFFF) | (in << 16));
@@ -46,8 +46,8 @@ bool setRed(int in)
 
 bool setGreen(int in)
 {
-  uint32_t color; 
-  for(int i=0;i<NUMPIXELS;i++) {
+  uint32_t color;
+  for (int i = 0; i < NUMPIXELS; i++) {
     color = pixels.getPixelColor(i);
     //set red color in the RGB 32 bit color variable
     color = ((color & 0xFFFF00FF) | (in << 8));
@@ -59,8 +59,8 @@ bool setGreen(int in)
 
 bool setBlue(int in)
 {
-  uint32_t color; 
-  for(int i=0;i<NUMPIXELS;i++) {
+  uint32_t color;
+  for (int i = 0; i < NUMPIXELS; i++) {
     color = pixels.getPixelColor(i);
     //set red color in the RGB 32 bit color variable
     color = ((color & 0xFFFFFF00) | (in));
@@ -76,7 +76,7 @@ Property propertyPointer[2] = {Property("temperature", "nc", &readTemp), Propert
 Parameter paramPointer[3] = {Parameter("r", "xsd:unsignedByte", "0", "255", &setRed), Parameter("g", "xsd:unsignedByte", "0", "255", &setGreen), Parameter("b", "xsd:unsignedByte", "0", "255", &setBlue)};
 
 Capability c1("RGBCapability", 3, paramPointer);
-  //    internalID, name, url, capability_number, Capability* Class, observesProperty_number, Property* Class
+//    internalID, name, url, capability_number, Capability* Class, observesProperty_number, Property* Class
 Semantic s1("SDEV", 1, &c1, 2, propertyPointer);
 
 symAgent sdev1(120000, "RGB Leds HAT", false, &s1);
@@ -85,6 +85,28 @@ extern volatile boolean keepAlive_triggered;
 extern NTPClient timeClient;
 Metro registrationMetro = Metro();
 int join_success = 0;
+
+void restartSdev() {
+  join_success = 0;
+  if (sdev1.begin() == true) {
+    int joinresp = sdev1.registry();
+    if (joinresp < 300 and joinresp >= 200) {
+      join_success = 1;
+    } else {
+      join_success = 0;
+      Serial.println("Error in JOIN message");
+    }
+    sdev1.join();
+    // if 0 no RegExpiration
+    if (sdev1.getRegExpiration() != 0) {
+      Serial.print("\nREG expiration: ");
+      Serial.println(sdev1.getRegExpiration());
+      registrationMetro.interval(floor(sdev1.getRegExpiration() * 0.9));
+    }
+  }
+  else Serial.print("Failed!");
+  if (join_success) Serial.println("\nJoin success!");
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -96,10 +118,10 @@ void setup() {
   Serial.println("Start...");
   pixels.begin(); // This initializes the NeoPixel library
   if (sdev1.begin() == true) {
-  int joinresp = sdev1.registry();
-  if (joinresp < 300 and joinresp >= 200) {
-    join_success = 1;
-  } else {
+    int joinresp = sdev1.registry();
+    if (joinresp < 300 and joinresp >= 200) {
+      join_success = 1;
+    } else {
       join_success = 0;
       Serial.println("Error in JOIN message");
     }
@@ -119,34 +141,33 @@ void setup() {
   Serial.print("Temperature:\t");
   Serial.println(readTemp());
   if (join_success) Serial.println("\nJoin success!");
-  delay(5000);
-  sdev1.TestelaborateQuery(tmpTestJson2);
-  delay(3000);
-  sdev1.TestelaborateQuery(tmpTestJson3);
+  //delay(5000);
+  //sdev1.TestelaborateQuery(tmpTestJson2);
+  //delay(3000);
+  //sdev1.TestelaborateQuery(tmpTestJson3);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   String resp;
-  
+
   delay(10);
-  if (keepAlive_triggered && join_success == 1){
+  if (keepAlive_triggered && join_success == 1) {
     if (timeClient.forceUpdate()) {
-      Serial.println("NTP update OK");
+      //Serial.println("NTP update OK");
     } else {
-      Serial.println("NTP update KO");
+      //Serial.println("NTP update KO");
     }
-    //if (count == 3) {
-      //sdev1.unregistry();
-      //keepAlive_triggered = false;
-      //join_success = 0;
-    //}
-    //if (count < 3) {
-      int sCode = sdev1.sendKeepAlive(resp);
-      Serial.print("Keep-Alive code: ");
-      Serial.println(sCode);
-      //count++;
-    //}    
+    int sCode = sdev1.sendKeepAlive(resp);
+    Serial.print("Keep-Alive code: ");
+    Serial.println(sCode);
+      // keep trace of the failed keepalive
+    if (sCode >= 300) count++;
+    else count = 0;
+    if (count > 9) {
+      Serial.print("Too many keep-alive failed, restarting SDEV...");
+      restartSdev();
+    }
   }
   sdev1.handleSSPRequest();
 }

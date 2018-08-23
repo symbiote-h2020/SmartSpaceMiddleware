@@ -113,7 +113,7 @@ void lsp::printBuffer(uint8_t* buff, uint8_t len, String label) {
 
 
 void lsp::calculateDK1(uint8_t num_iterations) {
-	P("\n\nStart calculating DK1 key....");
+	P("\nStart calculating DK1 key....");
 	// search for a valid key in flash, if not found _dk1 and _prevDk1 are not populated,
 	// otherwise get _dk1 and  
 	if (_kdf == "PBKDF2") {
@@ -215,13 +215,13 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 		}
 		_iv = _root["iv"].as<String>();
 		String tmpConvString = _root["nonce"].as<String>();
-		PI("DEBUG: GWnonce(STRING)=");
-		P(tmpConvString);
+		//PI("DEBUG: GWnonce(STRING)=");
+		//P(tmpConvString);
 		_GWNonce = HEX2Int(tmpConvString);
-		PI("DEBUG: GWnonce=");
-		P(_GWNonce);
-		PI("DEBUG: iv=");
-		P(_iv);
+		//PI("DEBUG: GWnonce=");
+		//P(_GWNonce);
+		//PI("DEBUG: iv=");
+		//P(_iv);
 		//_GWNonce = _root["nonce"].as<String>().toInt();
 		if (_iv != "") {
 			// we need to use the init vector for the key calculation
@@ -247,10 +247,10 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 			}
 */
 			String sn = _root["sn"].as<String>();
-			P("SEQUENCE NUMBER GOT(String):");
-			P(sn);
-			PI("SEQUENCE NUMBER GOT(INT):");
-			Serial.println(HEX2Int(sn), HEX);
+			//P("SEQUENCE NUMBER GOT(String):");
+			//P(sn);
+			//PI("SEQUENCE NUMBER GOT(INT):");
+			//Serial.println(HEX2Int(sn), HEX);
 			if (HEX2Int(sn) == (_sn+1)) {
 				// everything ok
 				// Increment the _sn index of 1 unit to match with the 
@@ -266,11 +266,11 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 				// save the new GWnonce
 				//_GWNonce = gwnonce.toInt();
 				String tmpConvString = _root["nonce"].as<String>();
-				PI("DEBUG: GWnonce(STRING)=");
-				P(tmpConvString);
+				//PI("DEBUG: GWnonce(STRING)=");
+				//P(tmpConvString);
 				_GWNonce = HEX2Int(tmpConvString);
-				PI("DEBUG: GWnonce=");
-				P(_GWNonce);
+				//PI("DEBUG: GWnonce=");
+				//P(_GWNonce);
 				String authn = _root["authn"].as<String>();
 				String sign = _root["sign"].as<String>();
 				String decrypted;
@@ -376,7 +376,8 @@ void lsp::getContextFromFlash() {
 	String tmpSSPId = "";
 	EEPROM.begin(FLASH_MEMORY_RESERVATION);
 	for (uint8_t i = FLASH_LSP_START_SSPID; i < FLASH_LSP_END_SSPID; i++) {
-		tmpSSPId += String(EEPROM.read(i), HEX);
+		//tmpSSPId += String(EEPROM.read(i), HEX);
+		tmpSSPId += (char)EEPROM.read(i);
 	}
 	PI("Read this SSPId from flash: ");
 	P(tmpSSPId);
@@ -408,10 +409,10 @@ void lsp::saveContextInFlash() {
 	for (uint8_t i = FLASH_LSP_START_SSPID; i < FLASH_LSP_END_SSPID; i++) {
 		EEPROM.write(i, _currentSSPId.charAt(j));
 		j++;
-		if(j >= _currentSSPId.length()) {
-			P("WARN: wrote less character than expect in SSPid");
-			break;
-		}
+		//if(j > _currentSSPId.length()) {
+		//	P("WARN: wrote less character than expect in SSPid");
+		//	break;
+		//}
 	}
 	for (uint8_t i = FLASH_LSP_START_PREV_DK1; i < FLASH_LSP_END_PREV_DK1; i++) {
 			EEPROM.write(i,_dk1[i-FLASH_LSP_START_PREV_DK1]);
@@ -423,11 +424,12 @@ void lsp::saveContextInFlash() {
 	String tmpSSPId = "";
 	EEPROM.begin(FLASH_MEMORY_RESERVATION);
 	for (uint8_t i = FLASH_LSP_START_SSPID; i < FLASH_LSP_END_SSPID; i++) {
-		tmpSSPId += String(EEPROM.read(i), HEX);
+		//tmpSSPId += String(EEPROM.read(i), HEX);
+		tmpSSPId += (char)EEPROM.read(i);
 	}
-	PI("Test flash data...\nSSPid from flash: ");
+	PI("**TEST FLASH DATA***\nSSPid from flash:\t");
 	P(tmpSSPId);
-	PI("I expect: ");
+	PI("I expect\t\t");
 	P(_currentSSPId);
 	uint8_t tmpDK1[AES_KEY_LENGTH];
 	for (uint8_t i = FLASH_LSP_START_PREV_DK1; i < FLASH_LSP_END_PREV_DK1; i++) {
@@ -436,7 +438,7 @@ void lsp::saveContextInFlash() {
 	P("GOT this key from flash:");
 	printBuffer(tmpDK1, sizeof(tmpDK1), "prev_DK1(from flash)");
 	P("I expect:");
-	printBuffer(_dk1, sizeof(_dk1), "DK1(as _dk1)");
+	printBuffer(_dk1, sizeof(_dk1), "DK1(as _dk1)\t");
 #endif
 }
 
@@ -449,13 +451,15 @@ String lsp::getHashOfIdentity(String id) {
 	if (_lastSSPId == "") return "00000000000000000000";
 	else {
 		String tmpString = id;
-		for (uint8_t i = 0; i < AES_KEY_LENGTH; i++) tmpString = String(_prevDk1[i], HEX); 
+		for (uint8_t i = 0; i < AES_KEY_LENGTH; i++) tmpString += String(_prevDk1[i], HEX); 
+		PI("This is (sym-id||prevDK1): ");
+		P(tmpString);
 		sha1.init();
 		sha1.print(tmpString);
 		uint8_t dataout[SHA1_KEY_SIZE];
 		memcpy(dataout, sha1.result(), SHA1_KEY_SIZE);
 		String retString = "";
-		for (uint8_t i = 0; i < SHA1_KEY_SIZE; i++) retString = String(dataout[i], HEX);
+		for (uint8_t i = 0; i < SHA1_KEY_SIZE; i++) retString += String(dataout[i], HEX);
 		PI("Got this SHA-1(sym-id||prevDK1): "); 
 		P(retString);
 		return retString;
@@ -536,7 +540,7 @@ uint8_t lsp::sendAuthN() {
 	//"authn": <			     b64 ( ENC_dk1 ( SHA-1(HEX_STRING(SDEVnonce)||HEX_STRING(GWnonce))  || HEX_STRING(sn) ) )  >
 	//"sign":  <b64( SHA-1-HMAC_dk2( ENC_dk1 ( SHA-1(HEX_STRING(SDEVnonce)||HEX_STRING(GWnonce))  || HEX_STRING(sn) ) ) )>
 
-	P("\nEnter sendAuthN\n*********************\n");
+	P("\nEnter sendAuthN");
 	String resp = "";
 	if (WiFi.status() == WL_CONNECTED) {
 		_jsonBuff.clear();
@@ -763,9 +767,6 @@ void lsp::cryptData(String in, String& out) {
 	//printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
 	base64 b64enc;
 	String encoded = b64enc.encode(enciphered, encrypted_size, false);
-
-
-	
 	out = encoded;
 }
 
@@ -803,8 +804,8 @@ void lsp::decrypt(unsigned char* crypted, uint8_t cryptedSize, String& output) {
   		output += String((char)deciphered[i]);
   	} 
   	output = output.substring(0,output.lastIndexOf("}")+1);
-  	PI("String decrypted: ");
-  	P(output);
+  	//PI("String decrypted: ");
+  	//P(output);
 
 }
 

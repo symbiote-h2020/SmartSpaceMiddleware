@@ -44,11 +44,12 @@
 //#define FLASH_LSP_START_ADDR    0
 // thought to be a 4 bytes identifier and 12 HEX byte
 // like this: sym-00112233445566778899aabb
-#define FLASH_LSP_START_SSPID   0
-#define FLASH_LSP_END_SSPID     31
+//#define FLASH_LSP_START_SSPID   0
+//#define FLASH_LSP_END_SSPID     21
+//#define FLASH_LSP_END_SSPID     31
 // should be 16 byte
-#define FLASH_LSP_START_PREV_DK1  32
-#define FLASH_LSP_END_PREV_DK1    47 
+//#define FLASH_LSP_START_PREV_DK1  32
+//#define FLASH_LSP_END_PREV_DK1    47 
 
 #define FLASH_AGENT_START_SYMID 48
   // 12 HEX bytes for sym-Id -> mapped to 24 ascii char
@@ -57,6 +58,8 @@
 #define FLASH_AGENT_START_SENSOR_RESOURCE_SYMID 73
   // 12 HEX bytes for sym-Id -> mapped to 24 ascii char
 #define FLASH_AGENT_END_SENSOR_RESOURCE_SYMID 97
+
+#define FLASH_AGENT_SYMID_SHA1_CHECK_BYTE 100
 
 #define MAX_JSON_SIZE 2500
 //#define JOIN_URL "10.20.30.1"
@@ -67,6 +70,7 @@
 #define RAP_PATH "/rap/v1/request"
 #define KEEPALIVE_PATH "/innkeeper/keep_alive"
 #define UNREGISTRY_PATH "/innkeeper/sdev/unregistry"
+#define RAP_NOTIFICATION_PATH "/rap/v1/plugin/notification"
 
 #define SSP_PORT 8080
 
