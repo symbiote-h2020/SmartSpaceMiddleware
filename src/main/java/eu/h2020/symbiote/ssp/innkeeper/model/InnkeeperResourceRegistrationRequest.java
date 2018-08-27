@@ -178,14 +178,13 @@ public class InnkeeperResourceRegistrationRequest {
 	}
 
 	public InnkeeperResourceRegistrationResponse joinResource(SspResource msg, Date currTime,String type) throws InvalidArgumentsException, IOException {
-		InnkeeperResourceRegistrationResponse res= null;
-		log.info(new ObjectMapper().writeValueAsString(msg));
+		InnkeeperResourceRegistrationResponse res= null;		
 
 		//check The core and assign symId to the Resource (R5 optional)
 		coreRegistry.setOnline(this.isCoreOnline);
 		coreRegistry.setRepository(resourcesRepository);
 
-		String symIdResource = coreRegistry.getSymbioteIdFromCore(msg.getResource().getId(),msg,type);
+		String symIdResource = coreRegistry.getSymbioteIdFromCore(msg,type);
 
 		String results=InnkeeperRestControllerConstants.REGISTRATION_REJECTED;
 
@@ -215,11 +214,10 @@ public class InnkeeperResourceRegistrationRequest {
 		//OFFLINE
 		if (symIdResource == "") { 
 
-			log.info("REGISTRATION OFFLINE symIdResource="+symIdResource);
+			log.debug("REGISTRATION OFFLINE symIdResource="+symIdResource);
 			Resource r=msg.getResource();
 			r.setId(symIdResource);
 			String newSspIdResource = new SspIdUtils(resourcesRepository).createSspId();
-			log.info(newSspIdResource);
 			msg.setSspIdResource(newSspIdResource);
 			msg.setResource(r);
 			msg.setSymIdParent(sessionsRepository.findBySspId(msg.getSspIdParent()).getSymId());
@@ -240,6 +238,10 @@ public class InnkeeperResourceRegistrationRequest {
 
 		// request symId and sspId not match in SessionRepository
 		SessionInfo s = sessionsRepository.findBySymId(msg.getSymIdParent());
+		
+		
+		log.info("symIdResource:"+symIdResource);
+		log.info("msg.getSymIdParent()"+msg.getSymIdParent());
 		if( s==null ) {
 			if (msg.getSymIdParent()==null)
 				log.error("REJECTED: Join ONLINE: SymId is null");
@@ -270,16 +272,16 @@ public class InnkeeperResourceRegistrationRequest {
 					);
 		}
 
-		if (symIdResource != "" && !msg.getSymIdParent().equals(symIdResource)) { //REGISTER!
+		if (symIdResource != "" && msg.getResource().getId().equals("")) { //NEW REGISTRATION
 
-			log.info("NEW REGISTRATION symIdResource="+symIdResource);
+			log.debug("NEW REGISTRATION symIdResource="+symIdResource);
 			Resource r=msg.getResource();
 			r.setId(symIdResource);			
 			msg.setSspIdResource(new SspIdUtils(resourcesRepository).createSspId());
 			msg.setResource(r);
-
+						
 			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspIdParent()).getSessionExpiration());
-
+			
 			results=InnkeeperRestControllerConstants.REGISTRATION_OK;						
 			return new InnkeeperResourceRegistrationResponse(
 					msg.getResource().getId(), 
@@ -291,7 +293,7 @@ public class InnkeeperResourceRegistrationRequest {
 
 		}	
 
-		if (symIdResource != "" && msg.getSymIdParent().equals(symIdResource)) { //Already exists
+		if (symIdResource != "") { //Already exists
 			log.error("ALREADY REGISTERED symIdResource="+symIdResource);
 			results=InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED;
 			return new InnkeeperResourceRegistrationResponse(
@@ -349,9 +351,9 @@ public class InnkeeperResourceRegistrationRequest {
 		}
 		
 		if (r.getClass().equals(Actuator.class)) {
-			log.info("Save Device for Resource");
-			log.info("sspResource.getSspIdResource() = " + sspResource.getSspIdResource());
-			log.info("r.getId() = " + r.getId());
+			log.debug("Save Device for Resource");
+			log.debug("sspResource.getSspIdResource() = " + sspResource.getSspIdResource());
+			log.debug("r.getId() = " + r.getId());
 			Actuator actuator = (Actuator) r;
 			for (Capability capability : actuator.getCapabilities()) {
 				parameters = capability.getParameters();
@@ -363,9 +365,9 @@ public class InnkeeperResourceRegistrationRequest {
 				result = saveRegistrationInfoODataInDb(sspResource.getSspIdResource(),r.getId(), className, superClass, parameters,session_expiration);
 			}
 		} else if (r.getClass().equals(Device.class)) {
-			log.info("Save Device for Resource");
-			log.info("sspResource.getSspIdResource() = " + sspResource.getSspIdResource());
-			log.info("r.getId() = " + r.getId());
+			log.debug("Save Device for Resource");
+			log.debug("sspResource.getSspIdResource() = " + sspResource.getSspIdResource());
+			log.debug("r.getId() = " + r.getId());
 
 			Device device = (Device) r;
 			for ( Service service : device.getServices()) {
@@ -431,43 +433,8 @@ public class InnkeeperResourceRegistrationRequest {
 		resourceInfo.setResource(resource);
 		resourcesRepository.save(resourceInfo);
 
-		try {
-			log.info("Resource " + new ObjectMapper().writeValueAsString(resourceInfo).toString() + " registered");
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
 	}
 
-/*
-	private void addPolicy(String resourceId, String internalId, IAccessPolicySpecifier accPolicy, Date currTime) throws InvalidArgumentsException {
-		try {
-			IAccessPolicy policy = AccessPolicyFactory.getAccessPolicy(accPolicy);
-			AccessPolicy ap = new AccessPolicy(resourceId, internalId, policy,currTime);
-			log.debug("ADD POLICY ACTION");
-			accessPolicyRepository.save(ap);
-
-			log.info("Policy successfully added for resource " + resourceId);
-		} catch (InvalidArgumentsException e) {
-			log.error("Invalid Policy definition for resource with id " + resourceId);
-		}
-	}
-	
-	private void deletePolicy(String id) {
-		try {
-			Optional<AccessPolicy> accessPolicy = accessPolicyRepository.findById(id);
-			if(accessPolicy == null || accessPolicy.get() == null) {
-				log.error("No policy stored for resource with internalId " + id);
-				return;
-			}
-
-			accessPolicyRepository.delete(accessPolicy.get().getResourceId());
-			log.info("Policy removed for resource " + id);
-
-		} catch (Exception e) {
-			log.error("Resource with internalId " + id + " not found - Exception: " + e.getMessage());
-		}
-	}
-*/	 
 
 
 }

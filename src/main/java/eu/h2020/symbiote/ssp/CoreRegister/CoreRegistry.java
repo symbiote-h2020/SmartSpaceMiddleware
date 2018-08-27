@@ -154,12 +154,8 @@ public class CoreRegistry {
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 		
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-		log.info(httpHeaders);
-		
-		String jsonInString = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sspRegInfoCore);
-
-
-		log.info("JSON PAYLOAD:"+jsonInString);
+		//log.info(httpHeaders);				 
+		log.info("JSON PAYLOAD:"+new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sspRegInfoCore));
 				
 		
 
@@ -167,25 +163,12 @@ public class CoreRegistry {
 		HttpEntity<SdevRegistryRequest> httpEntity = new HttpEntity<>(sdevRegistryRequest, httpHeaders) ;
 		RestTemplate restTemplate = new RestTemplate();
 
-		log.info("SDEV Interworking Service URL exposed to Core:"+sdevRegistryRequest.getBody().getPluginURL());
-		log.info("sspRegInfoCore.getSspId()="+sspRegInfoCore.getSspId());
-		//Create a smart device
-
-		log.info("URL CORE REGISTER ENDPOINT:"+endpoint);
-
-
-
-
 		try {
 
 			if (sspRegInfoCore.getSymId()==null) {
-				// FIRST REGISTRATION perform POST
-				log.info("FIRST REGISTRATION: POST");
 				return restTemplate.exchange(endpoint, HttpMethod.POST,
 						httpEntity, SdevRegistryResponse.class);
 			}else {
-				log.info("SDEV UPDATE REGISTRATION: PUT");
-				log.info("updating symId = "+sspRegInfoCore.getSymId()+"...");
 				return restTemplate.exchange(endpoint, HttpMethod.PUT,
 						httpEntity, SdevRegistryResponse.class);
 			}
@@ -232,7 +215,7 @@ public class CoreRegistry {
 			HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
 			httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 			
-			log.info(httpHeaders);
+			log.debug(httpHeaders);
 
 			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
 
@@ -244,11 +227,8 @@ public class CoreRegistry {
 			
 			sspResource.setSymIdParent(sspName);
 			
-			//String jsonInString = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(localSspRes.getResource());
-			//
-			log.info(">>>>> RESOURCE PAYLOAD:\n"+new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sspResource.getResource()));
-			//String jsonInStringSSPRes = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(localSspRes);
-			//log.info("RESOURCE PAYLOAD SSP:\n"+jsonInStringSSPRes);
+			//log.info(">>>>> RESOURCE PAYLOAD:\n"+new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sspResource.getResource()));
+
 			
 			
 			
@@ -259,27 +239,23 @@ public class CoreRegistry {
 
 			RestTemplate restTemplate = new RestTemplate();
 
-			log.info("[Resource registration] Http request to "+endpoint);
+			log.debug("[Resource registration] Http request to "+endpoint);
 			
 			try {
 				if (sspResource.getResource().getId()==null) {
 					response = restTemplate.exchange(endpoint, HttpMethod.POST,
 							httpEntity, SspResourceReqistryResponse.class);
-					log.info("RESPONSE HEADER:"+response.getHeaders());
-					log.info("RESPONSE BODY:"+response.getBody());					
+										
 				} else 
 					if (sspResource.getResource().getId().equals("") ) {
 						response = restTemplate.exchange(endpoint, HttpMethod.POST,
 								httpEntity, SspResourceReqistryResponse.class);
-						log.info("RESPONSE HEADER:"+response.getHeaders());
-						log.info("RESPONSE BODY:"+response.getBody());
+					
 
-					}else {
-						log.info("UPDATE REGISTRATION: PUT");
+					}else {						
 						response = restTemplate.exchange(endpoint, HttpMethod.PUT,
 								httpEntity, SspResourceReqistryResponse.class);
-						log.info("RESPONSE HEADER:"+response.getHeaders());
-						log.info("RESPONSE BODY:"+response.getBody());
+					
 
 					}
 
@@ -319,10 +295,6 @@ public class CoreRegistry {
 
 		RestTemplate restTemplate = new RestTemplate();
 
-		//Create a smart device
-
-		log.info("[SDEV delete]: endpoint:"+endpoint);
-
 		try {
 			return restTemplate.exchange(endpoint, HttpMethod.DELETE,
 					httpEntity, SdevRegistryResponse.class);
@@ -340,7 +312,6 @@ public class CoreRegistry {
 		String sdevId = resourceInfo.getSymIdParent();
 		
 		String resInfoStr= new ObjectMapper().writeValueAsString(resourceInfo.getResource());
-		log.info("PAYLOAD:"+resInfoStr);
 		String endpoint=cloudInterfaceUrl+"/ssps/"+sspName+"/sdevs/"+sdevId+"/resources";
 
 		HttpHeaders httpHeaders = authorizationService.getHttpHeadersWithSecurityRequest();
@@ -359,12 +330,11 @@ public class CoreRegistry {
 		SessionInfo s = sessionsRepository.findBySspId(resourceInfo.getSspIdParent());
 		resourceInfo.getResource().setInterworkingServiceURL(setSSPUrlStr(s.getPluginURL()));
 
-		log.info("[Resource DELETE] Http request to"+endpoint);
+		log.debug("[Resource DELETE] Http request to"+endpoint);
 
 		try {
 			ResponseEntity<SdevRegistryResponse> response = restTemplate.exchange(endpoint, HttpMethod.DELETE,
 					httpEntity, SdevRegistryResponse.class);
-			log.info(response.getHeaders());
 			return response;
 
 		}catch (Exception e) {
@@ -382,7 +352,7 @@ public class CoreRegistry {
 
 
 
-	public String getSymbioteIdFromCore(String symId, Object msg, String type) throws IOException {
+	public String getSymbioteIdFromCore(Object msg, String type) throws IOException {
 		ResponseEntity<?>  response = null;
 		//log.info(new ObjectMapper().writeValueAsString(msg).toString());	
 
@@ -393,7 +363,7 @@ public class CoreRegistry {
 
 		if (msg instanceof SspRegInfo) {
 			//ResponseEntity<SdevRegistryResponse> response=null;
-			log.info("SDEV Core Registration");
+			//log.info("SDEV Core Registration");
 
 			SspRegInfo sspRegInfo = (SspRegInfo)(msg);
 			response = registerSDEV(sspRegInfo);
@@ -432,19 +402,12 @@ public class CoreRegistry {
 		//Resource Registration
 		if (msg instanceof SspResource) {
 			//TBD
-			//ResponseEntity<SspResourceReqistryResponse> response=null;
-			log.info("Resource Core Registration");
-			
-			SspResource sspResource = (SspResource)(msg);
-			//log.info("sspResource.getSspIdResource()="+sspResource.getSspIdResource());
-			
-			log.info("["+type+"]RESOURCE:"+new ObjectMapper().writeValueAsString(sspResource));
-			
+			log.debug("Resource Core Registration");			
+			SspResource sspResource = (SspResource)(msg);			
 			response = registerResource(sspResource,type);
-
 			//Response is null if the registration function got an exception, in this case I assume that the SSP is offline.
 			if (response == null) {
-				log.info("RESPONSE IS NULL");
+				log.error("RESPONSE IS NULL");
 				return "";
 			}
 
@@ -464,8 +427,7 @@ public class CoreRegistry {
 			for (Map.Entry<String, Resource> entry : respBody.getBody().entrySet()) {
 				System.out.println("Item : " + entry.getKey() + " Count : " + entry.getValue());
 				Resource res = entry.getValue();
-				symIdRes=res.getId();
-				log.info("Got symId for resurce="+symIdRes);
+				symIdRes=res.getId();				
 				break;
 			}
 			if (symIdRes!=null)
