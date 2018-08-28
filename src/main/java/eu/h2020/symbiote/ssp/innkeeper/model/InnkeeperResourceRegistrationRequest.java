@@ -271,8 +271,12 @@ public class InnkeeperResourceRegistrationRequest {
 					0																	//registration expiration
 					);
 		}
-
-		if (symIdResource != "" && msg.getResource().getId().equals("")) { //NEW REGISTRATION
+		
+		Optional<ResourceInfo> rinfo = resourcesRepository.findBySymIdResource(symIdResource);
+		
+		if (symIdResource != "" && msg.getResource().getId().equals("") 
+				//|| (symIdResource != "" && rinfo==null)  						//Not locally exists
+				) { //NEW REGISTRATION
 
 			log.debug("NEW REGISTRATION symIdResource="+symIdResource);
 			Resource r=msg.getResource();
@@ -292,8 +296,8 @@ public class InnkeeperResourceRegistrationRequest {
 					0);
 
 		}	
-
-		if (symIdResource != "") { //Already exists
+		
+		if (symIdResource != "" && rinfo.isPresent()) { //Already exists
 			log.error("ALREADY REGISTERED symIdResource="+symIdResource);
 			results=InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED;
 			return new InnkeeperResourceRegistrationResponse(
@@ -304,7 +308,28 @@ public class InnkeeperResourceRegistrationRequest {
 					results,
 					0);
 
-		}	
+		}
+		
+		if (symIdResource != "" && !rinfo.isPresent()) { //Not locally exists
+			log.debug("NEW REGISTRATION symIdResource="+symIdResource);
+			Resource r=msg.getResource();
+			r.setId(symIdResource);			
+			msg.setSspIdResource(new SspIdUtils(resourcesRepository).createSspId());
+			msg.setResource(r);
+						
+			this.saveResource(msg,sessionsRepository.findBySspId(msg.getSspIdParent()).getSessionExpiration());
+			
+			results=InnkeeperRestControllerConstants.REGISTRATION_OK;						
+			return new InnkeeperResourceRegistrationResponse(
+					msg.getResource().getId(), 
+					msg.getSspIdResource(),
+					msg.getSymIdParent(),
+					msg.getSspIdParent(),
+					results,
+					0);
+			
+			
+		}
 		log.error("RESOURCE REGISTARTION DEFAULT REJECTED");
 		return res;
 

@@ -92,6 +92,9 @@ public class InnkeeperRegistrationRequest {
 
 		InnkeeperRegistrationResponse regResp = registry(sspRegInfo, type);		
 		log.info("REGISTRATION INFO, type:"+type+", SSP registartion status:"+regResp.getResult());
+		
+		log.info("message:"+msg);
+		
 		switch (regResp.getResult()) {		
 		case InnkeeperRestControllerConstants.REGISTRATION_OFFLINE: //OFFLINE
 		case InnkeeperRestControllerConstants.REGISTRATION_OK:		
@@ -118,12 +121,10 @@ public class InnkeeperRegistrationRequest {
 			s.setSspId(regResp.getSspId());			
 			s.setSymId(regResp.getSymId());								
 			s.setPluginId(sspRegInfo.getPluginId());			
-			s.setPluginURL(sspRegInfo.getPluginURL());
-			if (type==InnkeeperRestControllerConstants.SDEV)
-				s.setpsk(sspRegInfo.getHashField().getBytes());
-			if (s.getRoaming()==null) {
-				s.setRoaming(false);
-			}
+			s.setPluginURL(sspRegInfo.getPluginURL());			
+			s.setRoaming(sspRegInfo.getRoaming());
+			s.setdk1(sspRegInfo.getDerivedKey1());
+			
 
 			sessionsRepository.save(s);				
 			break;
@@ -183,7 +184,12 @@ public class InnkeeperRegistrationRequest {
 		}
 
 		// if symIdFromCore == RegInfo.symId -> Already registered
-		if (symIdFromCore.equals(sspRegInfo.getSymId())) { 	
+		
+		// check if Session exists
+		
+		SessionInfo s = sessionsRepository.findBySymId(symIdFromCore);
+		
+		if (symIdFromCore.equals(sspRegInfo.getSymId()) && s!=null) { 	
 
 			String sspId = sessionsRepository.findBySymId(symIdFromCore).getSspId();
 			return new InnkeeperRegistrationResponse(
@@ -191,7 +197,7 @@ public class InnkeeperRegistrationRequest {
 		} 
 
 		//NEW REGISTRATION
-		if ( sspRegInfo.getSymId().equals("")) {
+		if ( sspRegInfo.getSymId().equals("") || s==null) {
 			if (checkRegistrationInjection(sspRegInfo)) {
 				// Got some duplicate fields in Session, suspect on registration,found other registration, reject.
 				return new InnkeeperRegistrationResponse(
@@ -225,7 +231,7 @@ public class InnkeeperRegistrationRequest {
 		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
 		HttpStatus httpStatus = HttpStatus.OK;
 		SspRegInfo sspRegInfo = new ObjectMapper().readValue(msg, SspRegInfo.class);
-
+		log.info("msg:"+msg);
 		SessionInfo s = null;
 
 		if (sspRegInfo.getSymId()==null || sspRegInfo.getSymId().equals("")) {
@@ -280,13 +286,10 @@ public class InnkeeperRegistrationRequest {
 		String symIdReg=null;
 
 		sspRegInfo.setPluginURL(s.getPluginURL());
-		sspRegInfo.setDerivedKey1(s.getdk1()); 
 		sspRegInfo.setPluginId(s.getPluginId());
-		sspRegInfo.setRoaming(s.getRoaming());
 		sspRegInfo.setRoaming(s.getRoaming());
 		sspRegInfo.setSymId(s.getSymId());
 		sspRegInfo.setSspId(s.getSspId());
-		//sspRegInfoCore.setHashField(sspRegInfo.getHashField()); //????
 
 
 
@@ -485,8 +488,10 @@ public class InnkeeperRegistrationRequest {
 			if (s!=null)
 				if (s.getSymId()!=null)
 					symId=s.getSymId();
-
-			coreRegistry.unregisterSDEV(symId); // remote delete
+			
+			if (s.getRoaming()==false)
+				coreRegistry.unregisterSDEV(symId); // Remove SDEV in Core if L3
+			
 			sessionsRepository.delete(s); // local delete
 
 

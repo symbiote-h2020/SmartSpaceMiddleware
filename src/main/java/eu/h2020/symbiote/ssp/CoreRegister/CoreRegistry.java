@@ -1,8 +1,13 @@
 package eu.h2020.symbiote.ssp.CoreRegister;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.xml.bind.DatatypeConverter;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,6 +136,8 @@ public class CoreRegistry {
 	}
 	private ResponseEntity<SdevRegistryResponse> registerSDEV(SspRegInfo sspRegInfo) throws JsonProcessingException {
 		SspRegInfo sspRegInfoCore = new SspRegInfo();
+		
+		
 		sspRegInfoCore.setDerivedKey1(sspRegInfo.getDerivedKey1());
 		sspRegInfoCore.setHashField(sspRegInfo.getHashField());
 		sspRegInfoCore.setPluginId(sspRegInfo.getPluginId());
@@ -366,7 +373,35 @@ public class CoreRegistry {
 			//log.info("SDEV Core Registration");
 
 			SspRegInfo sspRegInfo = (SspRegInfo)(msg);
-			response = registerSDEV(sspRegInfo);
+			
+			if (sspRegInfo.getHashField()!=null && sspRegInfo.getDerivedKey1()!=null) {				
+				log.info("GOT sspRegInfo, forward dk1 and hashfiled to core");
+				log.info("hashfield:"+sspRegInfo.getHashField());
+				log.info("dk1:"+sspRegInfo.getDerivedKey1());
+				response = registerSDEV(sspRegInfo);
+			}
+			
+			
+			/*
+			SessionInfo s = sessionsRepository.findBySspId(sspRegInfo.getSspId());
+			if (s!=null) {		
+				sspRegInfo.setDerivedKey1(s.getdk1());
+				
+				String input=s.getSymId()+s.getdk1();
+				
+				String hashField="";				
+				try {
+					MessageDigest msdDigest;
+					msdDigest = MessageDigest.getInstance("SHA-1");
+					msdDigest.update(input.getBytes("UTF-8"), 0, input.length());
+					hashField = DatatypeConverter.printHexBinary(msdDigest.digest()).toLowerCase();
+				} catch (NoSuchAlgorithmException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				sspRegInfo.setHashField(hashField);
+			}
+			*/
 
 			//Response is null if the registration function got an exception, in this case I assume that the SSP is offline.
 			if (response == null) {
