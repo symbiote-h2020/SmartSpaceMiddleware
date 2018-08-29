@@ -233,6 +233,8 @@ public class InnkeeperRegistrationRequest {
 		SspRegInfo sspRegInfo = new ObjectMapper().readValue(msg, SspRegInfo.class);
 		log.info("msg:"+msg);
 		SessionInfo s = null;
+		
+		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
 
 		if (sspRegInfo.getSymId()==null || sspRegInfo.getSymId().equals("")) {
 			// symId is not useful or not available, use sspId
@@ -243,12 +245,21 @@ public class InnkeeperRegistrationRequest {
 			s = sessionsRepository.findBySymId(sspRegInfo.getSymId());
 		}
 
+		if (s==null) {
+			log.error("NO Session exists with given sspRegInfo.getSymId()="+sspRegInfo.getSymId()+" sspRegInfo.getSspId()="+sspRegInfo.getSspId());
+			response.setResult(InnkeeperRestControllerConstants.REGISTRATION_ERROR);
+			httpStatus=HttpStatus.BAD_REQUEST;
+			String res = new ObjectMapper().writeValueAsString(response);
+			return new ResponseEntity<Object>(res,responseHeaders,httpStatus);
+			
+		}
+		
 		String type=InnkeeperRestControllerConstants.PLATFORM;
 
 		if (s.getSessionExpiration()!=null)
 			type=InnkeeperRestControllerConstants.SDEV;
 
-		InnkeeperRegistrationResponse response =new InnkeeperRegistrationResponse();
+		
 
 		/*if (s==null) {			
 			log.error("ERROR1 - no session found");

@@ -374,34 +374,31 @@ public class CoreRegistry {
 
 			SspRegInfo sspRegInfo = (SspRegInfo)(msg);
 			
-			if (sspRegInfo.getHashField()!=null && sspRegInfo.getDerivedKey1()!=null) {				
-				log.info("GOT sspRegInfo, forward dk1 and hashfiled to core");
-				log.info("hashfield:"+sspRegInfo.getHashField());
-				log.info("dk1:"+sspRegInfo.getDerivedKey1());
-				response = registerSDEV(sspRegInfo);
-			}
-			
-			
-			/*
 			SessionInfo s = sessionsRepository.findBySspId(sspRegInfo.getSspId());
-			if (s!=null) {		
-				sspRegInfo.setDerivedKey1(s.getdk1());
-				
-				String input=s.getSymId()+s.getdk1();
-				
-				String hashField="";				
-				try {
-					MessageDigest msdDigest;
-					msdDigest = MessageDigest.getInstance("SHA-1");
-					msdDigest.update(input.getBytes("UTF-8"), 0, input.length());
-					hashField = DatatypeConverter.printHexBinary(msdDigest.digest()).toLowerCase();
-				} catch (NoSuchAlgorithmException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				sspRegInfo.setHashField(hashField);
+			if (s!=null) {				
+				// in case of Keep Alive
+				if (sspRegInfo.getHashField()==null && sspRegInfo.getDerivedKey1()==null) {
+					sspRegInfo.setDerivedKey1(s.getdk1());				
+					
+					String hashField="";
+					String input=s.getSymId()+s.getdk1();
+					try {
+						MessageDigest msdDigest;
+						msdDigest = MessageDigest.getInstance("SHA-1");
+						msdDigest.update(input.getBytes("UTF-8"), 0, input.length());
+						hashField = DatatypeConverter.printHexBinary(msdDigest.digest()).toLowerCase();
+					} catch (NoSuchAlgorithmException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					sspRegInfo.setHashField(hashField);
+				}	
 			}
-			*/
+			
+			if (sspRegInfo.getDerivedKey1()=="")
+				sspRegInfo.setDerivedKey1(null);
+			
+			response = registerSDEV(sspRegInfo);
 
 			//Response is null if the registration function got an exception, in this case I assume that the SSP is offline.
 			if (response == null) {
