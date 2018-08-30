@@ -459,7 +459,10 @@ String lsp::getHashOfIdentity(String id) {
 		uint8_t dataout[SHA1_KEY_SIZE];
 		memcpy(dataout, sha1.result(), SHA1_KEY_SIZE);
 		String retString = "";
-		for (uint8_t i = 0; i < SHA1_KEY_SIZE; i++) retString += String(dataout[i], HEX);
+		for (uint8_t i = 0; i < SHA1_KEY_SIZE; i++) {
+			if (dataout[i] <= 0x0f) retString += '0';
+			retString += String(dataout[i], HEX);
+		} 
 		PI("Got this SHA-1(sym-id||prevDK1): "); 
 		P(retString);
 		return retString;

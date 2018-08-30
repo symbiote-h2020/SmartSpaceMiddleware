@@ -79,7 +79,7 @@ Capability c1("RGBCapability", 3, paramPointer);
 //    internalID, name, url, capability_number, Capability* Class, observesProperty_number, Property* Class
 Semantic s1("SDEV", 1, &c1, 2, propertyPointer);
 
-symAgent sdev1(120000, "RGB Leds HAT", false, &s1);
+symAgent sdev1(120000, "RGB Leds HAT", true, &s1);
 
 extern volatile boolean keepAlive_triggered;
 extern NTPClient timeClient;
@@ -130,7 +130,9 @@ void setup() {
     if (sdev1.getRegExpiration() != 0) {
       Serial.print("\nREG expiration: ");
       Serial.println(sdev1.getRegExpiration());
-      registrationMetro.interval(floor(sdev1.getRegExpiration() * 0.9));
+      Serial.print("\nNext Keep-Alive: ");
+      Serial.println((unsigned long int)floor(sdev1.getRegExpiration() * 0.9));
+      registrationMetro.interval((unsigned long int)floor(sdev1.getRegExpiration() * 0.9));
     }
   }
   else Serial.print("Failed!");

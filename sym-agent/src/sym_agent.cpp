@@ -713,8 +713,9 @@ int symAgent::registry()
  	//_symId = ""; ///// TODO FIXME
 	//if (_symId == "") _firstTimeEverConnect = true;
 	//else _firstTimeEverConnect = false;
-	//_firstTimeEverConnect = false;
-	_root["symId"] = _symId;
+	_firstTimeEverConnect = false;
+	//_root["symId"] = ""; // TODO FIXME, PEZZA PER FABRIZIO
+	_root["symId"] = _symId; 
 	_root["pluginId"] = _mac;
 	_root["sspId"] = "";
 	if (_roaming == true) _root["roaming"] = true;
@@ -726,7 +727,8 @@ int symAgent::registry()
 	_root["dk1"] = _security->getDK1();
 		//Regarding the hashField could be (i) all 0 when the SDEV joins for the first time
 		// or (ii) hashField = H(sym-id || previous dk1)
-	_root["hashField"] = _security->getHashOfIdentity(_symId);
+	//_root["hashField"] = "00000000000000000000"; // TODO FIXME, PEZZA PER FABRIZIO
+	_root["hashField"] = _security->getHashOfIdentity(_symId); 
 	String tempClearData = "";
 	String tempCryptData = "";
 	String tempJsonPacket = "";
@@ -908,7 +910,7 @@ int symAgent::unregistry()
 int symAgent::join()
 {
 	P("JOIN");
-	if (_firstTimeEverConnect) {
+	//if (_firstTimeEverConnect) { // PEZZA PER FABRIZIO
 
 		if (_semantic->isAnActuator()) {
 			P("JOIN-ACTUATOR");
@@ -1173,10 +1175,10 @@ int symAgent::join()
 			dinamicJsonBuffer.clear();
 			return statusCode;
 		}
-	} else {
-		P("NO JOIN REQUIRED, RESOURCE ALREADY IN CORE");
-		return 200;
-	}
+	//} else { // PEZZA PER FABRIZIO
+	//	P("NO JOIN REQUIRED, RESOURCE ALREADY IN CORE"); // PEZZA PER FABRIZIO
+	//	return 200; // PEZZA PER FABRIZIO
+	//}
 }
 
 String symAgent::createSensorSemanticDescription() {
