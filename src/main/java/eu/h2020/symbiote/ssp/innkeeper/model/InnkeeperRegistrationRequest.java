@@ -205,7 +205,7 @@ public class InnkeeperRegistrationRequest {
 			} 
 			//No duplicate registration, go ahead
 			return	 new InnkeeperRegistrationResponse(
-					symIdFromCore,new SspIdUtils(sessionsRepository).createSspId(),InnkeeperRestControllerConstants.REGISTRATION_OK,DbConstants.EXPIRATION_TIME);
+					symIdFromCore,new SspIdUtils(sessionsRepository).createSspId(),InnkeeperRestControllerConstants.REGISTRATION_OK,DbConstants.EXPIRATION_TIME*1000);
 		}
 		log.error("REGISTARTION DEFAULT REJECTED");
 		return new InnkeeperRegistrationResponse(

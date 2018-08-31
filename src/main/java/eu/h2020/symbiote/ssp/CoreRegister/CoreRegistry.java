@@ -32,6 +32,7 @@ import eu.h2020.symbiote.core.cci.SspResourceReqistryResponse;
 import eu.h2020.symbiote.model.cim.Location;
 import eu.h2020.symbiote.model.cim.Resource;
 import eu.h2020.symbiote.model.cim.WGS84Location;
+import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestController;
 import eu.h2020.symbiote.ssp.innkeeper.communication.rest.InnkeeperRestControllerConstants;
 import eu.h2020.symbiote.ssp.innkeeper.services.AuthorizationService;
@@ -227,7 +228,7 @@ public class CoreRegistry {
 			// Create the httpEntity which you are going to send. The Object should be replaced by the message you are
 
 			Map<String,Resource> resMap = new HashMap<String,Resource>();
-			
+			Map<String,IAccessPolicySpecifier> filteringPoliciesMap = new HashMap<String,IAccessPolicySpecifier>();
 			// assign Resource Interworking Service URL
 			SessionInfo s = sessionsRepository.findBySspId(sspResource.getSspIdParent());
 			sspResource.getResource().setInterworkingServiceURL(setSSPUrlStr(s.getPluginURL()));
@@ -240,7 +241,9 @@ public class CoreRegistry {
 			
 			
 			resMap.put("1",sspResource.getResource());
+			filteringPoliciesMap.put("1",sspResource.getFilteringPolicy());
 			SspResourceRegistryRequest sdevResourceRequest = new SspResourceRegistryRequest(resMap);
+			sdevResourceRequest.setFilteringPolicies(filteringPoliciesMap);
 			HttpEntity<SspResourceRegistryRequest> httpEntity = new HttpEntity<>(sdevResourceRequest, httpHeaders) ;
 			//HttpEntity<Object> httpEntity = new HttpEntity<>("{}", httpHeaders) ;
 
