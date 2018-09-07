@@ -4,7 +4,7 @@ if (!hasProperty('mainClass')) {
 // initial extensions to gradle
 buildscript {
     ext {
-        springBootVersion = '1.5.11.RELEASE'
+        springBootVersion = '1.5.14.RELEASE'
     }
     repositories {
         mavenCentral()
@@ -43,13 +43,6 @@ targetCompatibility = 1.8
 repositories {
     mavenCentral()
     maven { url "https://jitpack.io" }
-}
-
-// Spring related configs
-dependencyManagement {
-    imports {
-    //    mavenBom "org.springframework.cloud:spring-cloud-dependencies:Dalston.SR5"
-    }
 }
 
 /*
