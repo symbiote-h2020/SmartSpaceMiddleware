@@ -1,5 +1,7 @@
 package eu.h2020.symbiote.ssp.resources;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.h2020.symbiote.model.cim.Resource;
@@ -30,6 +32,12 @@ public class SspResource {
 	private IAccessPolicySpecifier filteringPolicy;
 	@JsonProperty("resource")
 	private Resource resource; //Sensor, Actuator...
+	
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private List<String> resourceType;
+	
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private String location;
 
 
 	public SspResource() {
@@ -94,4 +102,26 @@ public class SspResource {
 		this.resource = resource;
 	}
 
+	@JsonProperty("resourceType")
+	public List<String> getResourceType() {
+		return resourceType;
+	}
+
+	@JsonProperty("resourceType")
+	public void setResourceType(List<String> resourceType) {
+		this.resourceType = resourceType;
+	}
+
+	@JsonProperty("locationName")
+	public String getLocationName() {
+		return this.location;
+	}
+
+	@JsonProperty("locationName")
+	public void setLocationName(String location) {
+		this.location = location;
+	}
+
+	
+	
 }

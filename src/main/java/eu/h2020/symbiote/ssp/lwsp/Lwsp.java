@@ -1,8 +1,10 @@
 package eu.h2020.symbiote.ssp.lwsp;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 import java.io.*;
 import java.sql.Timestamp;
 import java.math.BigInteger;
@@ -30,6 +32,10 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoOData;
+import eu.h2020.symbiote.ssp.resources.db.RegistrationInfoODataRepository;
+import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
+import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
 import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 
@@ -50,6 +56,11 @@ public class Lwsp {
 	 */
 	@Autowired
 	SessionsRepository sessionsRepository;
+	@Autowired
+	ResourcesRepository resourcesRepository;
+	
+	@Autowired
+	RegistrationInfoODataRepository registrationInfoODataRepository;
 
 	private String data;
 	private String allowedCipher;
@@ -248,8 +259,8 @@ public class Lwsp {
 			System.arraycopy(SerSalt, 0, salt, DevSaltB.length, SerSalt.length);
 		}
 		else salt=DatatypeConverter.parseHexBinary(DevSalt);
-		//		log.info("\n\n\npsk\n"+toHex(chars)+"\n\n\n");
-		//		log.info("\n\n\nsalt\n"+toHex(salt)+"\n\n\n");
+		//		log.debug("[LWSP]:    psk "+toHex(chars)+"   ");
+		//		log.debug("[LWSP]:    salt "+toHex(salt)+"   ");
 
 		PKCS5S2ParametersGenerator gen = new PKCS5S2ParametersGenerator(new SHA1Digest());
 		gen.init(chars, salt, iterations);
@@ -303,7 +314,7 @@ public class Lwsp {
 	}
 	private static String StripHTTPHeader(String data) 
 	{
-		String[] rows = data.split("[\r]*\n");
+		String[] rows = data.split("[\r]* ");
 		int index=0;
 		String res="";
 		for (int i=0;i<rows.length;i++) 
@@ -318,47 +329,47 @@ public class Lwsp {
 	}
 	private byte[] aescbcHash(String snonce,String gnonce,String sn,String dk) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, UnsupportedEncodingException 
 	{
-		log.info("\n aescbcHash(): "   +
-				"\n snonce: "         +snonce+
-				"\n gnonce: "         +gnonce+
-				"\n sn: "             +sn+
-				"\n dk: "             +dk
+		log.debug("[LWSP]:aescbcHash(): "   +
+				" snonce: "         +snonce+
+				" gnonce: "         +gnonce+
+				" sn: "             +sn+
+				" dk: "             +dk
 				);
-		log.info("\n sn_N: "   +(sn.length()!=0?sn:("0"+sn)));
+		log.debug("[LWSP]: sn_N: "   +(sn.length()!=0?sn:("0"+sn)));
 		String sha1_item=sha1(snonce+gnonce);
-		log.info("\n aescbcHash(): sha1_item="+sha1_item); 
+		log.debug("[LWSP]: aescbcHash(): sha1_item="+sha1_item); 
 		byte[] tmp=concat_LE(
 				//				          HexSS2BArray((sn.length()%2==0?sn:("0"+sn))),
 				sn.getBytes(),
 				HexSS2BArray(sha1_item)
 				);
-		log.info("\n aescbcHash(): "   +
-				"\n iv: "             +iv+
-				"\n tmp: "            +BArray2HexS(tmp)+
-				"\n dk: "             +dk
+		log.debug("[LWSP]: aescbcHash(): "   +
+				" iv: "             +iv+
+				" tmp: "            +BArray2HexS(tmp)+
+				" dk: "             +dk
 				);
 		byte[] aescoded=aes128enc(tmp,HexSS2BArray(dk),iv.getBytes());
-		log.info("\n aescbcHash(): "   +toHex(aescoded));
+		log.debug("[LWSP]: aescbcHash(): "   +toHex(aescoded));
 		return aescoded;
 	}
 	private String calcSign40() throws GeneralSecurityException, IOException
 	{
 		byte[] tmp4=HexSS2BArray(this.sn.length()==8?this.sn:(zeros(8-this.sn.length())+this.sn));
-		log.info("\n calcSign40() sn->: "+BArray2HexS(tmp4));
+		log.debug("[LWSP]: calcSign40() sn : "+BArray2HexS(tmp4));
 		byte[] tmp=aescbcHash(this.snonce2,this.gnonce2,this.sn,this.dk1);
 
 		byte[] tmp2=concat_LE(tmp4,tmp);
-		log.info("\n calcSign30(): dk2->  "+this.dk.split(":")[2]);
+		log.debug("[LWSP]: calcSign30(): dk2 -> "+this.dk.split(":")[2]);
 		byte[] tmp3=HmacSHA1(tmp2,HexSS2BArray(this.dk2.split(":")[2]));
 
-		log.info("\n     calcSign40(): "+
-				"\n payload to hmac: "+ BArray2HexS(tmp2) +
-				"\n sequence number: "+ tmp4 +
-				"\n            data: "+ BArray2HexS(tmp)+
-				"\n             dk2: "+ this.dk2.split(":")[2]+
-				"\n            sign: "+ BArray2HexS(tmp3)+
-				"\n         signb64: "+ Base64.getEncoder().encodeToString(tmp3)+
-				"\n      RemoteSign: "+this.sign		         
+		log.debug("[LWSP]: calcSign40(): "+
+				" payload to hmac: "+ BArray2HexS(tmp2) +
+				" sequence number: "+ tmp4 +
+				" data: "+ BArray2HexS(tmp)+
+				" dk2: "+ this.dk2.split(":")[2]+
+				" sign: "+ BArray2HexS(tmp3)+
+				" signb64: "+ Base64.getEncoder().encodeToString(tmp3)+
+				" RemoteSign: "+this.sign		         
 
 				);
 		return Base64.getEncoder().encodeToString(tmp3);
@@ -368,9 +379,9 @@ public class Lwsp {
 	{
 		byte[] hmacData = null;
 
-		log.info("\n<     HmacSHA1(): "+
-				"\n>           data: "+ BArray2HexS(data) +
-				"\n<            key: "+ BArray2HexS(key) +
+		log.debug("[LWSP]: <     HmacSHA1(): "+
+				" >           data: "+ BArray2HexS(data) +
+				" <            key: "+ BArray2HexS(key) +
 				"-----------------------------------------"
 				);
 		SecretKeySpec secretKey = new SecretKeySpec(key, "HmacSHA1");
@@ -382,21 +393,21 @@ public class Lwsp {
 	private String calcSign30() throws GeneralSecurityException, IOException
 	{
 		byte[] tmp4=HexSS2BArray(this.sn.length()==8?this.sn:(zeros(8-this.sn.length())+this.sn));
-		log.info("\n calcSign30() sn->: "+BArray2HexS(tmp4));
+		log.debug("[LWSP]:   calcSign30() sn->: "+BArray2HexS(tmp4));
 		byte[] tmp=aescbcHash(this.snonce,this.gnonce,this.sn,this.dk1);
 
 		byte[] tmp2=concat_LE(tmp4,tmp);
-		log.info("\n calcSign30(): dk2->  "+this.dk.split(":")[2]);
+		log.debug("[LWSP]:   calcSign30(): dk2->  "+this.dk.split(":")[2]);
 		byte[] tmp3=HmacSHA1(tmp2,HexSS2BArray(this.dk2.split(":")[2]));
 
-		log.info("\n     calcSign30(): "+
-				"\n payload to hmac: "+ BArray2HexS(tmp2) +
-				"\n sequence number: "+ tmp4+
-				"\n            data: "+ BArray2HexS(tmp)+
-				"\n             dk2: "+ this.dk2.split(":")[2]+
-				"\n            sign: "+ BArray2HexS(tmp3)+
-				"\n         signb64: "+ Base64.getEncoder().encodeToString(tmp3)+
-				"\n      RemoteSign: "+this.sign		         
+		log.debug("[LWSP]:       calcSign30(): "+
+				"  payload to hmac: "+ BArray2HexS(tmp2) +
+				"  sequence number: "+ tmp4+
+				"             data: "+ BArray2HexS(tmp)+
+				"              dk2: "+ this.dk2.split(":")[2]+
+				"             sign: "+ BArray2HexS(tmp3)+
+				"          signb64: "+ Base64.getEncoder().encodeToString(tmp3)+
+				"       RemoteSign: "+this.sign		         
 
 				);
 		return Base64.getEncoder().encodeToString(tmp3);
@@ -411,44 +422,42 @@ public class Lwsp {
 	private boolean validateAuthn() throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, UnsupportedEncodingException 
 	{
 		String encoded = Base64.getEncoder().encodeToString(aescbcHash(this.snonce,this.gnonce,this.sn,this.dk1));
-		log.info("\nvalidateAuthn(): " +encoded+
-				"\n snonce: "         +this.snonce+
-				"\n gnonce: "         +this.gnonce+
-				"\n sn: "             +this.sn+
-				"\n dk: "             +this.dk1+
-				"\n Lb64: "           +encoded+
-				"\n Rb64: "           +this.authn
+		log.debug("[LWSP]:  validateAuthn(): " +encoded+
+				"  snonce: "         +this.snonce+
+				"  gnonce: "         +this.gnonce+
+				"  sn: "             +this.sn+
+				"  dk: "             +this.dk1+
+				"  Lb64: "           +encoded+
+				"  Rb64: "           +this.authn
 				);
-		if (encoded.equals(this.authn)) {log.info("\nvalidateAuthn(): result OK!\n\n");return true;}
-		else {log.info("\nvalidateAuthn(): result K0##\n\n");return false;}
+		if (encoded.equals(this.authn)) {log.debug("[LWSP]:  validateAuthn(): result OK!  ");return true;}
+		else {log.debug("[LWSP]:  validateAuthn(): result K0##  ");return false;}
 	}
 	private static byte[] aes128enc(byte[] data, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException
 	{
 		int padLen=(data.length & 0xf)==0?0:16 - (data.length & 0xf);
 		byte[] pad_data=BAGet(padLen);
-		log.info("\naes128enc()\n data len: " +data.length+
-				"\n"+padLen );
+		//log.debug("[LWSP]: aes128enc()  data len: " +data.length+" "+padLen );
 
 		Key aesKey = new SecretKeySpec(key, "AES");
 		Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
 		IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 		cipher.init(Cipher.ENCRYPT_MODE, aesKey,ivParameterSpec);
 		byte[] tmp=concat_LE(pad_data,data);
-		log.info("\n\n\n\naes128enc() pad data: " +BArray2HexS(tmp)+"\n\n\n\n");
+		//log.debug("[LWSP]: aes128enc() pad data: " +BArray2HexS(tmp)+"    ");
 		byte[] encrypted = cipher.doFinal(tmp);
 		return encrypted;
 	}
 	private static byte[] aes128dec(byte[] data, byte[] key, byte[] iv) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException
 	{
 		int padLen=16 - (data.length & 0xf);
-		log.info("\naes128dec()\n data len: " +data.length+
-				"\n"+padLen );
+		//log.debug("[LWSP]:  aes128dec()  data len: " +data.length+" "+padLen );
 
 		Key aesKey = new SecretKeySpec(key, "AES");
 		Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
 		IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 		cipher.init(Cipher.DECRYPT_MODE, aesKey,ivParameterSpec);
-		log.info("\n\n\n\naes128enc() pad data: " +BArray2HexS(data)+"\n\n\n\n");
+		//log.debug("[LWSP]: aes128enc() pad data: " +BArray2HexS(data)+"    ");
 		byte[] decrypted = cipher.doFinal(data);
 		return decrypted;
 	}
@@ -467,7 +476,7 @@ public class Lwsp {
 		switch (this.get_mti())
 		{
 		case "0x10":
-			log.info("Received 0x10:\n"+data);
+			log.debug("[LWSP]: Received 0x10: "+data);
 			jsonData =new JSONObject(this.data);
 			this.sessionId=getSaltS(8,alpha);                
 			if ((this.cipher=cryptochoose(jsonData.getString("cp").toLowerCase(),this.allowedCipher).toLowerCase())!="NONE")
@@ -503,10 +512,36 @@ public class Lwsp {
 			currTime = new Timestamp(System.currentTimeMillis());
 			this.OutBuffer=out;			
 
-			log.info("Sent back 0x20:\n"+OutBuffer);
+			log.debug("[LWSP]: Sent back 0x20: "+OutBuffer);
 			if (!this.get_mti().contains("0xf")) 
 			{
 				sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,currTime,symId,sspId,pluginId,pluginURL);
+				
+				// Reset Session if a new SDEV registration with same MAC address occours. 
+				List<SessionInfo> lsessions=sessionsRepository.findByMacaddress(macaddress);
+				if (lsessions.size()!=0) {
+					for (SessionInfo tmp_session : lsessions) {
+						log.warn("FOUND EXISTS SDEV with mac address:"+macaddress+", drop previous registration (sessionID="+tmp_session.getsessionId()+") and re-registry");						
+						sessionsRepository.delete(tmp_session);
+						
+						List<String> sspIdResourcesList = new ArrayList<String>();
+
+						//Delete Resources
+						List<ResourceInfo> resList= resourcesRepository.findBySspIdParent(tmp_session.getSspId());
+						for (ResourceInfo r : resList) {
+							resourcesRepository.delete(r);
+							sspIdResourcesList.add(r.getSspIdResource());
+						}
+
+						//Delete OData
+						for (String sspIdCurr : sspIdResourcesList) {
+							List<RegistrationInfoOData> odataList= registrationInfoODataRepository.findBySspId(sspIdCurr);
+							for (RegistrationInfoOData r : odataList) {
+								registrationInfoODataRepository.delete(r);
+							}
+						}
+					}
+				}
 				sessionsRepository.save(sessionInfo);
 			}
 			break;
@@ -517,17 +552,15 @@ public class Lwsp {
                 /    \) \/ (  )(  ) __ (
                 \_/\_/\____/ (__) \_)(_/
 			 */           
-			log.info("Received 0x30:\n"+data);
+			log.debug("[LWSP]: Received 0x30:"+data);
 			jsonData =new JSONObject(this.data);
 			if (jsonData.has("sessionId"))
 			{
-				log.info("sessionId found into the db.");
+				log.debug("[LWSP]: sessionId found into the db.");
 				if (! regexvalidator(this.sessionId=jsonData.getString("sessionId"),sessionIdREGEX)){out=this.error_fb;}
 				else {
 					s = sessionsRepository.findBySessionId(sessionId);
-					log.info("\n-------------------------------------------Recover data from DB\n"+
-							new ObjectMapper().writeValueAsString(s)
-							+"\n-------------------------------------------\n");
+					log.debug("[LWSP]: Recover data from DB "+ new ObjectMapper().writeValueAsString(s));
 					if (! regexvalidator(this.iv         = s.getiv(),ivREGEX))                 {out=this.error_f9;}
 					if (! regexvalidator(this.gnonce     = s.getgnonce(),nonceREGEX))          {out=this.error_fd;}
 					if (! regexvalidator(this.snonce     = s.getsnonce(),nonceREGEX))          {out=this.error_fd;}
@@ -540,23 +573,23 @@ public class Lwsp {
 					if (! regexvalidator(this.authn      = jsonData.getString("authn"),base64REGEX))           {out=this.error_f4;}
 					if (! regexvalidator(this.sign       = jsonData.getString("sign"),base64REGEX))            {out=this.error_f3;}
 					if (! regexvalidator(this.snonce2    = jsonData.getString("nonce"),nonceREGEX))            {out=this.error_f4;}
-					log.info("\n][\n][\n][auth out: "+out);
+					log.debug("[LWSP]:  ][ ][ ][auth out: "+out);
 					if (out.equals("") && validateAuthn())
 					{
-						log.info("validateAuthn() success! validating sign...");
+						log.debug("[LWSP]: validateAuthn() success! validating sign...");
 						String saltT=this.snonce+this.gnonce;
 
 						byte[] arg=concat_LE(HexSS2BArray(saltT),half(getPSK()));
 						this.dk2=pbkdf2_SHA1(arg, saltT ,4, true);
-						log.info("\n"+
-								"\n Salt: "+ saltT+
-								"\n meat: "+ toHex(arg)+
-								"\n dk2: "+ this.dk2						         
+						log.debug("[LWSP]:  "+
+								"  Salt: "+ saltT+
+								"  meat: "+ toHex(arg)+
+								"  dk2: "+ this.dk2						         
 								);
 
 						if (calcSign30().equals(this.sign))
 						{
-							log.info("\n*************calcsign2 test*************\n");
+							log.debug("[LWSP]:  *************calcsign2 test************* ");
 							this.psk=getPSK(); 
 							this.gnonce2=BArray2HexS(getSalt());
 							incsn();
@@ -572,11 +605,11 @@ public class Lwsp {
 							sessionInfo = new SessionInfo(sessionId,iv,psk,dk,dk1,dk2,sn,sign,authn,data,OutBuffer,cipher,macaddress,snonce,snonce2,gnonce,gnonce2,kdf,this.sessionExpiration,symId,sspId,pluginId,pluginURL);
 							sessionsRepository.save(sessionInfo);
 							out=jsonData1.toString();
-							log.info("\n+--------------------------------+"+
-									"\n|"+
-									"\n| out: "+ out+
-									"\n|"+
-									"\n+--------------------------------+"						         
+							log.debug("[LWSP]:  +--------------------------------+"+
+									" |"+
+									" | out: "+ out+
+									" |"+
+									" +--------------------------------+"						         
 									);
 
 						}
@@ -586,16 +619,11 @@ public class Lwsp {
 			} else {out=this.error_fa;}
 			this.OutBuffer=out;
 			//System.out.println(Base64.getEncoder().encodeToString(aes128enc("{\"campo0\":\"topolino\",\"campo1\":\"pippo\",\"campo2\":\"pluto\",\"campo3\":\"paperino\",\"campo5\":\"qui\",\"campo6\":\"quo\",\"campo7\":\"qua\",\"campo8\":\"paperone\",\"campo9\":\"clarabella\"}".getBytes(),HexSS2BArray(dk.split(":")[2]),iv.getBytes())));
-			log.info("\n+--\n|\n+Sent back 0x40: "+OutBuffer+"\n|\n+--");
+			log.debug("[LWSP]:  Sent back 0x40: "+OutBuffer);
 			if (this.get_mti().contains("0xf")) 
 			{
 
-				log.info("\n+--------------------------------+\\"+
-						"\n|                                | \\"+
-						"\n+------------->DELETE<-----------+-->"+ 
-						"\n|                                | /"+
-						"\n+--------------------------------+/"						         
-						);
+				log.debug("[LWSP]:  ERROR DELETE session");
 
 				SessionInfo ss = sessionsRepository.findBySessionId(this.sessionId);
 				sessionsRepository.delete(ss);
@@ -609,7 +637,7 @@ public class Lwsp {
                  ) D (/    \ )( /    \
                 (____/\_/\_/(__)\_/\_/ 
 			 */
-			log.info("Received 0x50:\n"+data);
+			log.debug("[LWSP]: Received 0x50: "+data);
 			jsonData =new JSONObject(this.data);
 			if (jsonData.has("sessionId"))
 			{
@@ -630,7 +658,7 @@ public class Lwsp {
 					if (out.equals(""))
 					{
 						String decoded= new String(aes128dec(Base64.getDecoder().decode(jsonData.getString("data").getBytes()),HexSS2BArray(dk.split(":")[2]),iv.getBytes()));
-						log.info("\n+++++++\n+++++++++\n+++++++++ ->"+decoded);
+						log.debug("[LWSP]: decoded: "+decoded);
 						//this.OutBuffer=String.format(DecJson, decoded);
 						this.OutBuffer=decoded;
 					} 
@@ -641,7 +669,7 @@ public class Lwsp {
 					sessionsRepository.save(s);
 				}
 			}
-			log.info("Sent back 0x60:\n"+OutBuffer);
+			log.debug("[LWSP]: Sent back 0x60: "+OutBuffer);
 			break;
 		case "INVALID":          
 			throw new Exception("InvalidJson");

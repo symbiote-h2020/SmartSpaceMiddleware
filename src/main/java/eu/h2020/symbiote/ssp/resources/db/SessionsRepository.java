@@ -26,6 +26,7 @@ public interface SessionsRepository extends MongoRepository<SessionInfo, String>
 	public List<SessionInfo> findByPluginId(String pluginId);
 	public List<SessionInfo> findByPluginURL(String pluginURL);
 	public List<SessionInfo> findByDk1(String dk1);
+	public List<SessionInfo> findByMacaddress(String macaddress);
 	//public SessionInfo findBySymbioteId(String symbioteId);
     
 }

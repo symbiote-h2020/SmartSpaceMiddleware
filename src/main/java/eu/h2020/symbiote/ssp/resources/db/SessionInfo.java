@@ -157,6 +157,7 @@ public class SessionInfo {
 		this.sspId=sspId;
 		this.pluginId=pluginId;
 		this.pluginURL=pluginURL;
+		this.roaming=false;
 	}
 
 	@JsonCreator
@@ -210,6 +211,7 @@ public class SessionInfo {
 		this.pluginId=pluginId;
 		this.pluginURL=pluginURL;
 		this.roaming=Boolean.valueOf(roaming.toLowerCase());
+		
 	}
 	
 	

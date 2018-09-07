@@ -8,6 +8,7 @@ package eu.h2020.symbiote.ssp.rap.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.h2020.symbiote.security.ComponentSecurityHandlerFactory;
 import eu.h2020.symbiote.security.accesspolicies.IAccessPolicy;
+import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyFactory;
 import eu.h2020.symbiote.security.accesspolicies.common.IAccessPolicySpecifier;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
@@ -109,7 +110,7 @@ public class AuthorizationManager {
 
             }
 
-            if (checkedPolicies.size() == 1) {
+            if (checkedPolicies != null && checkedPolicies.size() == 1) {
                 return new AuthorizationResult("ok", true);
             } else {
                 return new AuthorizationResult("The stored resource access policy was not satisfied",
@@ -187,12 +188,18 @@ public class AuthorizationManager {
              // building dummy access policy
             Map<String, IAccessPolicy> accessPolicyMap = new HashMap<>();
             // to get policies here
-            Optional<ResourceInfo> resourceInfo = resourcesRepository.findById(resourceId);
-            if(resourceInfo == null) {
+            
+            Optional<ResourceInfo> resourceInfo = null;
+            resourceInfo = resourcesRepository.findBySymIdResource(resourceId);
+            if(resourceInfo == null)
+            		resourceInfo = resourcesRepository.findById(resourceId);
+            
+            if(resourceInfo == null || !resourceInfo.isPresent()) {
                 log.error("No access policies for resource");
                 return ids;
             }
-            accessPolicyMap.put(resourceId, resourceInfo.get().getAccessPolicy());
+            IAccessPolicy accessPolicy= AccessPolicyFactory.getAccessPolicy(resourceInfo.get().getAccessPolicySpecifier());
+            accessPolicyMap.put(resourceId, accessPolicy);
             String mapString = accessPolicyMap.entrySet().stream().map(entry -> entry.getKey() + " - " + entry.getValue())
                     .collect(Collectors.joining(", "));
             log.info("accessPolicyMap: " + mapString);

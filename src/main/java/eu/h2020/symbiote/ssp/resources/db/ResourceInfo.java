@@ -39,15 +39,21 @@ public class ResourceInfo {
 	@JsonProperty("internalIdResource") // of Resource
 	private String internalIdResource;
 
-	@JsonProperty("symIdParent") //of SDEV/Plat
+	//@JsonProperty("symIdParent") //of SDEV/Plat
+	@JsonIgnore
 	private String symIdParent;
-	@JsonProperty("sspIdParent") // of SDEV/Plat
+
+	//@JsonProperty("sspIdParent") // of SDEV/Plat
+	@JsonIgnore
 	private String sspIdParent;
 
 
-	@JsonProperty("type")
+	//@JsonProperty("type")
+	@JsonIgnore
 	private String type;
-	@JsonProperty("observedProperties")
+
+	//@JsonProperty("observedProperties")
+	@JsonIgnore
 	private List<String> observedProperties;
 	@JsonIgnore
 	private List<String> sessionIdList;
@@ -56,25 +62,43 @@ public class ResourceInfo {
 
 	@Field
 	@Indexed(name="session_expiration", expireAfterSeconds=DbConstants.EXPIRATION_TIME)
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	//@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnore
 	private Date session_expiration;
-	@JsonProperty("policy")
-	private IAccessPolicy policy;
-	@JsonProperty("policySpecifier") 
+
+	//@JsonProperty("policySpecifier")
+	@JsonIgnore
 	private IAccessPolicySpecifier policySpecifier;	
-	@JsonProperty("resource") 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	//@JsonProperty("resource")
+	//@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnore
 	private Resource resource;
 
-
-	public ResourceInfo() {
-		this.id = "";
-		this.symIdResource = "";
-		this.internalIdResource="";
+	@JsonCreator
+	public ResourceInfo(
+			@JsonProperty("sspIdResource")  String sspIdResource,
+			@JsonProperty("symIdResource")  String symIdResource,
+			@JsonProperty("internalIdResource")  String internalIdResource
+			) {
+		this.id = sspIdResource;
+		this.symIdResource = symIdResource;
+		this.internalIdResource = internalIdResource;
 		this.symIdParent ="";
 		this.sspIdParent ="";
 		this.pluginUrl = null;
 		this.observedProperties = null;
+		this.sessionIdList = null;
+		this.type = null;
+	}
+
+	public ResourceInfo() {
+		this.id = "";
+		this.symIdResource = "";
+		this.internalIdResource = "";
+		this.symIdParent = "";
+		this.sspIdParent = "";
+		this.pluginUrl = null;
+		this.observedProperties = null;
 		this.sessionIdList = null;       
 		this.type = null;
 	}
@@ -83,13 +107,13 @@ public class ResourceInfo {
 			@JsonProperty("sspIdResource")  String sspIdResource,
 			@JsonProperty("symIdResource")  String symIdResource,
 			@JsonProperty("internalIdResource")  String internalIdResource,
-			@JsonProperty("symIdParent") String symIdParent, // of SDEV/Plat
-			@JsonProperty("sspIdParent") String sspIdParent
+			String symIdParent, // of SDEV/Plat
+			String sspIdParent
 			) {
 		this.id = sspIdResource;
 		this.symIdResource = symIdResource;
-		this.internalIdResource=internalIdResource;
-		this.symIdParent =symIdParent;
+		this.internalIdResource = internalIdResource;
+		this.symIdParent = symIdParent;
 		this.sspIdParent = sspIdParent;
 		this.pluginUrl = null;
 		this.observedProperties = null;
@@ -97,72 +121,63 @@ public class ResourceInfo {
 		this.type = null;
 	}
 
-	@JsonCreator
 	public ResourceInfo(
 			@JsonProperty("sspIdResource")  String sspIdResource,
 			@JsonProperty("symIdResource")  String symIdResource,
 			@JsonProperty("internalIdResource")  String internalIdResource,
-			@JsonProperty("symIdParent") String symIdParent, // of SDEV/Plat
-			@JsonProperty("sspIdParent") String sspIdParent,
-			@JsonProperty("sessionExpiration") Date session_expiration
+			String symIdParent, // of SDEV/Plat
+			String sspIdParent,
+			Date session_expiration
 			) {
 		this.id = sspIdResource;
 		this.symIdResource = symIdResource;
-		this.internalIdResource=internalIdResource;
-		this.symIdParent =symIdParent;
-		this.sspIdParent = sspIdParent;
-		this.pluginUrl = null;
-		this.observedProperties = null;
-		this.sessionIdList = null;       
-		this.type = null;
-		this.session_expiration=session_expiration;
-	}
-
-	@JsonCreator
-	public ResourceInfo(
-			@JsonProperty("sspIdResource")  String sspIdResource,
-			@JsonProperty("symIdResource")  String symIdResource,
-			@JsonProperty("internalIdResource")  String internalIdResource,
-			@JsonProperty("symIdParent") String symIdParent, // of SDEV/Plat
-			@JsonProperty("sspIdParent") String sspIdParent,
-			@JsonProperty("sessionExpiration") Date session_expiration,
-			@JsonProperty("policy") IAccessPolicy policy,
-			@JsonProperty("policySpecifier") IAccessPolicySpecifier policySpecifier
-			) {
-		this.id = sspIdResource;
-		this.symIdResource = symIdResource;
-		this.internalIdResource=internalIdResource;
-		this.symIdParent =symIdParent;
+		this.internalIdResource = internalIdResource;
+		this.symIdParent = symIdParent;
 		this.sspIdParent = sspIdParent;
 		this.pluginUrl = null;
 		this.observedProperties = null;
 		this.sessionIdList = null;       
 		this.type = null;
 		this.session_expiration=session_expiration;
-		this.policy=policy;
+	}
+
+	public ResourceInfo(
+			@JsonProperty("sspIdResource")  String sspIdResource,
+			@JsonProperty("symIdResource")  String symIdResource,
+			@JsonProperty("internalIdResource")  String internalIdResource,
+			String symIdParent, // of SDEV/Plat
+			String sspIdParent,
+			Date session_expiration,
+			IAccessPolicySpecifier policySpecifier
+			) {
+		this.id = sspIdResource;
+		this.symIdResource = symIdResource;
+		this.internalIdResource = internalIdResource;
+		this.symIdParent = symIdParent;
+		this.sspIdParent = sspIdParent;
+		this.pluginUrl = null;
+		this.observedProperties = null;
+		this.sessionIdList = null;       
+		this.type = null;
+		this.session_expiration=session_expiration;
 		this.policySpecifier=policySpecifier;
 	}
-
 	
 	@JsonProperty("sspIdResource")
 	public String getSspIdResource() {
 		return id;
 	}
 
-	@JsonProperty("symIdParent")
 	public String getSymIdParent() {
 		return symIdParent;
 	}
 
-	@JsonProperty("symIdParent")
 	public void setSymIdParent(String symIdParent) {
 		this.symIdParent = symIdParent;
 	}
 
-	@JsonProperty("sspIdParent")
 	public String getSspIdParent() { return sspIdParent; }
 
-	@JsonProperty("sspIdParent")
 	public void setSspIdParent(String sspIdParent) {
 		this.sspIdParent = sspIdParent;
 	}
@@ -187,22 +202,18 @@ public class ResourceInfo {
 		this.internalIdResource = internalIdResource;
 	}
 
-	@JsonProperty("observedProperties")
 	public List<String> getObservedProperties() {
 		return observedProperties;
 	}    
 
-	@JsonProperty("observedProperties")
 	public void setObservedProperties(List<String> observedProperties) {
 		this.observedProperties = observedProperties;
 	}
 
-	@JsonProperty("type")
 	public String getType() {
 		return type;
 	}
 
-	@JsonProperty("type")
 	public void setType(String type) {
 		this.type = type;
 	}
@@ -234,31 +245,19 @@ public class ResourceInfo {
 		this.pluginUrl = pluginUrl;
 	}
 
-	@JsonProperty("session_expiration")
 	public Date getSessionExpiration() {
 		return this.session_expiration;
 	}
 
-	@JsonProperty("session_expiration")
 	public void setSessionExpiration(Date session_expiration) {
 		this.session_expiration = session_expiration;
 	}
-	
-	@JsonProperty("policy")
-	public IAccessPolicy getAccessPolicy() { return this.policy; }
 
-	@JsonProperty("policy")
-	public void setAccessPolicy(IAccessPolicy policy) {	this.policy = policy; }
-
-	@JsonProperty("policySpecifier")
 	public IAccessPolicySpecifier getAccessPolicySpecifier() { return this.policySpecifier; }
 
-	@JsonProperty("policySpecifier")
 	public void setAccessPolicySpecifier(IAccessPolicySpecifier policySpecifier) {	this.policySpecifier = policySpecifier; }
-	
-	@JsonProperty("resource")
+
 	public Resource getResource() { return this.resource; }
 
-	@JsonProperty("resource")
 	public void setResource(Resource resource) {	this.resource= resource; }
 }

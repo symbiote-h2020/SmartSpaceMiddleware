@@ -1,4 +1,4 @@
-package eu.h2020.symbiote.ssp.utils;
+package eu.h2020.symbiote.ssp.CoreRegister;
 
 import java.util.ArrayList;
 import java.util.List;

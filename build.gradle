@@ -4,7 +4,7 @@ if (!hasProperty('mainClass')) {
 // initial extensions to gradle
 buildscript {
     ext {
-        springBootVersion = '1.5.11.RELEASE'
+        springBootVersion = '1.5.14.RELEASE'
     }
     repositories {
         mavenCentral()
@@ -34,7 +34,7 @@ apply plugin: 'idea'
 //apply plugin: 'com.cinnober.gradle.semver-git'
 
 // XXX please change with your commits according to http://semver.org/
-project.version = '0.0.2'
+project.version = '3.0.0'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -43,13 +43,6 @@ targetCompatibility = 1.8
 repositories {
     mavenCentral()
     maven { url "https://jitpack.io" }
-}
-
-// Spring related configs
-dependencyManagement {
-    imports {
-    //    mavenBom "org.springframework.cloud:spring-cloud-dependencies:Dalston.SR5"
-    }
 }
 
 /*
@@ -76,15 +69,9 @@ dependencies {
             3) project dependency requires changes in settings.gradle file in this project
             4) never commit build.gradle which has project dependencies active as it will break CI builds
     */
-    //compile project(':SymbIoTeLibraries')
-    compile('com.github.symbiote-h2020:SymbIoTeLibraries:5+') { changing = true }
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:5.27+')
+
     // Spring
-    //compile('org.springframework.cloud:spring-cloud-starter')
-    //compile('org.springframework.cloud:spring-cloud-starter-config')
-    //compile('org.springframework.cloud:spring-cloud-starter-eureka')
-    //compile('org.springframework.cloud:spring-cloud-starter-zipkin')
-    //compile('org.springframework.boot:spring-boot-starter-amqp')
-    //compile("org.springframework.integration:spring-integration-mqtt:4+")
     compile('org.springframework.boot:spring-boot-starter-data-rest')
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.boot:spring-boot-starter-data-mongodb')

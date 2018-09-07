@@ -118,7 +118,19 @@ public class RapEntityProcessor implements EntityProcessor{
                 RapEntityCollectionProcessor.setErrorResponse(response, customOdataException, responseFormat);
                 return;
             }
-            if(!storageHelper.checkAccessPolicies(request, resource.getSymIdResource())) {
+
+            String symbioteId = resource.getSymIdResource();
+            if(symbioteId == null && symbioteId.isEmpty()) {
+                symbioteId = resource.getSspIdResource();
+            }
+            if (symbioteId == null || symbioteId.isEmpty()) {
+                log.error("No valid symbioteId for entity");
+                customOdataException = new CustomODataApplicationException(null, "No valid symbioteId for entity.",
+                        HttpStatusCode.NO_CONTENT.getStatusCode(), Locale.ROOT);
+                RapEntityCollectionProcessor.setErrorResponse(response, customOdataException, responseFormat);
+                return;
+            }
+            if(!storageHelper.checkAccessPolicies(request, symbioteId)) {
                 log.error("Access policy check error" );
                 customOdataException = new CustomODataApplicationException(resource.getSymIdResource(), "Access policy check error",
                         HttpStatusCode.UNAUTHORIZED.getStatusCode(), Locale.ROOT);
@@ -207,8 +219,16 @@ public class RapEntityProcessor implements EntityProcessor{
                 resourceInfoList = storageHelper.getResourceInfoList(typeNameList,keyPredicates);
                 for(ResourceInfo resourceInfo: resourceInfoList){
                     String symbioteIdTemp = resourceInfo.getSymIdResource();
-                    if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty())
+                    if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
                         symbioteId = symbioteIdTemp;
+                        break;
+                    } else {
+                        symbioteIdTemp = resourceInfo.getSspIdResource();
+                        if(symbioteIdTemp != null && !symbioteIdTemp.isEmpty()) {
+                            symbioteId = symbioteIdTemp;
+                            break;
+                        }
+                    }
                 }
             } catch(ODataApplicationException odataExc){
                 log.error(odataExc.getMessage(), odataExc);
