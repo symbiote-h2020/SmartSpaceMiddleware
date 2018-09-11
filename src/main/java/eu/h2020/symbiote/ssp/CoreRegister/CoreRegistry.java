@@ -136,7 +136,7 @@ public class CoreRegistry {
 		sspRegInfoCore.setPluginId(sspRegInfo.getPluginId());
 		sspRegInfoCore.setPluginURL(sspRegInfo.getPluginURL());
 		sspRegInfoCore.setRoaming(sspRegInfo.getRoaming());
-		sspRegInfoCore.setSspId(sspRegInfo.getSspId());
+		sspRegInfoCore.setSspId(sspRegInfo.getPluginId());
 		
 		if (sspRegInfo.getSymId().equals(""))
 			sspRegInfoCore.setSymId(null);
