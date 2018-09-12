@@ -52,7 +52,7 @@ public class AuthorizationService {
                                 @Value("${symbIoTe.component.password}") String componentOwnerPassword,
                                 @Value("${symbIoTe.localaam.url}") String aamAddress,
                                 @Value("${symbIoTe.component.clientId}") String clientId,
-                                @Value("${symbIoTe.component.keystore.path}") String keystoreName,
+                                @Value("${symbIoTe.innkeeper.keystore.path}") String keystoreName,
                                 @Value("${symbIoTe.component.keystore.password}") String keystorePass,
                                 @Value("${symbIoTe.aam.integration}") Boolean securityEnabled)
             throws SecurityHandlerException {
