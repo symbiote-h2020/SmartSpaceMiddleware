@@ -129,6 +129,19 @@ public class InnkeeperRegistrationRequest {
 
 
 		case InnkeeperRestControllerConstants.REGISTRATION_ALREADY_REGISTERED:
+			SessionInfo sinfo = sessionsRepository.findBySspId(regResp.getSspId());
+			
+			log.info("sinfo.getSspId()="+sinfo.getSspId());
+			log.info("regResp.getSspId()="+regResp.getSspId());	
+			
+			if ((sinfo != null) && (regResp!=null)) {
+				if (regResp.getSspId()!=null || !regResp.getSspId().equals("")) {
+					sinfo.setdk1(sspRegInfo.getDerivedKey1());
+					sessionsRepository.save(sinfo);
+				}
+			}
+				
+			
 			httpStatus=HttpStatus.OK;
 			break;
 
