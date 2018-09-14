@@ -22,6 +22,7 @@ import eu.h2020.symbiote.ssp.lwsp.model.LwspConstants;
 import eu.h2020.symbiote.ssp.resources.SspResource;
 import eu.h2020.symbiote.ssp.resources.db.ResourceInfo;
 import eu.h2020.symbiote.ssp.resources.db.ResourcesRepository;
+import eu.h2020.symbiote.ssp.resources.db.SessionInfo;
 import eu.h2020.symbiote.ssp.resources.db.SessionsRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -372,6 +373,33 @@ public class InnkeeperRestController {
 		return setCoreOnline(false);
 
 	}
+	
+	@RequestMapping(value = "delete_all_resources", method = RequestMethod.POST)
+	public ResponseEntity<Object> delete_all_resources(@RequestBody String payload) throws NoSuchAlgorithmException, SecurityHandlerException, ValidationException, IOException {
+		
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+		HttpStatus httpStatus = HttpStatus.OK;
+		List<SessionInfo> slist=sessionsRepository.findAll();
+		String result="OK";
+		for (SessionInfo s : slist) {
+			log.info("s.getSspId(): "+s.getSspId()+"s.getSymId(): "+s.getSymId());
+			String msg="{\"sspId\":\""+s.getSspId()+"\"}";
+			ResponseEntity<Object> res = innkeeperRegistrationRequest.SspDelete(msg);
+			result="OK";
+		}
+		 
+		
+		
+		return new ResponseEntity<Object>("{\"result\"=\""+result+"\"}",responseHeaders,httpStatus);
+		
+		
+		
+		
+		
+
+	}
+	
 
 
 }
