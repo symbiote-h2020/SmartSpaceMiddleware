@@ -93,8 +93,8 @@ String symAgent::getSymIdFromFlash() {
 		P(tmpID);
 
 		uint8_t byteCheck = ((uint8_t)EEPROM.read(FLASH_AGENT_SYMID_SHA1_CHECK_BYTE));
-		PI("Read this code-Check from flash: ");
-		P(byteCheck);
+		//PI("Read this code-Check from flash: ");
+		//P(byteCheck);
 		EEPROM.end();
 
 		//calculate SHA1 of the symId
@@ -103,15 +103,15 @@ String symAgent::getSymIdFromFlash() {
 		sha1.print(tmpID);
 		uint8_t dataout[SHA1_KEY_SIZE];
 		memcpy(dataout, sha1.result(), SHA1_KEY_SIZE);
-		PI("Calculate this code-Check from flash: ");
-		P(dataout[0]);
+		//PI("Calculate this code-Check from flash: ");
+		//P(dataout[0]);
 		
 		if (dataout[0] == byteCheck) {
 			//valid sym-id
-			P("Valid sym-id!");
+			P("Valid sym-id found in flash!");
 			return tmpID;
 		} else {
-			P("No symId found in flash");
+			P("No valid symId found in flash...");
 			return "";
 		}
 	} else return "";
@@ -815,6 +815,12 @@ int symAgent::registry()
 			P("JOIN RESPONSE UNKNOWN");
 			return ERR_UNKNOWN_RESPONSE_FROM_JOIN;
 		}
+		if (_roaming &&  (_rootClearResp["result"].as<String>() == "OK" || _rootClearResp["result"].as<String>() == "ALREADY_REGISTERED" || _rootClearResp["result"].as<String>() == "OFFLINE") ) {
+			P("ROAMING SDEV, SAVE CONTEXT IN FLASH");
+			_security->saveContextInFlash();
+				// save the symbiote-ID in flash
+			saveIdInFlash();
+		}
 	} else {
 			//error response from server
 			P("GOT http error code from INNK");
@@ -842,12 +848,7 @@ int symAgent::registry()
 	  	timer0_write(next);
 	  	interrupts();
 	}
-	if (_roaming) {
-		P("ROAMING SDEV, SAVE CONTEXT IN FLASH");
-		_security->saveContextInFlash();
-			// save the symbiote-ID in flash
-		saveIdInFlash();
-	}
+	
 	return statusCode;
 }
 
@@ -1283,6 +1284,12 @@ int symAgent::sendKeepAlive(String& response)
 						if (_rootClearResp["symId"].as<String>() != _symId) {
 							_symId = _rootClearResp["symId"].as<String>();
 							P("symId updated!");
+							if (_roaming) {
+								P("ROAMING SDEV, SAVE CONTEXT IN FLASH");
+								_security->saveContextInFlash();
+									// save the symbiote-ID in flash
+								saveIdInFlash();
+							}
 						} 
 						JsonArray& updateSymIdArray = _rootClearResp["updatedSymId"];
 						for (uint8_t i = 0; i < updateSymIdArray.size(); i++) {

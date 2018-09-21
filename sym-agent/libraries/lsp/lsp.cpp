@@ -113,12 +113,12 @@ void lsp::printBuffer(uint8_t* buff, uint8_t len, String label) {
 
 
 void lsp::calculateDK1(uint8_t num_iterations) {
-	P("\nStart calculating DK1 key....");
+	//P("\nStart calculating DK1 key....");
 	// search for a valid key in flash, if not found _dk1 and _prevDk1 are not populated,
 	// otherwise get _dk1 and  
 	if (_kdf == "PBKDF2") {
 		if (_cp == TLS_PSK_WITH_AES_128_CBC_SHA) {
-			printBuffer(_psk, _psk_len, "PSK");
+			//printBuffer(_psk, _psk_len, "PSK");
 			uint8_t salt[8];
 			memset(salt, 0, sizeof(salt));
 			//uint32_t tmpnonce = ENDIAN_SWAP_32(0x98ec4);
@@ -127,11 +127,11 @@ void lsp::calculateDK1(uint8_t num_iterations) {
 			tmpnonce = ENDIAN_SWAP_32(_GWNonce);
 			memcpy(salt+4, (uint8_t*)&tmpnonce, 4);
 
-			printBuffer(salt, 8, "DK1salt");
+			//printBuffer(salt, 8, "DK1salt");
 
 			PBKDF2function( _psk, _psk_len, salt, sizeof(salt) ,_dk1, sizeof(_dk1), num_iterations );
 #ifdef DEBUG_SYM_CLASS
-			printBuffer(_dk1, AES_KEY_LENGTH, "DK1");
+			//printBuffer(_dk1, AES_KEY_LENGTH, "DK1");
 #endif
 		} else {
 			//TBD
@@ -145,7 +145,7 @@ void lsp::calculateDK1(uint8_t num_iterations) {
 }
 
 void lsp::calculateDK2(uint8_t num_iterations) {
-	P("\nStart calculating DK2 key....");
+	//P("\nStart calculating DK2 key....");
 	if (_kdf == "PBKDF2") {
 		if (_cp == TLS_PSK_WITH_AES_128_CBC_SHA) {
 			uint8_t dk2Password[8+(_psk_len/2)];
@@ -165,12 +165,12 @@ void lsp::calculateDK2(uint8_t num_iterations) {
 			memcpy(dk2Password+14, (uint8_t*)&tmpnonce, 4);
 			memcpy(salt+4, (uint8_t*)&tmpnonce, 4);
 
-			printBuffer(dk2Password, sizeof(dk2Password), "DK2password");
-			printBuffer(salt, sizeof(salt), "DK2salt");
+			//printBuffer(dk2Password, sizeof(dk2Password), "DK2password");
+			//printBuffer(salt, sizeof(salt), "DK2salt");
 
 			PBKDF2function( dk2Password, sizeof(dk2Password), salt, sizeof(salt), _dk2, sizeof(_dk2), num_iterations );
 #ifdef DEBUG_SYM_CLASS
-			printBuffer(_dk2, AES_KEY_LENGTH, "DK2");
+			//printBuffer(_dk2, AES_KEY_LENGTH, "DK2");
 #endif
 		} else {
 			//TBD
@@ -208,7 +208,7 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 				"sessionId": <abCD123a>
 			}
 		*/
-		P("\nGOT MTI GW INK HELLO");
+		//P("\nGOT MTI GW INK HELLO");
 		String _cc = _root["cc"].as<String>();
 		if (_cc != _cp) {
 			P("Crypto Choice different from Crypto Proposal, process degraded, I continue usign CP");
@@ -225,16 +225,16 @@ uint8_t lsp::elaborateInnkResp(String& resp) {
 		//_GWNonce = _root["nonce"].as<String>().toInt();
 		if (_iv != "") {
 			// we need to use the init vector for the key calculation
-			P("Init vector found");
+			//P("Init vector found");
 			_needInitVector == true;
 		} else {
-			P("Init vector not found");
+			//P("Init vector not found");
 			_needInitVector == false;
 		}
 		_sessionId = _root["sessionId"].as<String>();
 		return COMMUNICATION_OK;
 	} else if (mti == STRING_MTI_GW_INK_AUTHN) {
-		P("\nGOT MTI GW INK AUTHN");
+		//P("\nGOT MTI GW INK AUTHN");
 /*
 		This is a GW INK AUTHN RESPONSE:
 			{	
@@ -372,7 +372,7 @@ void lsp::begin(String SSPId) {
   	 - _lastSSPId
 */
 void lsp::getContextFromFlash() {
-	P("GETCONTEXTFROMFLASH");
+	//P("GETCONTEXTFROMFLASH");
 	String tmpSSPId = "";
 	EEPROM.begin(FLASH_MEMORY_RESERVATION);
 	for (uint8_t i = FLASH_LSP_START_SSPID; i < FLASH_LSP_END_SSPID; i++) {
@@ -383,12 +383,12 @@ void lsp::getContextFromFlash() {
 	P(tmpSSPId);
 	if (tmpSSPId.substring(0, 4).equals("sym-")) {
 		//got a valid SSP-id
-		P("Found a SSPID valid in Flash!");
+		//P("Found a SSPID valid in Flash!");
 		for (uint8_t i = FLASH_LSP_START_PREV_DK1; i < FLASH_LSP_END_PREV_DK1; i++) {
 			_prevDk1[i-FLASH_LSP_START_PREV_DK1] = EEPROM.read(i);
 		}
-		P("GOT this key from flash:");
-		printBuffer(_prevDk1, sizeof(_prevDk1), "prev_DK1");
+		//P("GOT this key from flash:");
+		//printBuffer(_prevDk1, sizeof(_prevDk1), "prev_DK1");
 	} else {
 		EEPROM.end();
 		return;
@@ -403,7 +403,7 @@ void lsp::getContextFromFlash() {
  	Save in flash the currentSSPId and DK1
 */
 void lsp::saveContextInFlash() {
-	P("SAVECONTEXTINFLASH");
+	//P("SAVECONTEXTINFLASH");
 	EEPROM.begin(FLASH_MEMORY_RESERVATION);
 	uint8_t j = 0;
 	for (uint8_t i = FLASH_LSP_START_SSPID; i < FLASH_LSP_END_SSPID; i++) {
@@ -427,18 +427,18 @@ void lsp::saveContextInFlash() {
 		//tmpSSPId += String(EEPROM.read(i), HEX);
 		tmpSSPId += (char)EEPROM.read(i);
 	}
-	PI("**TEST FLASH DATA***\nSSPid from flash:\t");
-	P(tmpSSPId);
-	PI("I expect\t\t");
-	P(_currentSSPId);
+	//PI("**TEST FLASH DATA***\nSSPid from flash:\t");
+	//P(tmpSSPId);
+	//PI("I expect\t\t");
+	//P(_currentSSPId);
 	uint8_t tmpDK1[AES_KEY_LENGTH];
 	for (uint8_t i = FLASH_LSP_START_PREV_DK1; i < FLASH_LSP_END_PREV_DK1; i++) {
 			tmpDK1[i-FLASH_LSP_START_PREV_DK1] = EEPROM.read(i);
 		}
-	P("GOT this key from flash:");
-	printBuffer(tmpDK1, sizeof(tmpDK1), "prev_DK1(from flash)");
-	P("I expect:");
-	printBuffer(_dk1, sizeof(_dk1), "DK1(as _dk1)\t");
+	//P("GOT this key from flash:");
+	//printBuffer(tmpDK1, sizeof(tmpDK1), "prev_DK1(from flash)");
+	//P("I expect:");
+	//printBuffer(_dk1, sizeof(_dk1), "DK1(as _dk1)\t");
 #endif
 }
 
@@ -452,8 +452,8 @@ String lsp::getHashOfIdentity(String id) {
 	else {
 		String tmpString = id;
 		for (uint8_t i = 0; i < AES_KEY_LENGTH; i++) tmpString += String(_prevDk1[i], HEX); 
-		PI("This is (sym-id||prevDK1): ");
-		P(tmpString);
+		//PI("This is (sym-id||prevDK1): ");
+		//P(tmpString);
 		sha1.init();
 		sha1.print(tmpString);
 		uint8_t dataout[SHA1_KEY_SIZE];
@@ -463,8 +463,8 @@ String lsp::getHashOfIdentity(String id) {
 			if (dataout[i] <= 0x0f) retString += '0';
 			retString += String(dataout[i], HEX);
 		} 
-		PI("Got this SHA-1(sym-id||prevDK1): "); 
-		P(retString);
+		//PI("Got this SHA-1(sym-id||prevDK1): "); 
+		//P(retString);
 		return retString;
 	}
 }
@@ -521,9 +521,9 @@ void lsp::createAuthNPacket(uint8_t* dataout) {
 
 	}
 	String dataToHash = SDEVNonceString + gwNonceString;
-	PI("\n**********\nSHA1(");
-	PI(dataToHash);
-	PI(")");
+	//PI("\n**********\nSHA1(");
+	//PI(dataToHash);
+	//PI(")");
 	sha1.init();
 	sha1.print(dataToHash);
 	memcpy(dataout, sha1.result(), 20);
@@ -558,7 +558,7 @@ uint8_t lsp::sendAuthN() {
   		// crypt and sign data with the old SDEVnonce
   		// authNPacket should be SHA1(SDEVnonce||GWnonce)
   		createAuthNPacket(authNPacket);
-  		printBuffer(authNPacket, 20, "");
+  		//printBuffer(authNPacket, 20, "");
   		encryptDataAndSign((char*)authNPacket, outdata, signedData);
   		//PI("B64 encoded data(outside): ");
 		//P(outdata);
@@ -572,7 +572,7 @@ uint8_t lsp::sendAuthN() {
 				// use DK2 to sign
 			_root["sign"] = signedData;
 		String temp = "";
-		P("\n*********************\nSend this JSON:");
+		P("Send this JSON:");
 		_root.prettyPrintTo(Serial);
 		P(" ");
 		_root.printTo(temp);
@@ -623,14 +623,14 @@ void lsp::signData(uint8_t* data, uint8_t data_len, String& output) {
 	uint32_t tmpSn = ENDIAN_SWAP_32(_sn);
 	memcpy(dataToSign+data_len, (uint8_t*)&tmpSn, 4);
 
-	printBuffer(dataToSign, data_len+4, "DataToSign");
+	//printBuffer(dataToSign, data_len+4, "DataToSign");
 
 	sha1.initHmac(_dk2, DK2_KEY_LENGTH);
     sha1.write(dataToSign, (data_len+4));
 
     uint8_t* ret_data = sha1.resultHmac();
 
-    printBuffer(ret_data, SHA1_KEY_SIZE, "BinarySign");
+    //printBuffer(ret_data, SHA1_KEY_SIZE, "BinarySign");
 	base64 b64enc;
 	String encoded = b64enc.encode(ret_data, SHA1_KEY_SIZE, false);
 	output = encoded;
@@ -641,12 +641,12 @@ void lsp::encryptAndSign(char* plain_text, String& output, int length, String& s
 	byte enciphered[length];
 	uint8_t iv[16];
 	for (uint8_t k = 0; k < 16; k++) iv[k] = _iv.charAt(k);
-	printBuffer(iv, 16, "IV\t");
+	//printBuffer(iv, 16, "IV\t");
 	AES aesEncryptor(_dk1, iv, AES::AES_MODE_128, AES::CIPHER_ENCRYPT);
 	//aesEncryptor.process((uint8_t*)plain_text, enciphered, length);
 	aesEncryptor.processNoPad((uint8_t*)plain_text, enciphered, length);
 	int encrypted_size = sizeof(enciphered);
-	printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
+	//printBuffer((uint8_t*)enciphered, encrypted_size, "EncrypData");
 
 	String signedData;
 	signData(enciphered, encrypted_size, signedData);
@@ -670,15 +670,15 @@ void lsp::encryptDataAndSign(char* plain_text, String& output, String& signature
 	// todo fixme
 	tmpLen = SHA1_KEY_SIZE + String(_sn, HEX).length();
 	//String dataToEncrypt = String(plain_text) + String(_sn, HEX);
-	PI("ADD this SN to encrypt:\t= ");
-	P(String(_sn, HEX));
+	//PI("ADD this SN to encrypt:\t= ");
+	//P(String(_sn, HEX));
 	uint8_t arrayOfDataToEncrypt[tmpLen];
 	memset(arrayOfDataToEncrypt, 0, tmpLen);
 	//dataToEncrypt.getBytes((byte*)arrayOfDataToEncrypt, (unsigned int)tmpLen); 
 	memcpy(arrayOfDataToEncrypt, plain_text, SHA1_KEY_SIZE);
 	for (uint8_t i = SHA1_KEY_SIZE; i < tmpLen; i++) arrayOfDataToEncrypt[i] = String(_sn, HEX).charAt(i-SHA1_KEY_SIZE);
 
-	printBuffer((uint8_t*)arrayOfDataToEncrypt, tmpLen,"Data2Encrypt(array)");
+	//printBuffer((uint8_t*)arrayOfDataToEncrypt, tmpLen,"Data2Encrypt(array)");
 	bufferSize((char*)arrayOfDataToEncrypt, tmpLen, length);;
 	
 	String encrypted;
@@ -694,11 +694,11 @@ void lsp::encryptDataAndSign(char* plain_text, String& output, String& signature
 	//for (uint8_t i = dataToEncrypt.length(); i < length; i++) dataToEncrypt.concat('U');
 	//for (uint8_t i = tmpLen; i < length; i++) dataToEncrypt.concat('U');
 	///printBuffer((uint8_t*)dataToEncrypt.c_str(), dataToEncrypt.length(),"DATA2ENCRYPT");
-	printBuffer(arrayOfDataToEncrypt_padded, length,"DATA2ENCRYPT(padded)");
-	PI("Lenght of the data without padding:\t");
-	P(tmpLen);
-	PI("Lenght of the data with padding:\t");
-	P(length);
+	//printBuffer(arrayOfDataToEncrypt_padded, length,"DATA2ENCRYPT(padded)");
+	//PI("Lenght of the data without padding:\t");
+	//P(tmpLen);
+	//PI("Lenght of the data with padding:\t");
+	//P(length);
 
 	//encryptAndSign((char*)dataToEncrypt.c_str(), encrypted, length, tmpSign);
 	encryptAndSign((char*)arrayOfDataToEncrypt_padded, encrypted, length, tmpSign);
@@ -729,24 +729,24 @@ bool lsp::decryptAndVerify(String authn, String& decrypted, String GWsigned) {
   	// it creates the packet using the new SDEV and GW nonce savend in library
   	P(" ");
   	createAuthNPacket(GWauthNPacket);
-  	printBuffer(GWauthNPacket, 20, " = CalculatedGWauthNPacket");
+  	//printBuffer(GWauthNPacket, 20, " = CalculatedGWauthNPacket");
   	encryptDataAndSign((char*)GWauthNPacket, GWoutdata, signedData);
-  	PI("Got this sign from INNK:\t");
-  	P(GWsigned);
-  	PI("Calculated sign:\t\t");
-  	P(signedData);
+  	//PI("Got this sign from INNK:\t");
+  	//P(GWsigned);
+  	//PI("Calculated sign:\t\t");
+  	//P(signedData);
   	// FIXME: uncomment
   	if (signedData == GWsigned) {
   		unsigned int binaryLength = decode_base64_length((unsigned char*)authn.c_str());
   		unsigned char decodedb64[binaryLength];
   		memset(decodedb64, 0, binaryLength);
-  		P("Sign match found!");
+  		//P("Sign match found!");
   		decode_base64((unsigned char*)authn.c_str(), decodedb64);
-  		printBuffer(decodedb64, binaryLength, "AUTHN(binary)");
+  		//printBuffer(decodedb64, binaryLength, "AUTHN(binary)");
   		String plainHex;
   		decrypt(decodedb64, binaryLength, plainHex);
-  		PI("PlainHex decrypted: ");
-  		P(plainHex);
+  		//PI("PlainHex decrypted: ");
+  		//P(plainHex);
   		return true;
   	}
 }

@@ -132,7 +132,7 @@ void setup() {
       Serial.println(sdev1.getRegExpiration());
       Serial.print("\nNext Keep-Alive: ");
       Serial.println((unsigned long int)floor(sdev1.getRegExpiration() * 0.9));
-      registrationMetro.interval((unsigned long int)floor(sdev1.getRegExpiration() * 0.9));
+      registrationMetro.interval((unsigned long int)floor(sdev1.getRegExpiration() * 0.9)*1000);
     }
   }
   else Serial.print("Failed!");
@@ -143,10 +143,8 @@ void setup() {
   Serial.print("Temperature:\t");
   Serial.println(readTemp());
   if (join_success) Serial.println("\nJoin success!");
-  //delay(5000);
-  //sdev1.TestelaborateQuery(tmpTestJson2);
-  //delay(3000);
-  //sdev1.TestelaborateQuery(tmpTestJson3);
+  pixels.setPixelColor(5, 0xA00005);
+  pixels.show();
 }
 
 void loop() {
@@ -154,7 +152,8 @@ void loop() {
   String resp;
 
   delay(10);
-  if (keepAlive_triggered && join_success == 1) {
+  //if (keepAlive_triggered && join_success == 1) {
+  if (registrationMetro.check()) {
     if (timeClient.forceUpdate()) {
       //Serial.println("NTP update OK");
     } else {
@@ -170,6 +169,7 @@ void loop() {
       Serial.print("Too many keep-alive failed, restarting SDEV...");
       restartSdev();
     }
+    registrationMetro.reset();
   }
   sdev1.handleSSPRequest();
 }
