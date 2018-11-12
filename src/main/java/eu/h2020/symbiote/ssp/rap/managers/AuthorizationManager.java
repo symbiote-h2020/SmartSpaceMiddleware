@@ -170,7 +170,7 @@ public class AuthorizationManager {
         componentSecurityHandler = ComponentSecurityHandlerFactory.getComponentSecurityHandler(
                 keystoreName,
                 keystorePass,
-                "S3M-rap@" + sspId,
+                "rap@" + sspId,
                 localAamAddress,
                 componentOwnerName,
                 componentOwnerPassword);
